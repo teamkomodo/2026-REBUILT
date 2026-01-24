@@ -1,122 +1,329 @@
-// package main.java.frc.robot.state_machines; // VSCode unhappy if uncommented for Elijah
+// package main.java.frc.robot.state_machines; // VSCode unhappy if uncommented (for Elijah)
 
-/**
-    Planned state machine levels: Robot > Strategy > System  > subsystem
- 	    RobotStateMachine has these states:
-    DISABLED, CALIBRATE, AUTO, TELEOP (uses StrategySM), (FULL_RESET), (TEST) 
-        TeleopStateMachine has these states:
-    IDLE, STEAL, SCORE, MANUAL, and RESET.
-        SystemStateMachine has these states:
-    TRAVEL, INTAKE, ALIGNING, SHOOT, and INTAKE_AND_SHOOT, UNJAM (intake and indexer).
-        IntakeSubsystem:
-    STOW, DEPLOY, INTAKE, LOCK, EJECT, JAM_CLEAR
-    API: deploy(), stow(), start(), stop(), lock(), eject(), isStowed(), getState()
-        ShooterSubsystem:
-    STOW, IDLE, AIM, SPINUP, READY, FIRE, FIRING, COOLDOWN (optional)
-    API: aim(double angle), aim(), start(), stop(), isReady(), shootOnce(), startShooting(), stopShooting(), isStowed(), getState()
-        IndexerSubsystem:
-    IDLE, AGITATE, REVERSE, JAM_CLEAR
-    API: start(), stop(), reverse(), isEmpty(), isFull(), getState()
-        DrivetrainSubsystem:
-    DRIVE, various ALIGN_* states, PATH_FOLLOW (optional)
-    APIs: not sure, but at least getState()
-        Class count: seven (7)
-    Not going to start with a TEST state or FULL_RESET (may these add later).
-    Definitely log all state machine states (including subsystems) to shuffleboard. Yes, we should add a function to stop all subsystems, and call on entry into DISABLED (have had problems in the past with immediate robot motion on re-enable)
-    Will add transition gates in code Error handling is not the point of state machine. The point is to coordinate the subsystems to prevent collisions. Operator override button to bypass transition checks (only in non-dangerous scenario).
-    */
-
-import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import java.util.Objects;
 import java.util.function.BooleanSupplier;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import frc.robot.state_machines.TeleopStateMachine;
+import frc.robot.state_machines.TeleopStateMachine.TeleopState;
+import frc.robot.state_machines.SystemStateMachine;
+import frc.robot.state_machines.SystemStateMachine.SystemState;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
+import frc.robot.subsystems.IntakeSubsystem;
+import frc.robot.subsystems.IntakeSubsystem.IntakeState;
 
 /**
- * Top-level robot state machine.
- * States: DISABLED, CALIBRATE, AUTO, TELEOP
- * DISABLED always forces stopAllSubsystems().
+ * RobotStateMachine: coarse robot modes and transition policy.
+ *
+ * Public API:
+ * - RequestResult requestState(RobotState target)
+ * - Command requestStateCommand(RobotState target) // factory that returns a
+ * schedulable command
+ *
+ * Transition rules (implemented in canTransitionTo):
+ * - DISABLED -> only CALIBRATE or AUTO
+ * - From CALIBRATE -> TELEOP only when calibrationComplete (guard)
+ * - From CALIBRATE/AUTO -> TELEOP allowed (CALIBRATE requires
+ * calibrationComplete)
+ * - DISABLED is allowed from any state
+ * - Other transitions are explicit in the switch below
+ *
+ * Transition semantics:
+ * - requestState is non-blocking, idempotent (early-return if already in
+ * target).
+ * - Accepted transitions immediately interrupt current activity (onExit) and
+ * run onEntry for the new state.
+ * - onEntry should schedule long-running work (Commands) rather than performing
+ * it inline.
+ * 
+ * TODO: Wire automatic transitions.
  */
 public class RobotStateMachine {
-    public enum RobotState { DISABLED, CALIBRATE, AUTO, TELEOP }
 
-    private RobotState current = RobotState.DISABLED;
+    private static final Logger logger = Logger.getLogger(RobotStateMachine.class.getName());
 
-    private final TeleopStateMachine teleop; // strategy machine used in TELEOP
-    private final SystemStateMachine system;
-    private final Runnable stopAllSubsystems;
-    private final BooleanSupplier allowAutoSupplier; // optional gating for AUTO
-
-    public RobotStateMachine(
-            TeleopStateMachine teleop,
-            SystemStateMachine system,
-            Runnable stopAllSubsystems,
-            BooleanSupplier allowAutoSupplier) {
-        this.teleop = teleop;
-        this.system = system;
-        this.stopAllSubsystems = stopAllSubsystems;
-        this.allowAutoSupplier = allowAutoSupplier;
-        publish();
+    public enum RobotState {
+        DISABLED,
+        CALIBRATE,
+        AUTO,
+        TELEOP
+        // FULL_RESET,
+        // TEST
     }
 
-    public RobotState getState() {
-        return current;
+    public enum RequestResult {
+        ACCEPTED,
+        ALREADY_IN_STATE,
+        NO_SUCH_TRANSITION,
+        REJECTED_GUARD
+    }
+
+    // Dependencies: teleop and system state machines, intake subsystem, operator
+    // override supplier, etc.
+    private final main.java.frc.robot.state_machines.TeleopStateMachine teleopSM;
+    private final SystemStateMachine systemSM;
+    private final IntakeSubsystem intake; // used only as an example
+    private final BooleanSupplier operatorOverrideSupplier;
+
+    private volatile RobotState currentState = RobotState.DISABLED;
+    private volatile long stateEnteredTimestampMs = System.currentTimeMillis();
+
+    public RobotStateMachine(
+            TeleopStateMachine teleopSM,
+            SystemStateMachine systemSM,
+            IntakeSubsystem intake,
+            BooleanSupplier operatorOverrideSupplier) {
+        this.teleopSM = Objects.requireNonNull(teleopSM);
+        this.systemSM = Objects.requireNonNull(systemSM);
+        this.intake = Objects.requireNonNull(intake);
+        this.operatorOverrideSupplier = Objects.requireNonNull(operatorOverrideSupplier);
     }
 
     /**
-     * Call in Robot.periodic()
+     * Snapshot of runtime values used for guard evaluation. Keep this lightweight.
      */
-    public void periodic() {
-        // Enforce DISABLED behavior
-        if (DriverStation.isDisabled() && current != RobotState.DISABLED) {
-            enterDisabled();
-            return;
-        }
+    public static class Context {
+        public final RobotState robotState;
+        public final TeleopState teleopState;
+        public final SystemState systemState;
+        public final long stateEnteredTimestampMs;
+        public final boolean calibrationComplete;
+        public final boolean operatorOverride;
 
-        // Minimal publish
-        publish();
-        // Optionally dispatch periodic to children depending on mode
-        if (current == RobotState.TELEOP) {
-            teleop.periodic();
-            system.periodic();
-        } else if (current == RobotState.AUTO) {
-            system.periodic();
-            // auton-specific logic could run here or in system
-        }
-    }
-
-    private void publish() {
-        SmartDashboard.putString("RobotState", current.name());
-        SmartDashboard.putString("TeleopState", teleop.getState().name());
-        SmartDashboard.putString("SystemState", system.getState().name());
-    }
-
-    private void enterDisabled() {
-        current = RobotState.DISABLED;
-        stopAllSubsystems.run(); // immediate neutralization
-        // Keep teleop/system state as-is or reset as desired
-        publish();
-    }
-
-    // External requests (operator/RobotContainer can call)
-    public void requestEnterCalibrate() {
-        if (current == RobotState.DISABLED) {
-            current = RobotState.CALIBRATE;
-            publish();
+        public Context(RobotState robotState, TeleopState teleopState, SystemState systemState,
+                long stateEnteredTimestampMs, boolean calibrationComplete,
+                boolean operatorOverride) {
+            this.robotState = robotState;
+            this.teleopState = teleopState;
+            this.systemState = systemState;
+            this.stateEnteredTimestampMs = stateEnteredTimestampMs;
+            this.calibrationComplete = calibrationComplete;
+            this.operatorOverride = operatorOverride;
         }
     }
 
-    public void requestEnterAuto() {
-        if (current == RobotState.CALIBRATE || current == RobotState.DISABLED) {
-            if (allowAutoSupplier == null || allowAutoSupplier.getAsBoolean()) {
-                current = RobotState.AUTO;
-                publish();
+    private Context snapshotContext() {
+        return new Context(
+                currentState,
+                teleopSM.getState(),
+                systemSM.getState(),
+                stateEnteredTimestampMs,
+                getCalibrationComplete(),
+                operatorOverrideSupplier.getAsBoolean()
+        );
+    }
+
+    /**
+     * Request a state transition. Idempotent and returns a RequestResult with a
+     * simple reason.
+     */
+    public synchronized RequestResult requestState(RobotState target) {
+        if (target == currentState) {
+            return RequestResult.ALREADY_IN_STATE;
+        }
+
+        Context ctx = snapshotContext();
+
+        RequestResult can = canTransitionTo(ctx, target);
+        if (can != RequestResult.ACCEPTED) {
+            logReject(ctx, target, can);
+            return can;
+        }
+
+        // perform transition: interrupt current activity, set new state, run entry
+        // actions
+        performTransition(target, ctx);
+        return RequestResult.ACCEPTED;
+    }
+
+    /**
+     * Factory that returns a Command wrapper for requestState.
+     */
+    public Command requestStateCommand(RobotState target) {
+        return new InstantCommand(() -> requestState(target));
+    }
+
+    private void logReject(Context ctx, RobotState target, RequestResult reason) {
+        logger.log(Level.FINE, () -> String.format("Transition %s -> %s rejected: %s (calComplete=%s, override=%s)",
+                ctx.robotState, target, reason, ctx.calibrationComplete, ctx.operatorOverride));
+    }
+
+    private boolean getCalibrationComplete() {
+        return teleopSM.calibrationCompleteSupplier().getAsBoolean();
+    }
+
+    /**
+     * Canonical small switch-based transition guard. Add special-case guards here.
+     */
+    private RequestResult canTransitionTo(Context ctx, RobotState target) {
+        // DISABLED is always allowed
+        if (target == RobotState.DISABLED) {
+            return RequestResult.ACCEPTED;
+        }
+
+        switch (ctx.robotState) {
+            case DISABLED:
+                // From DISABLED, only allow CALIBRATE or AUTO
+                if (target == RobotState.CALIBRATE || target == RobotState.AUTO) {
+                    return RequestResult.ACCEPTED;
+                }
+                return RequestResult.NO_SUCH_TRANSITION;
+
+            case CALIBRATE:
+                // From CALIBRATE: allow DISABLED always; allow TELEOP only when calibration is
+                // complete
+                if (target == RobotState.DISABLED) {
+                    return RequestResult.ACCEPTED;
+                }
+                if (target == RobotState.TELEOP) {
+                    return ctx.calibrationComplete ? RequestResult.ACCEPTED : RequestResult.REJECTED_GUARD;
+                }
+                return RequestResult.NO_SUCH_TRANSITION;
+
+            case AUTO:
+                // From AUTO: TELEOP allowed; DISABLED allowed
+                if (target == RobotState.TELEOP || target == RobotState.DISABLED) {
+                    return RequestResult.ACCEPTED;
+                }
+                return RequestResult.NO_SUCH_TRANSITION;
+
+            case TELEOP:
+                // TELEOP may go to DISABLED, or back to CALIBRATE if you allow:
+                if (target == RobotState.DISABLED) {
+                    return RequestResult.ACCEPTED;
+                }
+                // Allow going to CALIBRATE from TELEOP only under override
+                if (target == RobotState.CALIBRATE) {
+                    return ctx.operatorOverride ? RequestResult.ACCEPTED : RequestResult.REJECTED_GUARD;
+                }
+                return RequestResult.NO_SUCH_TRANSITION;
+            default:
+                return RequestResult.NO_SUCH_TRANSITION;
+        }
+    }
+
+    /*
+     * performTransition: interrupt current activity, run exit, set state, run
+     * entry.
+     * Keep onExit/onEntry fast; schedule long-running work from onEntry using
+     * Commands.
+     */
+    private void performTransition(RobotState target, Context ctx) {
+        RobotState previous = currentState;
+        try {
+            // 1) synchronous cleanup / interrupt of previous state
+            try {
+                onExit(previous);
+            } catch (Exception e) {
+                logger.log(Level.WARNING, "Exception during onExit of " + previous, e);
             }
+
+            // Cancel or preempt any long-running Commands owned by the previous mode.
+            cancelModeActivities(previous);
+
+            // 2) set new state
+            currentState = target;
+            stateEnteredTimestampMs = System.currentTimeMillis();
+            logger.log(Level.INFO, () -> String.format("Robot transitioned from %s to %s", previous, target));
+
+            // 3) run entry actions (schedule commands, enable subsystems, etc.)
+            try {
+                onEntry(target, snapshotContext());
+            } catch (Exception e) {
+                logger.log(Level.WARNING, "Exception during onEntry of " + target, e);
+            }
+
+        } finally {
+            // any metrics or publishable state
         }
     }
 
-    public void requestEnterTeleop() {
-        if (current == RobotState.AUTO || current == RobotState.CALIBRATE || current == RobotState.DISABLED) {
-            current = RobotState.TELEOP;
-            publish();
+    // Lightweight cancel hook: ensure current mode's long-running activities are
+    // stopped immediately.
+    private void cancelModeActivities(RobotState previous) {
+        switch (previous) {
+            case TELEOP:
+            case AUTO:
+            case CALIBRATE:
+            case DISABLED:
+                cancelAll();
+                break;
+            default:
+                // nothing to cancel
+                break;
         }
+    }
+
+    /**
+     * onExit hook: stop motors, clear intents relevant to the previous top-level
+     * state.
+     * Keep fast and deterministic; prefer scheduling cleanup tasks as Commands
+     * rather than long blocking work here.
+     */
+    private void onExit(RobotState previous) {
+        switch (previous) {
+            case TELEOP:
+            case AUTO:
+            case CALIBRATE:
+            case DISABLED:
+            default:
+                // nothing to do
+                break;
+        }
+    }
+
+    /**
+     * onEntry hook: enable subsystems, schedule Commands for the new top-level
+     * state behavior.
+     * Do not block.
+     */
+    private void onEntry(RobotState target, Context ctx) {
+        switch (target) {
+            case DISABLED:
+                systemSM.requestState(SystemState.IDLE);
+                teleopSM.requestState(TeleopState.IDLE);
+                systemSM.cancelAll();
+                teleopSM.cancelAll();
+                break;
+
+            case CALIBRATE:
+                // Start calibration commands for subsystems: systemSM handles calibration
+                // sub-states
+                systemSM.requestState(SystemState.CALIBRATE); // TODO: add the calibrate state
+                teleopSM.requestState(TeleopState.IDLE);
+                break;
+
+            case AUTO:
+                systemSM.prepareForAuto(); // TODO: fix this line; no such method
+                teleopSM.requestState(TeleopState.IDLE);
+                // Optionally schedule autonomous Command here or externally
+                break;
+
+            case TELEOP:
+                // Activate teleop state machine; teleopSM will control subsystems via its own
+                // API.
+                teleopSM.requestState(TeleopState.SCORE); // TODO: choose appropriate initial teleop state
+                systemSM.armForTeleop();
+                break;
+
+            default:
+                break;
+        }
+    }
+
+    public cancelAll() {
+        // Cancel all activities in both state machines
+        systemSM.cancelAll();
+        teleopSM.cancelAll();
+    }
+
+    // Accessors for diagnostics
+    public RobotState getCurrentState() {
+        return currentState;
+    }
+
+    public long getStateEnteredTimestampMs() {
+        return stateEnteredTimestampMs;
     }
 }
