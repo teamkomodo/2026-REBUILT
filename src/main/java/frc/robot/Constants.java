@@ -1,9 +1,12 @@
 package frc.robot;
 
+import com.ctre.phoenix6.sim.TalonFXSimState.MotorType;
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
+import com.revrobotics.spark.SparkMax;
 
 public final class Constants {
+
   public static final boolean TUNING_MODE = false;
 
   // Controls
@@ -15,6 +18,7 @@ public final class Constants {
   public static final double ANGULAR_SLOW_MODE_MODIFIER = 0.3;
   public static final double DRIVETRAIN_WIDTH = 0.57785; // Distance between center of left and right swerve wheels in meters
   public static final double DRIVETRAIN_LENGTH = 0.57785; // Distance between center of front and back swerve wheels in meters
+  
   public static final int BACK_RIGHT_DRIVE_MOTOR_ID = 32;
   public static final int BACK_RIGHT_STEER_MOTOR_ID = 34;
   public static final int BACK_RIGHT_STEER_ENCODER_ID = 22;
@@ -65,6 +69,20 @@ public final class Constants {
   public static final PIDConstants DRIVE_PID = new PIDConstants(2, 0, 0);
   public static final PIDConstants STEER_PID = new PIDConstants(1, 0, 0.0002);
 
+  //Shooter
+  public static final int SHOOTER_MOTOR_RIGHT_ID = 0; //FIXME
+  public static final int SHOOTER_MOTOR_LEFT_ID = 0; //FIXME
+
+  public static final int SHOOTER_SMART_CURRENT_LIMIT = 30; //FIXME
+
+  //Intake
+  public static final int INTAKE_MOTOR_RIGHT_ID = 0; //FIXME
+  public static final int INTAKE_MOTOR_LEFT_ID = 0; //FIXME
+
+  public static final int INTAKE_SMART_CURRENT_LIMIT = 30;
+
+  //Basic constants
+  public static final com.revrobotics.spark.SparkLowLevel.MotorType BRUSHLESS = SparkMax.MotorType.kBrushless;
   public static PPHolonomicDriveController HOLONOMIC_PATH_FOLLOWER_CONFIG = new PPHolonomicDriveController(
       DRIVE_PID, // Translation Constants
       STEER_PID // Steering Constants
