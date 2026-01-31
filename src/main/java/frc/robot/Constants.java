@@ -1,7 +1,13 @@
 package frc.robot;
 
+import java.util.Optional;
+import java.util.function.BooleanSupplier;
+
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
+
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 
 public final class Constants {
   public static final boolean TUNING_MODE = false;
@@ -66,7 +72,15 @@ public final class Constants {
   public static final PIDConstants STEER_PID = new PIDConstants(1, 0, 0.0002);
 
   public static PPHolonomicDriveController HOLONOMIC_PATH_FOLLOWER_CONFIG = new PPHolonomicDriveController(
-      DRIVE_PID, // Translation Constants
-      STEER_PID // Steering Constants
-      );
+    DRIVE_PID, // Translation Constants
+    STEER_PID // Steering Constants
+  );
+
+  public static final BooleanSupplier ON_RED_ALLIANCE = () -> {
+    Optional<Alliance> alliance = DriverStation.getAlliance();
+    if (alliance.isPresent()) {
+      return alliance.get() == DriverStation.Alliance.Red;
+    }
+    return false;
+  };
 }

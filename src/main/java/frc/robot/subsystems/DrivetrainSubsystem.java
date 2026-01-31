@@ -152,6 +152,8 @@ public class DrivetrainSubsystem implements Subsystem {
 
     private ChassisSpeeds lastCommandedChassisSpeeds = new ChassisSpeeds();
 
+    BooleanSupplier flipAuto = () -> true;
+
     public DrivetrainSubsystem() {
         
         
@@ -248,21 +250,21 @@ public class DrivetrainSubsystem implements Subsystem {
     }
 
     private void setupPathPlanner(){
-        // try {
-        //     config = RobotConfig.fromGUISettings();
-        //     AutoBuilder.configure(
-        //         this::getPose,
-        //         this::resetPose,
-        //         this::getChassisSpeeds,
-        //         this::robotRelativeDrive,
-        //         HOLONOMIC_PATH_FOLLOWER_CONFIG,
-        //         config,
-                
-        //         this
-        //      );
-        // } catch (Exception e){
-        //     e.printStackTrace();
-        // } 
+        try {
+            config = RobotConfig.fromGUISettings();
+            AutoBuilder.configure(
+                this::getPose,
+                this::resetPose,
+                this::getChassisSpeeds,
+                this::robotRelativeDrive,
+                HOLONOMIC_PATH_FOLLOWER_CONFIG,
+                config,
+                flipAuto,
+                this
+             );
+        } catch (Exception e){
+            e.printStackTrace();
+        } 
     }
 
     private void updateTelemetry(){
@@ -409,9 +411,9 @@ public class DrivetrainSubsystem implements Subsystem {
         return kinematics;
     }
 
-    // public AHRS getNavx() {
-    //     return navX;
-    // }
+    public AHRS getNavx() {
+        return navX;
+    }
 
     public HolonomicDriveController getDriveController() {
         return driveController;
@@ -557,19 +559,19 @@ public class DrivetrainSubsystem implements Subsystem {
         );
     }
     
-    // public Command followPathCommand(String pathName) throws IOException, ParseException{
-    //     PathPlannerPath path = PathPlannerPath.fromPathFile(pathName);
-    //     return new FollowPathCommand(
-    //         path, 
-    //         this::getPose, 
-    //         this::getChassisSpeeds, 
-    //         null, //needs to be replaced with actual biconsumer
-    //         HOLONOMIC_PATH_FOLLOWER_CONFIG, 
-    //         config, 
-    //         ON_RED_ALLIANCE,
-    //         this
-    //     ); 
-    // }
+    public Command followPathCommand(String pathName) throws IOException, ParseException{
+        PathPlannerPath path = PathPlannerPath.fromPathFile(pathName);
+        return new FollowPathCommand(
+            path, 
+            this::getPose, 
+            this::getChassisSpeeds, 
+            null, //needs to be replaced with actual biconsumer
+            HOLONOMIC_PATH_FOLLOWER_CONFIG, 
+            config, 
+            ON_RED_ALLIANCE,
+            this
+        ); 
+    }
 
     public void timedDriveCommand(double xSpeed, double ySpeed, double angularVelocity, boolean fieldRelative, double driveTime) {
         new SequentialCommandGroup(
