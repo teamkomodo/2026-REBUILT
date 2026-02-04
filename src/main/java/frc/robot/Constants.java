@@ -81,6 +81,10 @@ public final class Constants {
 
   public static final int INTAKE_SMART_CURRENT_LIMIT = 30;
 
+  //Hinge
+  public static final int HINGE_MOTOR_RIGHT_ID = 0; //FIXME
+  public static final int HINGE_MOTOR_LEFT_ID = 0; //FIXME
+
   //Basic constants
   public static final com.revrobotics.spark.SparkLowLevel.MotorType BRUSHLESS = SparkMax.MotorType.kBrushless;
   public static PPHolonomicDriveController HOLONOMIC_PATH_FOLLOWER_CONFIG = new PPHolonomicDriveController(

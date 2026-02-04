@@ -44,6 +44,15 @@ public class IntakeSubsystem extends SubsystemBase{
 
     private double desiredSpeed;
 
+    // private final SparkMax hingeMotorRight;
+    // private final SparkMax hingeMotorLeft;
+    // private final SparkMaxConfig hingeMotorRightConfig;
+    // private final SparkMaxConfig hingeMotorLeftConfig;
+
+    // private final SparkClosedLoopController hingeMotorRightController;
+    // private final RelativeEncoder hingeMotorRightRelativeEncoder;
+    // private final PIDGains hingePidGains;
+
     public IntakeSubsystem() {
 
         intakeMotorRight = new SparkMax(INTAKE_MOTOR_RIGHT_ID, BRUSHLESS);
@@ -56,6 +65,8 @@ public class IntakeSubsystem extends SubsystemBase{
         intakePidGains = new PIDGains(1.0, 0.0, 0.0, 0.0);
 
         desiredSpeed = 0.0;
+
+        //hingeMotorRight = new SparkMax(IN);
         configureMotors();
     }
 
