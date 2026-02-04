@@ -1,6 +1,8 @@
 package frc.robot.subsystems;
 
 import static frc.robot.Constants.BRUSHLESS;
+import static frc.robot.Constants.HINGE_MOTOR_LEFT_ID;
+import static frc.robot.Constants.HINGE_MOTOR_RIGHT_ID;
 import static frc.robot.Constants.INTAKE_MOTOR_LEFT_ID;
 import static frc.robot.Constants.INTAKE_MOTOR_RIGHT_ID;
 import static frc.robot.Constants.INTAKE_SMART_CURRENT_LIMIT;
@@ -33,6 +35,12 @@ public class IntakeSubsystem extends SubsystemBase{
     private final DoublePublisher intakeRpmPublisher = intakeTable.getDoubleTopic("intake-rpm").publish();
     private final DoublePublisher intakeDesiredSpeedPublisher = intakeTable.getDoubleTopic("intake-desired-speed").publish();
 
+    private final NetworkTable hingeTable = NetworkTableInstance.getDefault().getTable("hinge");
+
+    private final DoublePublisher hingeSpeedPublisher = hingeTable.getDoubleTopic("hinge-speed").publish();
+    private final DoublePublisher hingeRpmPublisher = hingeTable.getDoubleTopic("hinge-rpm").publish();
+    private final DoublePublisher hingeDesiredPositionPublisher = hingeTable.getDoubleTopic("hinge-desired-position").publish();
+
     private final SparkMax intakeMotorRight;
     private final SparkMax intakeMotorLeft;
     private final SparkMaxConfig intakeMotorRightConfig;
@@ -44,14 +52,16 @@ public class IntakeSubsystem extends SubsystemBase{
 
     private double desiredSpeed;
 
-    // private final SparkMax hingeMotorRight;
-    // private final SparkMax hingeMotorLeft;
-    // private final SparkMaxConfig hingeMotorRightConfig;
-    // private final SparkMaxConfig hingeMotorLeftConfig;
+    private final SparkMax hingeMotorRight;
+    private final SparkMax hingeMotorLeft;
+    private final SparkMaxConfig hingeMotorRightConfig;
+    private final SparkMaxConfig hingeMotorLeftConfig;
 
-    // private final SparkClosedLoopController hingeMotorRightController;
-    // private final RelativeEncoder hingeMotorRightRelativeEncoder;
-    // private final PIDGains hingePidGains;
+    private final SparkClosedLoopController hingeMotorRightController;
+    private final RelativeEncoder hingeMotorRightRelativeEncoder;
+    private final PIDGains hingePidGains;
+
+    private double desiredPosition;
 
     public IntakeSubsystem() {
 
@@ -66,7 +76,17 @@ public class IntakeSubsystem extends SubsystemBase{
 
         desiredSpeed = 0.0;
 
-        //hingeMotorRight = new SparkMax(IN);
+        hingeMotorRight = new SparkMax(HINGE_MOTOR_RIGHT_ID, BRUSHLESS);
+        hingeMotorLeft = new SparkMax(HINGE_MOTOR_LEFT_ID, BRUSHLESS);
+        hingeMotorRightConfig = new SparkMaxConfig();
+        hingeMotorLeftConfig = new SparkMaxConfig();
+
+        hingeMotorRightController = hingeMotorRight.getClosedLoopController();
+        hingeMotorRightRelativeEncoder = hingeMotorRight.getEncoder();
+        hingePidGains = new PIDGains(1.0, 0.0, 0.0, 0.0);
+
+        desiredPosition = 0.0;
+
         configureMotors();
     }
 
@@ -105,12 +125,43 @@ public class IntakeSubsystem extends SubsystemBase{
             intakeMotorLeftConfig, 
             ResetMode.kResetSafeParameters, 
             PersistMode.kPersistParameters);
+        
+        hingeMotorRightConfig
+            .smartCurrentLimit(INTAKE_SMART_CURRENT_LIMIT)
+            .idleMode(IdleMode.kBrake)
+            .inverted(false);
+        
+        hingeMotorRightConfig.closedLoop
+            .p(hingePidGains.p)
+            .i(hingePidGains.i)
+            .d(hingePidGains.d)
+            .velocityFF(intakePidGains.FF);
+        
+        hingeMotorRight.configure(
+            hingeMotorRightConfig,
+            ResetMode.kResetSafeParameters,
+            PersistMode.kPersistParameters);
+        
+        hingeMotorLeftConfig
+            .smartCurrentLimit(INTAKE_SMART_CURRENT_LIMIT)
+            .follow(HINGE_MOTOR_RIGHT_ID)
+            .idleMode(IdleMode.kBrake)
+            .inverted(true);
+        
+        hingeMotorLeft.configure(
+            hingeMotorLeftConfig,
+            ResetMode.kResetSafeParameters,
+            PersistMode.kPersistParameters);
     }
 
     public void updateTelemetry() {
         intakeSpeedPublisher.set(intakeMotorRight.getAppliedOutput());
         intakeRpmPublisher.set(intakeMotorRightRelativeEncoder.getVelocity());
         intakeDesiredSpeedPublisher.set(desiredSpeed);
+
+        hingeSpeedPublisher.set(hingeMotorRight.getAppliedOutput());
+        hingeRpmPublisher.set(hingeMotorRightRelativeEncoder.getVelocity());
+        hingeDesiredPositionPublisher.set(desiredPosition);
     }
 
     public void setIntakeDutyCycle(double dutyCycle) {
@@ -128,5 +179,9 @@ public class IntakeSubsystem extends SubsystemBase{
     public Command updateIntakeSpeed(double desiredSpeed) {
         this.desiredSpeed = desiredSpeed;
         return Commands.runOnce(() -> setIntakeDutyCycle(this.desiredSpeed));
+    }
+
+    public void setHingeDutyCycle(double position) {
+        hingeMotorRightController.setSetpoint(position, ControlType.kPosition);
     }
 }
