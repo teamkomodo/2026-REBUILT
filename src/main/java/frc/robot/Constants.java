@@ -58,8 +58,6 @@ public final class Constants {
   public static final boolean ALIGNMENT_DRIVE = false;
   public static final int FRONT_LEFT_STEER_ENCODER_ID = 10;
 
-  public static final double LIMELIGHT_X_OFFSET = 0;
-
   public static final double MAX_MODULE_VELOCITY = 4.058; // physical maximum attainable speed of swerve modules
   public static final double MAX_MODULE_ACCEL = 21; // physical maximum attainable accel of swerve modules
 
@@ -79,11 +77,22 @@ public final class Constants {
   public static final int INTAKE_MOTOR_RIGHT_ID = 0; //FIXME
   public static final int INTAKE_MOTOR_LEFT_ID = 0; //FIXME
 
-  public static final int INTAKE_SMART_CURRENT_LIMIT = 30;
+  public static final int INTAKE_SMART_CURRENT_LIMIT = 30; //FIXME
+
+  public static final double INTAKE_INTAKE_SPEED = 0.3; //FIXME
+  public static final double INTAKE_FEED_SPEED = 0.2; //FIXME
+  public static final double INTAKE_EJECT_SPEED = -0.3; //FIXME
+
+  public static final double INTAKE_EJECT_TIME = 0.3; //FIXME
 
   //Hinge
   public static final int HINGE_MOTOR_RIGHT_ID = 0; //FIXME
   public static final int HINGE_MOTOR_LEFT_ID = 0; //FIXME
+
+  public static final double HINGE_STOW_POSITION = 0.0; //FIXME
+  public static final double HINGE_FEED_POSITION = 0.0; //FIXME
+  public static final double HINGE_INTAKE_POSITION = 0.0; //FIXME
+  public static final double HINGE_EJECT_POSITION = 0.0; //FIXME
 
   //Basic constants
   public static final com.revrobotics.spark.SparkLowLevel.MotorType BRUSHLESS = SparkMax.MotorType.kBrushless;
