@@ -92,7 +92,7 @@ public class IntakeSubsystem extends SubsystemBase{
 
         intakeMotorRightController = intakeMotorRight.getClosedLoopController();
         intakeMotorRightRelativeEncoder = intakeMotorRight.getEncoder();
-        intakePidGains = new PIDGains(1.0, 0.0, 0.0, 0.0);
+        intakePidGains = new PIDGains(1.0, 0.0, 0.0, 0.0); //FIXME
 
         desiredSpeed = 0.0;
 
@@ -103,7 +103,7 @@ public class IntakeSubsystem extends SubsystemBase{
 
         hingeMotorRightController = hingeMotorRight.getClosedLoopController();
         hingeMotorRightRelativeEncoder = hingeMotorRight.getEncoder();
-        hingePidGains = new PIDGains(1.0, 0.0, 0.0, 0.0);
+        hingePidGains = new PIDGains(1.0, 0.0, 0.0, 0.0); //FIXME
 
         desiredPosition = 0.0;
 
@@ -193,10 +193,12 @@ public class IntakeSubsystem extends SubsystemBase{
     }
 
     public Command stopIntake() {
+        desiredSpeed = 0;
         return Commands.runOnce(() -> intakeMotorRightController.setSetpoint(0, ControlType.kDutyCycle));
     }
 
     public Command holdIntake() {
+        desiredSpeed = 0;
         return Commands.runOnce(() -> intakeMotorRightController.setSetpoint(intakeMotorRightRelativeEncoder.getPosition(), ControlType.kPosition));
     }
 
@@ -214,7 +216,8 @@ public class IntakeSubsystem extends SubsystemBase{
     }
 
     public Command holdHinge() {
-        return Commands.runOnce(() -> hingeMotorRightController.setSetpoint(hingeMotorRightRelativeEncoder.getPosition(), ControlType.kPosition));
+        desiredPosition = hingeMotorRightRelativeEncoder.getPosition();
+        return Commands.runOnce(() -> hingeMotorRightController.setSetpoint(desiredPosition, ControlType.kPosition));
     }
 
     public Command updateHingePosition(double desiredPosition) {

@@ -70,13 +70,11 @@ public final class Constants {
   //Shooter
   public static final int SHOOTER_MOTOR_RIGHT_ID = 0; //FIXME
   public static final int SHOOTER_MOTOR_LEFT_ID = 0; //FIXME
-
   public static final int SHOOTER_SMART_CURRENT_LIMIT = 30; //FIXME
 
   //Intake
   public static final int INTAKE_MOTOR_RIGHT_ID = 0; //FIXME
   public static final int INTAKE_MOTOR_LEFT_ID = 0; //FIXME
-
   public static final int INTAKE_SMART_CURRENT_LIMIT = 30; //FIXME
 
   public static final double INTAKE_INTAKE_SPEED = 0.3; //FIXME
@@ -93,6 +91,12 @@ public final class Constants {
   public static final double HINGE_FEED_POSITION = 0.0; //FIXME
   public static final double HINGE_INTAKE_POSITION = 0.0; //FIXME
   public static final double HINGE_EJECT_POSITION = 0.0; //FIXME
+
+  //Indexer
+  public static final int INDEXER_MOTOR_ID = 0; //FIXME
+  public static final int INDEXER_SMART_CURRENT_LIMIT = 30; //FIXME
+
+  public static final double INDEXER_SPEED = 0.3; //FIXME
 
   //Basic constants
   public static final com.revrobotics.spark.SparkLowLevel.MotorType BRUSHLESS = SparkMax.MotorType.kBrushless;
