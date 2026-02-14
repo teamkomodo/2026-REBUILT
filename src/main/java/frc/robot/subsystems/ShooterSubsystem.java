@@ -1,16 +1,16 @@
 package frc.robot.subsystems;
 
-import static frc.robot.Constants.BRUSHLESS;
-import static frc.robot.Constants.SHOOTER_MOTOR_LEFT_ID;
-import static frc.robot.Constants.SHOOTER_MOTOR_RIGHT_ID;
-import static frc.robot.Constants.SHOOTER_SMART_CURRENT_LIMIT;
+import static frc.robot.Constants.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.spark.SparkClosedLoopController;
 import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.SparkBase.ControlType;
-import com.revrobotics.spark.SparkBase.PersistMode;
-import com.revrobotics.spark.SparkBase.ResetMode;
+import com.revrobotics.PersistMode;
+import com.revrobotics.ResetMode;
 import com.revrobotics.spark.config.SparkMaxConfig;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 
@@ -20,19 +20,21 @@ import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Constants;
 import frc.robot.util.PIDGains;
 
 /**
  * Small command helpers to integrate with SystemStateMachine expectations.
  */
 
-public class ShooterSubsystem extends SubsystemBase{
-    
+public class ShooterSubsystem extends SubsystemBase {
+
     private final NetworkTable shooterTable = NetworkTableInstance.getDefault().getTable("shooter");
 
     private final DoublePublisher shooterSpeedPublisher = shooterTable.getDoubleTopic("shooter-speed").publish();
     private final DoublePublisher shooterRpmPublisher = shooterTable.getDoubleTopic("shooter-rpm").publish();
-    private final DoublePublisher shooterDesiredSpeedPublisher = shooterTable.getDoubleTopic("shooter-desired-speed").publish();
+    private final DoublePublisher shooterDesiredSpeedPublisher = shooterTable.getDoubleTopic("shooter-desired-speed")
+            .publish();
 
     private final SparkMax shooterMotorRight;
     private final SparkMax shooterMotorLeft;
@@ -43,7 +45,7 @@ public class ShooterSubsystem extends SubsystemBase{
     private final RelativeEncoder shooterMotorRightRelativeEncoder;
     private final PIDGains shooterPidGains;
 
-    private double desiredSpeed;
+    private double desiredSpeed; // RPMs
 
     public ShooterSubsystem() {
 
@@ -60,41 +62,39 @@ public class ShooterSubsystem extends SubsystemBase{
         configureMotors();
     }
 
-    public void teleopInit() {}
+    public void teleopInit() {
+    }
 
     @Override
     public void periodic() {
         updateTelemetry();
     }
 
-    @SuppressWarnings("removal")
     public void configureMotors() {
         shooterMotorRightConfig
-            .smartCurrentLimit(SHOOTER_SMART_CURRENT_LIMIT)
-            .idleMode(IdleMode.kCoast)
-            .inverted(false);
+                .smartCurrentLimit(SHOOTER_SMART_CURRENT_LIMIT)
+                .idleMode(IdleMode.kCoast)
+                .inverted(false);
 
         shooterMotorRightConfig.closedLoop
-            .p(shooterPidGains.p)
-            .i(shooterPidGains.i)
-            .d(shooterPidGains.d)
-            .velocityFF(shooterPidGains.FF);
-        
+                .p(shooterPidGains.p)
+                .i(shooterPidGains.i)
+                .d(shooterPidGains.d).feedForward.sv(0.0, shooterPidGains.FF);
+
         shooterMotorRight.configure(
-            shooterMotorRightConfig, 
-            ResetMode.kResetSafeParameters, 
-            PersistMode.kPersistParameters);
-        
+                shooterMotorRightConfig,
+                ResetMode.kResetSafeParameters,
+                PersistMode.kPersistParameters);
+
         shooterMotorLeftConfig
-            .smartCurrentLimit(SHOOTER_SMART_CURRENT_LIMIT)
-            .follow(SHOOTER_MOTOR_RIGHT_ID)
-            .idleMode(IdleMode.kCoast)
-            .inverted(true);
-        
+                .smartCurrentLimit(SHOOTER_SMART_CURRENT_LIMIT)
+                .follow(SHOOTER_MOTOR_RIGHT_ID, true)
+                .idleMode(IdleMode.kCoast);
+
         shooterMotorLeft.configure(
-            shooterMotorLeftConfig, 
-            ResetMode.kResetSafeParameters, 
-            PersistMode.kPersistParameters);
+                shooterMotorLeftConfig,
+                ResetMode.kResetSafeParameters,
+                PersistMode.kPersistParameters);
     }
 
     public void updateTelemetry() {
@@ -107,8 +107,12 @@ public class ShooterSubsystem extends SubsystemBase{
         shooterMotorRightController.setSetpoint(dutyCycle, ControlType.kDutyCycle);
     }
 
+    public void setShooterVelocity(double velocity) {
+        shooterMotorRightController.setSetpoint(velocity, ControlType.kVelocity);
+    }
+
     public void stopShooter() {
-        shooterMotorRightController.setSetpoint(0, ControlType.kDutyCycle);
+        setShooterDutyCycle(0.0);
     }
 
     public Command stopShooterCommand() {
@@ -121,16 +125,197 @@ public class ShooterSubsystem extends SubsystemBase{
 
     public Command updateShooterSpeed(double desiredSpeed) {
         this.desiredSpeed = desiredSpeed;
-        return Commands.runOnce(() -> setShooterDutyCycle(this.desiredSpeed));
+        return Commands.runOnce(() -> setShooterVelocity(this.desiredSpeed), this);
+    }
+
+    public Command updateFlywheelSpeed(double desiredFlywheelSpeed) {
+        double targetSpeed = desiredFlywheelSpeed / Constants.SHOOTER_GEAR_RATIO;
+        return updateShooterSpeed(targetSpeed);
     }
 
     public Command startShootingCommand() {
         // FIXME: need to call out to navx for this
-        return updateShooterSpeed(0.1);
+        // Ask @Bora A
+        return updateShooterSpeed(ShooterLookupTable.findShooterSpeed(4.0)); // 4m is a placeholder for now
     }
 
     public Command stowShooterCommand() {
         // default stow behavior: stop shooter for now
         return stopShooterCommand();
     }
+
+    // Shooting calculation:
+    public class ShooterLookupTable {
+        // Distance in meters, RPM in rotations per minute
+
+        public static double findShooterSpeed(double distance) {
+            // 1. Handle Out-of-Bounds
+            if (distance <= SHOOTER_DISTANCES[0])
+                return SHOOTER_RPMS[0];
+            if (distance >= SHOOTER_DISTANCES[SHOOTER_DISTANCES.length - 1])
+                return SHOOTER_RPMS[SHOOTER_RPMS.length - 1];
+
+            // 2. Find the bounding indices (Linear Search)
+            int i = 0;
+            while (SHOOTER_DISTANCES[i + 1] < distance) {
+                i++;
+            }
+
+            // 3. Linear Interpolation
+            // Formula: y = y0 + (x - x0) * ((y1 - y0) / (x1 - x0))
+            double x0 = SHOOTER_DISTANCES[i];
+            double x1 = SHOOTER_DISTANCES[i + 1];
+            double y0 = SHOOTER_RPMS[i];
+            double y1 = SHOOTER_RPMS[i + 1];
+
+            return y0 + (distance - x0) * ((y1 - y0) / (x1 - x0));
+        }
+    }
+
+    public class ShooterTableGenerator {
+        // --- Physics Constants in Constants file ---
+
+        // --- Table Generation Settings ---
+        private static final double MIN_DIST = 0.76; // Meters
+        private static final double MAX_DIST = 8.0; // Meters
+        private static final double STEP_SIZE = 0.15; // Meters (Adjustable)
+        private static final double MAX_ERROR_METERS = 10.0 / Constants.INCHES_PER_METER; // 0.254m
+
+        // The main method is commented to prevent accidental execution. Uncomment to generate table and print results.
+        //*
+        
+        public static void main(String[] args) {
+            createTable();
+        }
+        // */
+
+        // Main function; called in main() method
+        public static void createTable() {
+            List<Double> distances = new ArrayList<>();
+            List<Double> rpms = new ArrayList<>();
+
+            // 1. Generate Table
+            for (double d = MIN_DIST; d <= MAX_DIST; d += STEP_SIZE) {
+                distances.add(d);
+                rpms.add(calculateFlywheelRPM(findVelocity(d, HUB_OPENING_HEIGHT, LAUNCH_ANGLE)));
+            }
+
+            // 2. Validate Table (Check midpoints for linear interpolation error)
+            System.out.println("--- Validation Report ---");
+            boolean passed = true;
+            double maxErrorFound = 0;
+
+            for (int i = 0; i < distances.size() - 1; i++) {
+                double dMid = (distances.get(i) + distances.get(i + 1)) / 2.0;
+                double rpmMid = (rpms.get(i) + rpms.get(i + 1)) / 2.0;
+
+                // Where does this interpolated RPM actually land?
+                double actualX = simulateForX(calculateV0FromRPM(rpmMid), LAUNCH_ANGLE,
+                        HUB_OPENING_HEIGHT);
+                double error = Math.abs(actualX - dMid);
+
+                if (error > maxErrorFound)
+                    maxErrorFound = error;
+                if (error > MAX_ERROR_METERS) {
+                    passed = false;
+                    System.out.printf("FAIL at %.2fm: Error is %.3f inches%n", dMid, error /
+                            0.0254);
+                }
+            }
+
+            System.out.printf("Validation Status: %s%n", passed ? "PASSED" : "FAILED");
+            System.out.printf("Max Distance Error: %.2f inches%n%n", maxErrorFound /
+                    0.0254);
+
+            // 3. Print Final Code-Ready Table
+            System.out.println("--- Final Lookup Table (Java Arrays) ---");
+            printArray("SHOOTER_DISTANCES", distances);
+            printArray("SHOOTER_RPMS", rpms);
+        }
+
+        // --- Core Logic ---
+
+        public static double calculateFlywheelRPM(double v0) {
+            double surfaceSpeed = v0 / FLYWHEEL_SURFACE_TO_BALL_SPEED_RATIO;
+            return ((surfaceSpeed / FLYWHEEL_RADIUS) * 60.0) / (2.0 * Math.PI);
+        }
+
+        public static double calculateV0FromRPM(double rpm) {
+            double omega = (rpm * 2.0 * Math.PI) / 60.0;
+            double surfaceSpeed = omega * FLYWHEEL_RADIUS;
+            return surfaceSpeed * FLYWHEEL_SURFACE_TO_BALL_SPEED_RATIO;
+        }
+
+        public static double findVelocity(double tx, double ty, double angle) {
+            double lowV = 0.0, highV = 100.0;
+            double bestV = 0.0;
+            for (int i = 0; i < 25; i++) {
+                double midV = (lowV + highV) / 2.0;
+                if (simulateAtDistance(midV, angle, tx) < ty)
+                    lowV = midV;
+                else
+                    highV = midV;
+                bestV = midV;
+            }
+            return bestV;
+        }
+
+        /** Returns Y-height at a specific X-distance */
+        private static double simulateAtDistance(double v0, double theta, double targetX) {
+            double rad = Math.toRadians(theta);
+            double vx = v0 * Math.cos(rad), vy = v0 * Math.sin(rad);
+            double x = 0, y = 0, vSpin = v0;
+
+            while (x < targetX) {
+                double v = Math.sqrt(vx * vx + vy * vy);
+                double Cl = LIFT_COEFFICIENT * (vSpin / v);
+                double drag = 0.5 * AIR_DENSITY * v * v * DRAG_COEFFICIENT * BALL_AREA;
+                double magnus = 0.5 * AIR_DENSITY * v * v * Cl * BALL_AREA;
+                double ax = -(drag * (vx / v) + magnus * (vy / v)) / BALL_MASS;
+                double ay = (-GRAVITY * BALL_MASS - drag * (vy / v) + magnus * (vx / v)) / BALL_MASS;
+                vx += ax * DELTA_TIME;
+                vy += ay * DELTA_TIME;
+                x += vx * DELTA_TIME;
+                y += vy * DELTA_TIME;
+                if (y < -1.0)
+                    break;
+            }
+            return y;
+        }
+
+        /** Returns X-distance when ball falls back to target height (Validation use) */
+        private static double simulateForX(double v0, double theta, double targetY) {
+            double rad = Math.toRadians(theta);
+            double vx = v0 * Math.cos(rad), vy = v0 * Math.sin(rad);
+            double x = 0, y = 0, vSpin = v0;
+            boolean peaked = false;
+
+            while (true) {
+                double v = Math.sqrt(vx * vx + vy * vy);
+                double Cl = 0.15 * (vSpin / v);
+                double drag = 0.5 * AIR_DENSITY * v * v * DRAG_COEFFICIENT * BALL_AREA;
+                double magnus = 0.5 * AIR_DENSITY * v * v * Cl * BALL_AREA;
+                vx += (-(drag * (vx / v) + magnus * (vy / v)) / BALL_MASS) * DELTA_TIME;
+                vy += ((-GRAVITY * BALL_MASS - drag * (vy / v) + magnus * (vx / v)) / BALL_MASS) * DELTA_TIME;
+                x += vx * DELTA_TIME;
+                y += vy * DELTA_TIME;
+
+                if (vy < 0)
+                    peaked = true;
+                if (peaked && y <= targetY)
+                    return x; // Ball crossed target height on way down
+                if (y < -1.0 || x > 15.0)
+                    return x;
+            }
+        }
+
+        private static void printArray(String name, List<Double> vals) {
+            System.out.print("  public static final double[] " + name + " = { ");
+            for (int i = 0; i < vals.size(); i++) {
+                System.out.printf("%.3f%s", vals.get(i), (i == vals.size() - 1) ? "" : ", ");
+            }
+            System.out.println(" };");
+        }
+    }
+
 }

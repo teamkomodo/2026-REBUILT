@@ -113,7 +113,7 @@ public class TeleopStateMachine extends SubsystemBase {
     private final SystemStateMachine systemSM;
     private final BooleanSupplier operatorOverrideSupplier; // used for any teleop-level gating if needed
     private String receivedGameData;
-    public volatile int matchStage = 0; // 0 = early match, 1 - 4 = alliance periods, 5 = endgame
+    public volatile int matchStage = 0; // 0 = early match, 1 - 4 = alliance shifts, 5 = endgame
 
     private volatile TeleopState currentState = TeleopState.IDLE;
 
@@ -239,16 +239,16 @@ public class TeleopStateMachine extends SubsystemBase {
 
                     // Run the timer
                     return Commands.sequence(
-                            // Period 1 (25s)
+                            // Shift 1 (25s)
                             setMatchStage(1),
                             requestState(initial, true), Commands.waitSeconds(25.0),
-                            // Period 2 (25s)
+                            // Shift 2 (25s)
                             setMatchStage(2),
                             requestState(opposite, true), Commands.waitSeconds(25.0),
-                            // Period 3 (25s)
+                            // Shift 3 (25s)
                             setMatchStage(3),
                             requestState(initial, true), Commands.waitSeconds(25.0),
-                            // Period 4 (25s)
+                            // Shift 4 (25s)
                             setMatchStage(4),
                             requestState(opposite, true), Commands.waitSeconds(25.0),
                             // Final: SCORE until match ends
