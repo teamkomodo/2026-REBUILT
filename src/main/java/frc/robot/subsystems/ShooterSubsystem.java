@@ -22,6 +22,10 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.util.PIDGains;
 
+/**
+ * Small command helpers to integrate with SystemStateMachine expectations.
+ */
+
 public class ShooterSubsystem extends SubsystemBase{
     
     private final NetworkTable shooterTable = NetworkTableInstance.getDefault().getTable("shooter");
@@ -107,6 +111,10 @@ public class ShooterSubsystem extends SubsystemBase{
         shooterMotorRightController.setSetpoint(0, ControlType.kDutyCycle);
     }
 
+    public Command stopShooterCommand() {
+        return Commands.runOnce(this::stopShooter, this);
+    }
+
     public void holdShooter() {
         shooterMotorRightController.setSetpoint(shooterMotorRightRelativeEncoder.getPosition(), ControlType.kPosition);
     }
@@ -114,5 +122,15 @@ public class ShooterSubsystem extends SubsystemBase{
     public Command updateShooterSpeed(double desiredSpeed) {
         this.desiredSpeed = desiredSpeed;
         return Commands.runOnce(() -> setShooterDutyCycle(this.desiredSpeed));
+    }
+
+    public Command startShootingCommand() {
+        // FIXME: need to call out to navx for this
+        return updateShooterSpeed(0.1);
+    }
+
+    public Command stowShooterCommand() {
+        // default stow behavior: stop shooter for now
+        return stopShooterCommand();
     }
 }

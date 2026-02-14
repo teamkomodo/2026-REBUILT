@@ -16,11 +16,12 @@ import static frc.robot.Constants.INTAKE_MOTOR_RIGHT_ID;
 import static frc.robot.Constants.INTAKE_SMART_CURRENT_LIMIT;
 
 import com.revrobotics.RelativeEncoder;
+import com.revrobotics.spark.SparkAbsoluteEncoder;
 import com.revrobotics.spark.SparkClosedLoopController;
 import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.SparkBase.ControlType;
-import com.revrobotics.spark.SparkBase.PersistMode;
-import com.revrobotics.spark.SparkBase.ResetMode;
+import com.revrobotics.ResetMode;
+import com.revrobotics.PersistMode;
 import com.revrobotics.spark.config.SparkMaxConfig;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 
@@ -37,7 +38,7 @@ import edu.wpi.first.wpilibj2.command.WaitCommand;
 import frc.robot.util.PIDGains;
 
 public class IntakeSubsystem extends SubsystemBase{
-    
+    /* NetworkTable */
     private final NetworkTable intakeTable = NetworkTableInstance.getDefault().getTable("intake");
 
     private final DoublePublisher intakeSpeedPublisher = intakeTable.getDoubleTopic("intake-speed").publish();
@@ -51,7 +52,12 @@ public class IntakeSubsystem extends SubsystemBase{
     private final DoublePublisher hingeSpeedPublisher = hingeTable.getDoubleTopic("hinge-speed").publish();
     private final DoublePublisher hingeRpmPublisher = hingeTable.getDoubleTopic("hinge-rpm").publish();
     private final DoublePublisher hingeDesiredPositionPublisher = hingeTable.getDoubleTopic("hinge-desired-position").publish();
+    // Publish absolute hinge encoder position
+    private final DoublePublisher hingeAbsolutePositionPublisher = hingeTable.getDoubleTopic("hinge-absolute-position").publish();
 
+    /* ----- Intake ----- */
+    // Intake motors and controllers.
+    // The right motor is the "master" and the left motor follows it
     private final SparkMax intakeMotorRight;
     private final SparkMax intakeMotorLeft;
     private final SparkMaxConfig intakeMotorRightConfig;
@@ -63,6 +69,9 @@ public class IntakeSubsystem extends SubsystemBase{
 
     private double desiredSpeed;
 
+    /* ----- Hinge ----- */
+    // Hinge motors and controllers.
+    // The right motor is the "master" and the left motor follows it
     private final SparkMax hingeMotorRight;
     private final SparkMax hingeMotorLeft;
     private final SparkMaxConfig hingeMotorRightConfig;
@@ -71,6 +80,9 @@ public class IntakeSubsystem extends SubsystemBase{
     private final SparkClosedLoopController hingeMotorRightController;
     private final RelativeEncoder hingeMotorRightRelativeEncoder;
     private final PIDGains hingePidGains;
+
+    // Absolute encoder for hinge position
+    private final SparkAbsoluteEncoder hingeAbsoluteEncoder;
 
     private double desiredPosition;
 
@@ -81,10 +93,11 @@ public class IntakeSubsystem extends SubsystemBase{
         FEED,
         EJECT,
         STOW
+        // Add JAM_CLEAR?
     };
 
     public IntakeSubsystem() {
-
+        // Intake motors and controllers
         intakeMotorRight = new SparkMax(INTAKE_MOTOR_RIGHT_ID, BRUSHLESS);
         intakeMotorLeft = new SparkMax(INTAKE_MOTOR_LEFT_ID, BRUSHLESS);
         intakeMotorRightConfig = new SparkMaxConfig();
@@ -94,8 +107,10 @@ public class IntakeSubsystem extends SubsystemBase{
         intakeMotorRightRelativeEncoder = intakeMotorRight.getEncoder();
         intakePidGains = new PIDGains(1.0, 0.0, 0.0, 0.0); //FIXME
 
+        // Intake target variable
         desiredSpeed = 0.0;
 
+        // Hinge motors and controllers and variables
         hingeMotorRight = new SparkMax(HINGE_MOTOR_RIGHT_ID, BRUSHLESS);
         hingeMotorLeft = new SparkMax(HINGE_MOTOR_LEFT_ID, BRUSHLESS);
         hingeMotorRightConfig = new SparkMaxConfig();
@@ -105,10 +120,16 @@ public class IntakeSubsystem extends SubsystemBase{
         hingeMotorRightRelativeEncoder = hingeMotorRight.getEncoder();
         hingePidGains = new PIDGains(1.0, 0.0, 0.0, 0.0); //FIXME
 
+        // Hinge target variable
         desiredPosition = 0.0;
 
+        // Hinge absolute encoder
+        hingeAbsoluteEncoder = hingeMotorRight.getAbsoluteEncoder();
+
+        // State variable
         intakeState = IntakeState.IDLE;
 
+        // Configure motors
         configureMotors();
     }
 
@@ -119,7 +140,6 @@ public class IntakeSubsystem extends SubsystemBase{
         updateTelemetry();
     }
 
-    @SuppressWarnings("removal")
     public void configureMotors() {
         intakeMotorRightConfig
             .smartCurrentLimit(INTAKE_SMART_CURRENT_LIMIT)
@@ -130,7 +150,7 @@ public class IntakeSubsystem extends SubsystemBase{
             .p(intakePidGains.p)
             .i(intakePidGains.i)
             .d(intakePidGains.d)
-            .velocityFF(intakePidGains.FF);
+            .feedForward.sv(0.0, intakePidGains.FF);
         
         intakeMotorRight.configure(
             intakeMotorRightConfig, 
@@ -157,7 +177,7 @@ public class IntakeSubsystem extends SubsystemBase{
             .p(hingePidGains.p)
             .i(hingePidGains.i)
             .d(hingePidGains.d)
-            .velocityFF(intakePidGains.FF);
+            .feedForward.sv(0.0, hingePidGains.FF);
         
         hingeMotorRight.configure(
             hingeMotorRightConfig,
@@ -184,6 +204,7 @@ public class IntakeSubsystem extends SubsystemBase{
         hingeSpeedPublisher.set(hingeMotorRight.getAppliedOutput());
         hingeRpmPublisher.set(hingeMotorRightRelativeEncoder.getVelocity());
         hingeDesiredPositionPublisher.set(desiredPosition);
+        hingeAbsolutePositionPublisher.set(hingeAbsoluteEncoder.getPosition());
 
         intakeStatePublisher.set(getState().toString());
     }
@@ -194,7 +215,7 @@ public class IntakeSubsystem extends SubsystemBase{
 
     public Command stopIntake() {
         desiredSpeed = 0;
-        return Commands.runOnce(() -> intakeMotorRightController.setSetpoint(0, ControlType.kDutyCycle));
+        return Commands.runOnce(() -> setIntakeDutyCycle(0.0));
     }
 
     public Command holdIntake() {
@@ -216,8 +237,14 @@ public class IntakeSubsystem extends SubsystemBase{
     }
 
     public Command holdHinge() {
-        desiredPosition = hingeMotorRightRelativeEncoder.getPosition();
+        // Prefer absolute encoder for a stable hinge hold position
+        desiredPosition = hingeAbsoluteEncoder.getPosition();
         return Commands.runOnce(() -> hingeMotorRightController.setSetpoint(desiredPosition, ControlType.kPosition));
+    }
+
+    /** Return the hinge absolute encoder position. */
+    public double getHingeAbsolutePosition() {
+        return hingeAbsoluteEncoder.getPosition();
     }
 
     public Command updateHingePosition(double desiredPosition) {

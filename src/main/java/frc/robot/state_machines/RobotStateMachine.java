@@ -1,6 +1,7 @@
 package frc.robot.state_machines;
 
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.BooleanSupplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -9,6 +10,7 @@ import frc.robot.state_machines.TeleopStateMachine.TeleopState;
 import frc.robot.state_machines.SystemStateMachine;
 import frc.robot.state_machines.SystemStateMachine.SystemState;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
@@ -26,7 +28,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
  *
  * Transition rules (implemented in canTransitionTo):
  * - DISABLED -> only TELEOP or AUTO
- * - From AUTO -> TELEOP allowed 
+ * - From AUTO -> TELEOP allowed
  * - DISABLED is allowed from any state
  * - Other transitions are explicit in the switch below
  *
@@ -85,7 +87,8 @@ public class RobotStateMachine {
         public final SystemState systemState;
         public final boolean operatorOverride;
 
-        public Context(RobotState robotState, TeleopState teleopState, SystemState systemState, boolean operatorOverride) {
+        public Context(RobotState robotState, TeleopState teleopState, SystemState systemState,
+                boolean operatorOverride) {
             this.robotState = robotState;
             this.teleopState = teleopState;
             this.systemState = systemState;
@@ -98,38 +101,38 @@ public class RobotStateMachine {
                 currentState,
                 teleopSM.getState(),
                 systemSM.getState(),
-                operatorOverrideSupplier.getAsBoolean()
-        );
+                operatorOverrideSupplier.getAsBoolean());
     }
 
     /**
      * Request a state transition. Idempotent and returns a RequestResult with a
      * simple reason.
      */
-    public synchronized RequestResult requestState(RobotState target) {
-        if (target == currentState) {
-            return RequestResult.ALREADY_IN_STATE;
-        }
+    public Command requestState(RobotState target) {
+        // We use defer so that 'snapshotContext' and 'canTransitionTo'
+        // are evaluated when the command starts, not at startup.
+        return Commands.defer(() -> {
+            if (target == currentState) {
+                return Commands.none();
+            }
 
-        Context ctx = snapshotContext();
+            Context ctx = snapshotContext();
+            RequestResult result = canTransitionTo(ctx, target);
 
-        RequestResult can = canTransitionTo(ctx, target);
-        if (can != RequestResult.ACCEPTED) {
-            logReject(ctx, target, can);
-            return can;
-        }
+            if (result != RequestResult.ACCEPTED) {
+                return Commands.runOnce(() -> logReject(ctx, target, result));
+            }
 
-        // perform transition: interrupt current activity, set new state, run entry
-        // actions
-        performTransition(target, ctx);
-        return RequestResult.ACCEPTED;
+            // Return the transition command we built earlier
+            return performTransition(target, ctx);
+        }, Set.of()); // No subsystem requirements needed for the logic itself
     }
 
     /**
      * Factory that returns a Command wrapper for requestState.
      */
     public Command requestStateCommand(RobotState target) {
-        return new InstantCommand(() -> requestState(target));
+        return requestState(target);
     }
 
     private void logReject(Context ctx, RobotState target, RequestResult reason) {
@@ -171,39 +174,32 @@ public class RobotStateMachine {
         }
     }
 
-    /*
-     * performTransition: interrupt current activity, run exit, set state, run
-     * entry.
-     * Keep onExit/onEntry fast; schedule long-running work from onEntry using
-     * Commands.
+    /**
+     * Returns a Command that handles the state transition sequence.
+     * This ensures the robot successfully exits the old state before
+     * updating internal variables and starting the new state behavior.
      */
-    private void performTransition(RobotState target, Context ctx) {
+    private Command performTransition(RobotState target, Context ctx) {
         RobotState previous = currentState;
-        try {
-            // 1) synchronous cleanup / interrupt of previous state
-            try {
-                onExit(previous);
-            } catch (Exception e) {
-                logger.log(Level.WARNING, "Exception during onExit of " + previous, e);
-            }
 
-            // Cancel or preempt any long-running Commands owned by the previous mode.
-            cancelModeActivities(previous);
+        return Commands.sequence(
+                // 1) Run the exit command for the previous state
+                onExit(previous)
+                        .handleInterrupt(() -> logger.log(Level.WARNING, "onExit interrupted for " + previous)),
 
-            // 2) set new state
-            currentState = target;
-            logger.log(Level.INFO, () -> String.format("Robot transitioned from %s to %s", previous, target));
+                // 2) Cleanup existing long-running activities
+                new InstantCommand(() -> cancelModeActivities(previous)),
 
-            // 3) run entry actions (schedule commands, enable subsystems, etc.)
-            try {
-                onEntry(target, snapshotContext());
-            } catch (Exception e) {
-                logger.log(Level.WARNING, "Exception during onEntry of " + target, e);
-            }
+                // 3) Update the state variable & log (The "Hook")
+                new InstantCommand(() -> {
+                    currentState = target;
+                    logger.log(Level.INFO, String.format("Robot transitioned from %s to %s", previous, target));
+                }),
 
-        } finally {
-            // any metrics or publishable state
-        }
+                // 4) Run the entry command for the new state
+                onEntry(target, snapshotContext())
+                        .handleInterrupt(() -> logger.log(Level.WARNING, "onEntry interrupted for " + target)))
+                .withName("Transition_" + previous + "_to_" + target);
     }
 
     // Lightweight cancel hook: ensure current mode's long-running activities are
@@ -227,15 +223,13 @@ public class RobotStateMachine {
      * Keep fast and deterministic; prefer scheduling cleanup tasks as Commands
      * rather than long blocking work here.
      */
-    private void onExit(RobotState previous) {
-        switch (previous) {
-            case TELEOP:
-            case AUTO:
-            case DISABLED:
-            default:
-                // nothing to do
-                break;
-        }
+    private Command onExit(RobotState previous) {
+        return switch (previous) {
+            case TELEOP -> Commands.none();
+            case AUTO -> Commands.none();
+            case DISABLED -> Commands.none();
+            default -> Commands.none();
+        };
     }
 
     /**
@@ -243,37 +237,33 @@ public class RobotStateMachine {
      * state behavior.
      * Do not block.
      */
-    private void onEntry(RobotState target, Context ctx) {
-        switch (target) {
-            case DISABLED:
-                systemSM.requestState(SystemState.OFF);
-                teleopSM.requestState(TeleopState.IDLE);
-                systemSM.cancelAll();
-                teleopSM.cancelAll();
-                break;
 
-            case AUTO:
-                // systemSM.prepareForAuto(); // TODO: fix this line; no such method
-                teleopSM.requestState(TeleopState.IDLE);
-                // Optionally schedule autonomous Command here or externally
-                break;
+    private Command onEntry(RobotState target, Context ctx) {
+        return switch (target) {
+            case DISABLED -> Commands.parallel(
+                    systemSM.requestState(SystemState.OFF),
+                    teleopSM.requestState(TeleopState.IDLE),
+                    Commands.runOnce(() -> {
+                        systemSM.cancelAll();
+                    })).withName("Entry_Disabled");
 
-            case TELEOP:
-                // Activate teleop state machine; teleopSM will control subsystems via its own
-                // API.
-                teleopSM.requestState(TeleopState.SCORE); // TODO: choose appropriate initial teleop state
-                // systemSM.armForTeleop(); // TODO: fix this line; no such method
-                break;
+            case AUTO -> Commands.parallel(
+                    teleopSM.requestState(TeleopState.IDLE)
+                // Add autonomous routine command here if needed
+                ).withName("Entry_Auto");
 
-            default:
-                break;
-        }
+            case TELEOP -> Commands.parallel(
+                    teleopSM.requestState(TeleopState.SCORE)
+                // systemSM.someTeleopCommand()
+                ).withName("Entry_Teleop");
+
+            default -> Commands.none();
+        };
     }
 
     public void cancelAll() {
         // Cancel all activities in both state machines
         systemSM.cancelAll();
-        teleopSM.cancelAll();
     }
 
     public RobotState getCurrentState() {

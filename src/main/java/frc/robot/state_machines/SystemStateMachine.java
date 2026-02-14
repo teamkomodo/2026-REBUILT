@@ -1,25 +1,25 @@
 package frc.robot.state_machines;
 
 import java.util.Objects;
-import java.util.function.BooleanSupplier;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import frc.robot.state_machines.TeleopStateMachine;
-import frc.robot.state_machines.TeleopStateMachine.TeleopState;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import frc.robot.subsystems.IntakeSubsystem;
+import frc.robot.subsystems.IntakeSubsystem.IntakeState;
 import frc.robot.subsystems.IndexerSubsystem;
 import frc.robot.subsystems.ShooterSubsystem;
 import frc.robot.subsystems.DrivetrainSubsystem;
-import frc.robot.subsystems.SystemState;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 /**
  * SystemStateMachine: low-level system behaviors that coordinate subsystems.
  *
  * States:
- * TRAVEL, INTAKE, ALIGNING, SHOOT, INTAKE_AND_SHOOT, RESET, DEPLOY, EMPTYING, UNJAM
+ * TRAVEL, INTAKE, ALIGNING, SHOOT, INTAKE_AND_SHOOT, RESET, DEPLOY, EMPTYING,
+ * UNJAM
  *
  * Public API:
  * - RequestResult requestState(State target)
@@ -42,7 +42,30 @@ public class SystemStateMachine {
         RESET,
         DEPLOY,
         EMPTYING,
-        UNJAM
+        UNJAM;
+
+        /**
+         * Defines the valid "next steps" from the current state.
+         */
+        public boolean canTransitionTo(SystemState from, SystemState to) {
+            // Global escapes allowed from any state
+            if (to == RESET || to == UNJAM || to == OFF) {
+                return true;
+            }
+
+            return switch (from) {
+                case OFF -> to == TRAVEL;
+                case TRAVEL -> Set.of(INTAKE, ALIGNING, DEPLOY, EMPTYING).contains(to);
+                case INTAKE -> Set.of(TRAVEL, ALIGNING, DEPLOY, EMPTYING).contains(to);
+                case ALIGNING -> Set.of(SHOOT, TRAVEL, INTAKE_AND_SHOOT).contains(to);
+                case SHOOT -> Set.of(TRAVEL, EMPTYING, INTAKE).contains(to);
+                case INTAKE_AND_SHOOT -> Set.of(TRAVEL, SHOOT, EMPTYING, INTAKE).contains(to);
+                case RESET -> Set.of(TRAVEL, INTAKE, DEPLOY).contains(to);
+                case DEPLOY -> Set.of(INTAKE, TRAVEL).contains(to);
+                case EMPTYING -> Set.of(TRAVEL, INTAKE).contains(to);
+                case UNJAM -> to == TRAVEL;
+            };
+        }
     }
 
     public enum RequestResult {
@@ -70,265 +93,91 @@ public class SystemStateMachine {
         this.shooter = Objects.requireNonNull(shooter);
         this.indexer = Objects.requireNonNull(indexer);
         this.drivetrain = Objects.requireNonNull(drivetrain);
-
-        this.jamDetectedSupplier = Objects.requireNonNull(jamDetectedSupplier);
     }
 
     // Lightweight Context snapshot for guards
     public static class Context {
         public final SystemState currentState;
-        public final boolean jamDetected;
 
-        public Context(SystemState currentState, boolean jamDetected) {
+        public Context(SystemState currentState) {
             this.currentState = currentState;
-            this.jamDetected = jamDetected;
         }
     }
 
     private Context snapshotContext() {
         return new Context(
-                currentState,
-                shooter.isReady(),
-                jamDetectedSupplier.getAsBoolean());
+                currentState);
     }
 
-    // Public API
-    public synchronized RequestResult requestState(SystemState target) {
-        if (target == currentState) {
-            return RequestResult.ALREADY_IN_STATE;
-        }
+    public Command requestState(SystemState target) {
+        return Commands.defer(() -> {
+            synchronized (this) {
+                if (target == currentState)
+                    return Commands.none();
 
-        Context ctx = snapshotContext();
-        RequestResult can = canTransitionTo(ctx, target);
-        if (can != RequestResult.ACCEPTED) {
-            logger.log(Level.FINE,
-                    () -> String.format("System transition %s -> %s rejected: %s (jam=%s)",
-                            ctx.currentState, target, can, ctx.jamDetected));
-            return can;
-        }
+                Context ctx = snapshotContext();
 
-        performTransition(target, ctx);
-        return RequestResult.ACCEPTED;
+                if (!currentState.canTransitionTo(ctx.currentState, target)) {
+                    logger.log(Level.FINE, () -> String.format(
+                            "System transition %s -> %s rejected", currentState, target));
+                    return Commands.none();
+                }
+
+                return performTransition(target, ctx);
+            }
+        }, Set.of());
     }
 
     public Command requestStateCommand(SystemState target) {
-        return new InstantCommand(() -> requestState(target));
+        // requestState already returns a Command that performs the transition when run
+        return requestState(target);
     }
 
-    public RequestResult requestUnjam() {
+    public Command requestUnjam() {
         return requestState(SystemState.UNJAM);
     }
 
-    // Main transition guard — small switch-based decision tree.
-    private RequestResult canTransitionTo(Context ctx, SystemState target) {
-        // RESET and UNJAM are allowed from anywhere
-        if (target == SystemState.RESET || target == SystemState.UNJAM) {
-            return RequestResult.ACCEPTED;
-        }
-        if (target == SystemState.SHOOT) {
-            if (ctx.shooterAtSpeed) {
-                return RequestResult.ACCEPTED;
-            } else {
-                return RequestResult.REJECTED_GUARD;
-            }
-        }
-        if ((intake.getState() != IntakeState.JAM_CLEAR || indexer.getState() != IndexerState.JAM_CLEAR) 
-                && target != SystemState.UNJAM) {
-            return RequestResult.REJECTED_GUARD;
-        }
-
-        switch (ctx.currentState) {
-            case TRAVEL:
-                if (target == SystemState.INTAKE || target == SystemState.ALIGNING || target == SystemState.DEPLOY
-                        || target == SystemState.EMPTYING) {
-                    return RequestResult.ACCEPTED;
-                }
-                return RequestResult.NO_SUCH_TRANSITION;
-
-            case INTAKE:
-                // allow stopping intake (TRAVEL), combining with shoot, aligning, deploying, or
-                // emptying
-                if (target == SystemState.TRAVEL || target == SystemState.ALIGNING
-                        || target == SystemState.DEPLOY || target == SystemState.EMPTYING) {
-                    return RequestResult.ACCEPTED;
-                }
-                return RequestResult.NO_SUCH_TRANSITION;
-
-            case ALIGNING:
-                if (target == SystemState.SHOOT || target == SystemState.TRAVEL
-                        || target == SystemState.INTAKE_AND_SHOOT) {
-                    return RequestResult.ACCEPTED;
-                }
-                return RequestResult.NO_SUCH_TRANSITION;
-
-            case SHOOT:
-                if (target == SystemState.TRAVEL || target == SystemState.EMPTYING || target == SystemState.INTAKE) {
-                    return RequestResult.ACCEPTED;
-                }
-                return RequestResult.NO_SUCH_TRANSITION;
-
-            case INTAKE_AND_SHOOT:
-                if (target == SystemState.TRAVEL || target == SystemState.SHOOT || target == SystemState.EMPTYING
-                        || target == SystemState.INTAKE) {
-                    return RequestResult.ACCEPTED;
-                }
-                return RequestResult.NO_SUCH_TRANSITION;
-
-            case RESET:
-                // After RESET you usually go to TRAVEL or INTAKE; allow these
-                if (target == SystemState.TRAVEL || target == SystemState.INTAKE || target == SystemState.DEPLOY) {
-                    return RequestResult.ACCEPTED;
-                }
-                return RequestResult.NO_SUCH_TRANSITION;
-
-            case DEPLOY:
-                if (target == SystemState.INTAKE || target == SystemState.TRAVEL) {
-                    return RequestResult.ACCEPTED;
-                }
-                return RequestResult.NO_SUCH_TRANSITION;
-
-            case EMPTYING:
-                if (target == SystemState.TRAVEL || target == SystemState.INTAKE) {
-                    return RequestResult.ACCEPTED;
-                }
-                return RequestResult.NO_SUCH_TRANSITION;
-
-            case UNJAM:
-                // After UNJAM go back to TRAVEL
-                if (target == SystemState.TRAVEL) {
-                    return RequestResult.ACCEPTED;
-                }
-                return RequestResult.NO_SUCH_TRANSITION;
-
-            default:
-                return RequestResult.NO_SUCH_TRANSITION;
-        }
-    }
-
-    // TODO: Finish proofreading code from here down
-
-    // Perform the transition: stop previous activities, set state, run entry
-    // actions (non-blocking)
-    private void performTransition(SystemState target, Context ctx) {
+    private Command performTransition(SystemState target, Context ctx) {
         SystemState previous = currentState;
-        try {
-            try {
-                onExit(previous);
-            } catch (Exception e) {
-                logger.log(Level.WARNING, "Exception during SystemState onExit for " + previous, e);
-            }
 
-            cancelAll(); // cancel long-running system-level routines (non-blocking)
-
-            currentState = target;
-            logger.log(Level.INFO, () -> String.format("System transitioned %s -> %s", previous, target));
-
-            try {
-                onEntry(target, snapshotContext());
-            } catch (Exception e) {
-                logger.log(Level.WARNING, "Exception during SystemState onEntry for " + target, e);
-            }
-        } finally {
-            // optional telemetry publish
-        }
+        return Commands.sequence(
+                onExit(previous),
+                cancelAll(),
+                Commands.runOnce(() -> {
+                    currentState = target;
+                    logger.log(Level.INFO, String.format("System: %s -> %s", previous, target));
+                }),
+                onEntry(target, snapshotContext())).withName("TransitionTo_" + target);
     }
 
-    public void cancelAll() {
-        // Cancel or stop any running system-level commands/routines.
-        try {
-            intake.stop();
-            shooter.stop();
-            indexer.stop();
-        } catch (Exception e) {
-            logger.log(Level.FINE, "cancelAll subsystem stop failed", e);
-        }
+    public Command cancelAll() {
+        // We return a command that parallelizes all stop actions.
+        return Commands.parallel(
+                intake.stopIntake(),
+                shooter.stopShooterCommand(),
+                indexer.stopCommand()).withName("SystemCancelAll");
     }
 
-    // Fast exit hooks
-    private void onExit(SystemState previous) {
-        switch (previous) {
-            case INTAKE:
-            case INTAKE_AND_SHOOT:
-            case DEPLOY:
-            case EMPTYING:
-            case SHOOT:
-            case ALIGNING:
-                intake.stop();
-                shooter.stop();
-                indexer.stop();
-                break;
-
-            case UNJAM:
-                // ensure normal flows are stopped
-                indexer.stop();
-                intake.stop();
-                break;
-
-            default:
-                break;
-        }
+    private Command onExit(SystemState previous) {
+        return switch (previous) {
+            case INTAKE, INTAKE_AND_SHOOT, DEPLOY, EMPTYING, SHOOT, ALIGNING, UNJAM ->
+                cancelAll();
+            default -> Commands.none();
+        };
     }
 
-    // Fast entry hooks — non-blocking; schedule longer sequences via Commands
-    private void onEntry(SystemState target, Context ctx) {
-        switch (target) {
-            case TRAVEL:
-                break;
-
-            case INTAKE:
-                // Deploy and run intake
-                intake.deploy();
-                intake.start();
-                break;
-
-            case DEPLOY:
-                // Only deploy intake but don't run rollers
-                intake.deploy();
-                intake.stop();
-                break;
-
-            case ALIGNING:
-                // Prepare shooter (spin to target RPM) and run vision/align routine externally
-                drivetrain.startVisionAlign();
-                break;
-
-            case SHOOT:
-                shooter.startShooting();
-                break;
-
-            case INTAKE_AND_SHOOT:
-                // Run intake and shooter concurrently (feeding will be managed by higher-level
-                // routine or command)
-                intake.deploy();
-                intake.start();
-                shooter.startShooting();
-                break;
-
-            case EMPTYING:
-                intake.eject();
-                indexer.reverse();
-                break;
-
-            case RESET:
-                // Reset routine
-                intake.stop();
-                intake.stow();
-
-                shooter.stop();
-                shooter.stow();
-
-                indexer.stop();
-                break;
-
-            case UNJAM:
-                // Unjam routine
-                indexer.reverse();
-                intake.eject();
-                break;
-
-            default:
-                break;
-        }
+    private Command onEntry(SystemState target, Context ctx) {
+        return (switch (target) {
+            case INTAKE -> intake.startIntakeCommand();
+            case DEPLOY -> intake.stowIntakeCommand();
+            case SHOOT -> shooter.startShootingCommand();
+            case ALIGNING -> Commands.none();
+            case INTAKE_AND_SHOOT -> Commands.parallel(intake.startIntakeCommand(), shooter.startShootingCommand());
+            case EMPTYING -> Commands.parallel(intake.ejectIntakeCommand(), indexer.reverseCommand());
+            case UNJAM -> Commands.parallel(indexer.reverseCommand(), intake.ejectIntakeCommand());
+            case RESET -> Commands.parallel(intake.stopIntake(), shooter.stopShooterCommand(), indexer.stopCommand());
+            default -> Commands.none();
+        }).withName("SystemEntry_" + target);
     }
 
     public SystemState getState() {

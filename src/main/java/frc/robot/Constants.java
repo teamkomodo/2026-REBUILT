@@ -1,9 +1,14 @@
 package frc.robot;
 
-import com.ctre.phoenix6.sim.TalonFXSimState.MotorType;
+import java.util.Optional;
+import java.util.function.BooleanSupplier;
+
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 import com.revrobotics.spark.SparkMax;
+
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 
 public final class Constants {
 
@@ -97,6 +102,9 @@ public final class Constants {
   public static final int INDEXER_SMART_CURRENT_LIMIT = 30; //FIXME
 
   public static final double INDEXER_SPEED = 0.3; //FIXME
+  // Indexer beam-break sensor DIO channels (update to real wiring)
+  public static final int INDEXER_BEAM_BREAK_FULL_CHANNEL = 0; // Indexer is full sensor //FIXME
+  public static final int INDEXER_BEAM_BREAK_EMPTY_CHANNEL = 1; // Indexer is empty sensor //FIXME
 
   //Basic constants
   public static final com.revrobotics.spark.SparkLowLevel.MotorType BRUSHLESS = SparkMax.MotorType.kBrushless;
