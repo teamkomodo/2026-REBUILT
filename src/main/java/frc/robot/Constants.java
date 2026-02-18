@@ -74,6 +74,14 @@ public final class Constants {
   public static final int SHOOTER_MOTOR_LEFT_ID = 0; //FIXME
   public static final int SHOOTER_SMART_CURRENT_LIMIT = 30; //FIXME
   public static final double SHOOTER_GEAR_RATIO = 1.5; // 1:1.5 speeding up the flywheel
+  public static final double MAX_SHOOTER_SPEED_TOLERANCE = 50.0; // RPM tolerance for considering shooter at target speed
+
+  // Interestingly, shooter controls the feeder motor, while indexer has the beambreaks
+  // Shooter feeder (ball feeding) constants
+  public static final int SHOOTER_FEEDER_MOTOR_ID = 0; // FIXME: set real CAN ID
+  public static final double SHOOTER_FEEDER_ROTATIONS_PER_BALL = 1.0; // FIXME: tune this
+  public static final double SHOOTER_FEEDER_FEED_SPEED = 0.25; // FIXME: tune this
+  public static final double BEAMBREAK_DEBOUNCE_DURATION = 2.5; // A delay for bouncy balls
 
   // Shooter physics simulation constants
   public static final double GRAVITY = 9.80665;
@@ -92,6 +100,11 @@ public final class Constants {
       // Since the shooter consists of one wheel pressing a ball against a stationary plate, 
       // the ball's initial velocity is half of the surface speed of the wheel.
   public static final double FLYWHEEL_SURFACE_TO_BALL_SPEED_RATIO = 0.5;
+  public static final double MAX_FLYWHEEL_RPM = 6700;
+
+  public static final double SHORT_BASELINE_RPM = 3000;
+  public static final double LONG_BASELINE_RPM = 4500;
+  public static final double PASS_SHOT_RPM = 5500;
 
   // Finished table
   // These values are pre-generated using the ShooterTableGenerator class in ShooterSubsystem
@@ -126,7 +139,7 @@ public final class Constants {
   public static final double INDEXER_SPEED = 0.3; //FIXME
   // Indexer beam-break sensor DIO channels (update to real wiring)
   public static final int INDEXER_BEAM_BREAK_FULL_CHANNEL = 0; // Indexer is full sensor //FIXME
-  public static final int INDEXER_BEAM_BREAK_EMPTY_CHANNEL = 1; // Indexer is empty sensor //FIXME
+  public static final int INDEXER_BEAM_BREAK_READY_CHANNEL = 1; // Indexer is empty sensor //FIXME
 
   //Basic constants
   public static final com.revrobotics.spark.SparkLowLevel.MotorType BRUSHLESS = SparkMax.MotorType.kBrushless;

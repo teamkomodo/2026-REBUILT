@@ -41,9 +41,16 @@ public class ShooterSubsystem extends SubsystemBase {
     private final SparkMaxConfig shooterMotorRightConfig;
     private final SparkMaxConfig shooterMotorLeftConfig;
 
+    // Feeder motor that moves balls into the flywheel
+    private final SparkMax feederMotor;
+    private final SparkMaxConfig feederMotorConfig;
+
     private final SparkClosedLoopController shooterMotorRightController;
     private final RelativeEncoder shooterMotorRightRelativeEncoder;
     private final PIDGains shooterPidGains;
+
+    private final SparkClosedLoopController feederController;
+    private final RelativeEncoder feederEncoder;
 
     private double desiredSpeed; // RPMs
 
@@ -54,9 +61,15 @@ public class ShooterSubsystem extends SubsystemBase {
         shooterMotorRightConfig = new SparkMaxConfig();
         shooterMotorLeftConfig = new SparkMaxConfig();
 
+        feederMotor = new SparkMax(Constants.SHOOTER_FEEDER_MOTOR_ID, BRUSHLESS);
+        feederMotorConfig = new SparkMaxConfig();
+
         shooterMotorRightController = shooterMotorRight.getClosedLoopController();
         shooterMotorRightRelativeEncoder = shooterMotorRight.getEncoder();
         shooterPidGains = new PIDGains(1.0, 0.0, 0.0, 0.0);
+
+        feederController = feederMotor.getClosedLoopController();
+        feederEncoder = feederMotor.getEncoder();
 
         desiredSpeed = 0.0;
         configureMotors();
@@ -95,6 +108,16 @@ public class ShooterSubsystem extends SubsystemBase {
                 shooterMotorLeftConfig,
                 ResetMode.kResetSafeParameters,
                 PersistMode.kPersistParameters);
+
+        // Configure feeder motor
+        feederMotorConfig
+                .smartCurrentLimit(SHOOTER_SMART_CURRENT_LIMIT)
+                .idleMode(IdleMode.kBrake);
+
+        feederMotor.configure(
+                feederMotorConfig,
+                ResetMode.kResetSafeParameters,
+                PersistMode.kPersistParameters);
     }
 
     public void updateTelemetry() {
@@ -119,6 +142,41 @@ public class ShooterSubsystem extends SubsystemBase {
         return Commands.runOnce(this::stopShooter, this);
     }
 
+    // --- Feeder controls -------------------------------------------------
+
+    /** Start continuous feeding (runs at configured feed speed). */
+    public void startFeeding() {
+        setFeederDutyCycle(SHOOTER_FEEDER_FEED_SPEED);
+    }
+
+    /** Stop the feeder motor. */
+    public void stopFeeding() {
+        setFeederDutyCycle(0.0);
+    }
+
+    /** Advance the feeder by the configured rotations-per-ball. */
+    public void feedOnce() {
+        double target = feederEncoder.getPosition() + SHOOTER_FEEDER_ROTATIONS_PER_BALL;
+        feederController.setSetpoint(target, ControlType.kPosition);
+    }
+
+    public Command feedOnceCommand() {
+        return Commands.runOnce(this::feedOnce, this);
+    }
+
+    public Command startFeedingCommand() {
+        // This command will set the feeder to run at feed speed while scheduled.
+        return Commands.runOnce(this::startFeeding, this);
+    }
+
+    public Command stopFeedingCommand() {
+        return Commands.runOnce(this::stopFeeding, this);
+    }
+
+    public void setFeederDutyCycle(double dutyCycle) {
+        feederController.setSetpoint(dutyCycle, ControlType.kDutyCycle);
+    }
+
     public void holdShooter() {
         shooterMotorRightController.setSetpoint(shooterMotorRightRelativeEncoder.getPosition(), ControlType.kPosition);
     }
@@ -128,15 +186,32 @@ public class ShooterSubsystem extends SubsystemBase {
         return Commands.runOnce(() -> setShooterVelocity(this.desiredSpeed), this);
     }
 
-    public Command updateFlywheelSpeed(double desiredFlywheelSpeed) {
+    public Command updateFlywheelSpeedRPM(double desiredFlywheelSpeed) {
         double targetSpeed = desiredFlywheelSpeed / Constants.SHOOTER_GEAR_RATIO;
         return updateShooterSpeed(targetSpeed);
     }
 
+    public boolean isAtTargetSpeed() {
+        return shooterMotorRightRelativeEncoder.getVelocity() > desiredSpeed - MAX_SHOOTER_SPEED_TOLERANCE;
+    }
+
     public Command startShootingCommand() {
+        double distanceToHub = 4.0;
         // FIXME: need to call out to navx for this
         // Ask @Bora A
-        return updateShooterSpeed(ShooterLookupTable.findShooterSpeed(4.0)); // 4m is a placeholder for now
+        return updateShooterSpeed(ShooterLookupTable.findShooterSpeed(distanceToHub)); // 4m is a placeholder for now
+    }
+
+    public Command shortShotCommand() {
+        return updateFlywheelSpeedRPM(SHORT_BASELINE_RPM);
+    }
+
+    public Command longShotCommand() {
+        return updateFlywheelSpeedRPM(LONG_BASELINE_RPM);
+    }
+
+    public Command passShotCommand() {
+        return updateFlywheelSpeedRPM(PASS_SHOT_RPM);
     }
 
     public Command stowShooterCommand() {
@@ -168,7 +243,9 @@ public class ShooterSubsystem extends SubsystemBase {
             double y0 = SHOOTER_RPMS[i];
             double y1 = SHOOTER_RPMS[i + 1];
 
-            return y0 + (distance - x0) * ((y1 - y0) / (x1 - x0));
+            double calculatedRPM = y0 + (distance - x0) * ((y1 - y0) / (x1 - x0));
+            // Limit flywheel speed
+            return Math.min(calculatedRPM, MAX_FLYWHEEL_RPM);
         }
     }
 
@@ -181,13 +258,11 @@ public class ShooterSubsystem extends SubsystemBase {
         private static final double STEP_SIZE = 0.15; // Meters (Adjustable)
         private static final double MAX_ERROR_METERS = 10.0 / Constants.INCHES_PER_METER; // 0.254m
 
-        // The main method is commented to prevent accidental execution. Uncomment to generate table and print results.
-        //*
-        
-        public static void main(String[] args) {
-            createTable();
-        }
-        // */
+        // The main method is commented out to prevent accidental execution. Uncomment
+        // to generate table and print results.
+        // public static void main(String[] args) {
+        // createTable();
+        // }
 
         // Main function; called in main() method
         public static void createTable() {

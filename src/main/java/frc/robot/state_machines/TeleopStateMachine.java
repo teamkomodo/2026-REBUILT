@@ -201,9 +201,9 @@ public class TeleopStateMachine extends SubsystemBase {
     private Command onEntry(TeleopState target, Context ctx) {
         return switch (target) {
             case IDLE -> Commands.none();
-            case STEAL -> systemSM.requestState(SystemState.INTAKE_AND_SHOOT);
-            case SCORE -> Commands.none(); // schedule scoring behavior
-            case MANUAL -> Commands.none(); // give direct operator control
+            case STEAL -> systemSM.requestState(SystemState.INTAKE); // TODO: Consider doing INTAKE_AND_SHOOT
+            case SCORE -> Commands.none(); // TODO: schedule scoring behavior
+            case MANUAL -> systemSM.requestState(SystemState.MANUAL); // give direct operator control
             case RESET -> systemSM.requestState(SystemState.RESET);
         };
     }

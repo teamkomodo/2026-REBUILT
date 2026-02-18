@@ -1,11 +1,10 @@
 package frc.robot.subsystems;
 
-import static frc.robot.Constants.BRUSHLESS;
-import static frc.robot.Constants.INDEXER_MOTOR_ID;
-import static frc.robot.Constants.INDEXER_SMART_CURRENT_LIMIT;
+import static frc.robot.Constants.*;
 
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.spark.SparkClosedLoopController;
+import com.revrobotics.spark.SparkBase.ControlType;
 import com.revrobotics.spark.SparkMax;
 import com.revrobotics.ResetMode;
 import com.revrobotics.PersistMode;
@@ -19,18 +18,19 @@ import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringPublisher;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj.DigitalInput;
-import frc.robot.Constants;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.util.PIDGains;
 
-public class IndexerSubsystem extends SubsystemBase{
-    
+public class IndexerSubsystem extends SubsystemBase {
+
     private final NetworkTable indexerTable = NetworkTableInstance.getDefault().getTable("indexer");
-    
+
     private final DoublePublisher indexerSpeedPublisher = indexerTable.getDoubleTopic("indexer-speed").publish();
-    private final BooleanPublisher indexerFullSensorPublisher = indexerTable.getBooleanTopic("indexer-full-sensor").publish();
-    private final BooleanPublisher indexerEmptySensorPublisher = indexerTable.getBooleanTopic("indexer-ready-sensor").publish();
+    private final BooleanPublisher indexerFullSensorPublisher = indexerTable.getBooleanTopic("indexer-full-sensor")
+            .publish();
+    private final BooleanPublisher indexerReadySensorPublisher = indexerTable.getBooleanTopic("indexer-ready-sensor")
+            .publish();
 
     private final StringPublisher indexerStatePublisher = indexerTable.getStringTopic("indexer-state").publish();
 
@@ -40,20 +40,21 @@ public class IndexerSubsystem extends SubsystemBase{
     private final SparkClosedLoopController indexerMotorController;
     private final RelativeEncoder indexerMotorRelativeEncoder;
     private final PIDGains indexerPidGains;
-    
+
     // Beambreaks for indexerFull and indexerEmpty
     private final DigitalInput beamBreakIsFull;
-    private final DigitalInput beamBreakIsEmpty;
-
+    private final DigitalInput beamBreakIsReady;
 
     private double desiredSpeed;
 
     private IndexerState indexerState;
+
     public static enum IndexerState {
         IDLE,
         PIECE_READY,
         AGITATING,
-        INDEXER_FULL
+        INDEXER_FULL,
+        REVERSE
     };
 
     public IndexerSubsystem() {
@@ -63,15 +64,17 @@ public class IndexerSubsystem extends SubsystemBase{
 
         indexerMotorController = indexerMotor.getClosedLoopController();
         indexerMotorRelativeEncoder = indexerMotor.getEncoder();
-        indexerPidGains = new PIDGains(1.0, 0.0, 0.0, 0.0); //FIXME
-        
+        indexerPidGains = new PIDGains(1.0, 0.0, 0.0, 0.0); // FIXME
+
         desiredSpeed = 0.0;
 
         // Initialize beam-break sensors (DIO channels in Constants)
-        beamBreakIsFull = new DigitalInput(Constants.INDEXER_BEAM_BREAK_FULL_CHANNEL);
-        beamBreakIsEmpty = new DigitalInput(Constants.INDEXER_BEAM_BREAK_EMPTY_CHANNEL);
+        beamBreakIsFull = new DigitalInput(INDEXER_BEAM_BREAK_FULL_CHANNEL);
+        beamBreakIsReady = new DigitalInput(INDEXER_BEAM_BREAK_READY_CHANNEL);
 
         indexerState = IndexerState.IDLE;
+
+        configureMotors();
     }
 
     // Basic control helpers used by the SystemStateMachine. These are minimal
@@ -81,14 +84,41 @@ public class IndexerSubsystem extends SubsystemBase{
     }
 
     public Command stopCommand() {
-        return Commands.runOnce(() -> desiredSpeed = 0);
+        return Commands.runOnce(() -> {
+            indexerState = IndexerState.IDLE;
+            updateSpeed(0);
+        }, this);
     }
 
     public Command reverseCommand() {
-        return Commands.runOnce(() -> desiredSpeed = -Math.abs(desiredSpeed == 0 ? Constants.INDEXER_SPEED : desiredSpeed));
+        return Commands.runOnce(() -> {
+            indexerState = IndexerState.REVERSE;
+            updateSpeed(-Math.abs(desiredSpeed == 0 ? INDEXER_SPEED : desiredSpeed));
+        }, this);
     }
 
-    public void teleopInit() {}
+    public Command startCommand() {
+        return Commands.runOnce(() -> {
+            indexerState = IndexerState.AGITATING;
+            updateSpeed(Math.abs(desiredSpeed == 0 ? INDEXER_SPEED : desiredSpeed));
+        }, this);
+    }
+    
+    public void updateSpeed(double desiredSpeed) {
+        this.desiredSpeed = desiredSpeed;
+        setSpeed(desiredSpeed);
+    }
+
+    public void setSpeed(double speed) {
+        indexerMotorController.setSetpoint(speed, ControlType.kVelocity);
+    }
+
+    public void setDutyCycle(double dutyCycle) {
+        indexerMotorController.setSetpoint(dutyCycle, ControlType.kDutyCycle);
+    }
+
+    public void teleopInit() {
+    }
 
     @Override
     public void periodic() {
@@ -97,35 +127,35 @@ public class IndexerSubsystem extends SubsystemBase{
 
     public void configureMotors() {
         indexerMotorConfig
-            .smartCurrentLimit(INDEXER_SMART_CURRENT_LIMIT)
-            .idleMode(IdleMode.kCoast)
-            .inverted(false);
-        
+                .smartCurrentLimit(INDEXER_SMART_CURRENT_LIMIT)
+                .idleMode(IdleMode.kCoast)
+                .inverted(false);
+
         indexerMotorConfig.closedLoop
-            .p(indexerPidGains.p)
-            .i(indexerPidGains.i)
-            .d(indexerPidGains.d)
-            .feedForward.sv(0.0, indexerPidGains.FF);
-        
+                .p(indexerPidGains.p)
+                .i(indexerPidGains.i)
+                .d(indexerPidGains.d).feedForward.sv(0.0, indexerPidGains.FF);
+
         indexerMotor.configure(
-            indexerMotorConfig,
-            ResetMode.kResetSafeParameters,
-            PersistMode.kPersistParameters);
+                indexerMotorConfig,
+                ResetMode.kResetSafeParameters,
+                PersistMode.kPersistParameters);
     }
 
     public void updateTelemetry() {
         indexerSpeedPublisher.set(indexerMotor.get());
         indexerStatePublisher.set(indexerState.toString());
-        // Publish beam-break sensor states (true means circuit closed / sensor triggered)
+        // Publish beam-break sensor states (true means circuit closed / sensor
+        // triggered)
         try {
             indexerFullSensorPublisher.set(beamBreakIsFull.get());
         } catch (Exception e) {
             indexerFullSensorPublisher.set(false);
         }
         try {
-            indexerEmptySensorPublisher.set(beamBreakIsEmpty.get());
+            indexerReadySensorPublisher.set(beamBreakIsReady.get());
         } catch (Exception e) {
-            indexerEmptySensorPublisher.set(false);
+            indexerReadySensorPublisher.set(false);
         }
     }
 
@@ -134,8 +164,14 @@ public class IndexerSubsystem extends SubsystemBase{
         return beamBreakIsFull.get();
     }
 
-    /** Returns true if the indexer ready (piece present) beam-break is triggered. */
+    /**
+     * Returns true if the indexer ready (piece present) beam-break is triggered.
+     */
     public boolean isPieceReady() {
-        return beamBreakIsEmpty.get();
+        return beamBreakIsReady.get();
+    }
+
+    public boolean isEmpty() {
+        return !isPieceReady() && !isIndexerFull();
     }
 }
