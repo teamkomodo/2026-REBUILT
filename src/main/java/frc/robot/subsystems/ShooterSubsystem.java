@@ -75,8 +75,8 @@ public class ShooterSubsystem extends SubsystemBase {
         shooterMotorLeftConfig = new SparkMaxConfig();
 
         // Lead feeder (contains encoder & controller), follower mirrors the lead
-        feederRightMotor = new SparkMax(Constants.SHOOTER_FEEDER_MOTOR_LEAD_ID, BRUSHLESS);
-        feederLeftMotor = new SparkMax(Constants.SHOOTER_FEEDER_MOTOR_FOLLOWER_ID, BRUSHLESS);
+        feederRightMotor = new SparkMax(Constants.SHOOTER_FEEDER_MOTOR_RIGHT_ID, BRUSHLESS);
+        feederLeftMotor = new SparkMax(Constants.SHOOTER_FEEDER_MOTOR_LEFT_ID, BRUSHLESS);
         feederRightMotorConfig = new SparkMaxConfig();
         feederLeftMotorConfig = new SparkMaxConfig();
 
@@ -144,7 +144,7 @@ public class ShooterSubsystem extends SubsystemBase {
                 PersistMode.kPersistParameters);
 
         // Configure follower to mirror the lead (no inversion)
-        feederLeftMotorConfig.follow(Constants.SHOOTER_FEEDER_MOTOR_LEAD_ID, false)
+        feederLeftMotorConfig.follow(Constants.SHOOTER_FEEDER_MOTOR_RIGHT_ID, false)
                 .smartCurrentLimit(SHOOTER_FEEDER_SMART_CURRENT_LIMIT)
                 .idleMode(IdleMode.kBrake);
 

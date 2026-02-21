@@ -20,24 +20,24 @@ public final class Constants {
   public static final double DRIVETRAIN_LENGTH = 0.57785; // Distance between center of front and back swerve wheels in
                                                           // meters
 
-  public static final int BACK_RIGHT_DRIVE_MOTOR_ID = 32;
-  public static final int BACK_RIGHT_STEER_MOTOR_ID = 34;
-  public static final int BACK_RIGHT_STEER_ENCODER_ID = 22;
+  public static final int BACK_RIGHT_DRIVE_MOTOR_ID = 0;
+  public static final int BACK_RIGHT_STEER_MOTOR_ID = 0;
+  public static final int BACK_RIGHT_STEER_ENCODER_ID = 0;
   public static final double BACK_RIGHT_STEER_OFFSET = 5.277;
 
-  public static final int BACK_LEFT_DRIVE_MOTOR_ID = 39;
-  public static final int BACK_LEFT_STEER_MOTOR_ID = 38;
-  public static final int BACK_LEFT_STEER_ENCODER_ID = 21;
+  public static final int BACK_LEFT_DRIVE_MOTOR_ID = 0;
+  public static final int BACK_LEFT_STEER_MOTOR_ID = 0;
+  public static final int BACK_LEFT_STEER_ENCODER_ID = 0;
   public static final double BACK_LEFT_STEER_OFFSET = 1.089;
 
-  public static final int FRONT_RIGHT_DRIVE_MOTOR_ID = 33;
-  public static final int FRONT_RIGHT_STEER_MOTOR_ID = 35;
-  public static final int FRONT_RIGHT_STEER_ENCODER_ID = 20;
+  public static final int FRONT_RIGHT_DRIVE_MOTOR_ID = 0;
+  public static final int FRONT_RIGHT_STEER_MOTOR_ID = 0;
+  public static final int FRONT_RIGHT_STEER_ENCODER_ID = 0;
   public static final double FRONT_RIGHT_STEER_OFFSET = 1.2796;
 
-  public static final int FRONT_LEFT_DRIVE_MOTOR_ID = 36;
-  public static final int FRONT_LEFT_STEER_MOTOR_ID = 37;
-  public static final int FRONT_LEFT_STEER_ENCODER_ID = 23;
+  public static final int FRONT_LEFT_DRIVE_MOTOR_ID = 0;
+  public static final int FRONT_LEFT_STEER_MOTOR_ID = 0;
+  public static final int FRONT_LEFT_STEER_ENCODER_ID = 0;
   public static final double FRONT_LEFT_STEER_OFFSET = 1.7006;
 
   public static final double WHEEL_DIAMETER = 0.1016;
@@ -74,8 +74,8 @@ public final class Constants {
 
   // Shooter
   // The motors on the right side have a CAN id ending in a 2, left side end in 1
-  public static final int SHOOTER_MOTOR_RIGHT_ID = 32; // FIXME
-  public static final int SHOOTER_MOTOR_LEFT_ID = 31; // FIXME
+  public static final int SHOOTER_MOTOR_RIGHT_ID = 32;
+  public static final int SHOOTER_MOTOR_LEFT_ID = 31;
   public static final int SHOOTER_SMART_CURRENT_LIMIT = 30; // FIXME
   public static final double SHOOTER_GEAR_RATIO = 1.5; // 1:1.5 speeding up the flywheel
   public static final double MAX_SHOOTER_SPEED_TOLERANCE = 50.0; // RPM tolerance for considering shooter at target
@@ -85,8 +85,8 @@ public final class Constants {
   // beambreaks
   // Shooter feeder (ball feeding) constants
   // Feeder motors: lead (has encoder/controller) and follower
-  public static final int SHOOTER_FEEDER_MOTOR_LEAD_ID = 52;
-  public static final int SHOOTER_FEEDER_MOTOR_FOLLOWER_ID = 51;
+  public static final int SHOOTER_FEEDER_MOTOR_RIGHT_ID = 52;
+  public static final int SHOOTER_FEEDER_MOTOR_LEFT_ID = 51;
   public static final double SHOOTER_FEEDER_ROTATIONS_PER_BALL = 1.0; // FIXME: tune this
   public static final double SHOOTER_FEEDER_FEED_SPEED = 0.25; // FIXME: tune this
   public static final int SHOOTER_FEEDER_SMART_CURRENT_LIMIT = 30; // FIXME: Make sure this is a good value
