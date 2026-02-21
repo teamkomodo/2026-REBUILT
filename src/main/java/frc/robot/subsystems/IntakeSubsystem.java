@@ -49,15 +49,12 @@ public class IntakeSubsystem extends SubsystemBase {
             .publish();
 
     /* ----- Intake ----- */
-    // Intake motors and controllers.
-    // The right motor is the "master" and the left motor follows it
-    private final SparkMax intakeMotorRight;
+    // Intake motor and controller.
     private final SparkMax intakeMotorLeft;
-    private final SparkMaxConfig intakeMotorRightConfig;
     private final SparkMaxConfig intakeMotorLeftConfig;
 
-    private final SparkClosedLoopController intakeMotorRightController;
-    private final RelativeEncoder intakeMotorRightRelativeEncoder;
+    private final SparkClosedLoopController intakeMotorLeftController;
+    private final RelativeEncoder intakeMotorLeftRelativeEncoder;
     private final PIDGains intakePidGains;
 
     private double desiredSpeed;
@@ -89,13 +86,11 @@ public class IntakeSubsystem extends SubsystemBase {
 
     public IntakeSubsystem() {
         // Intake motors and controllers
-        intakeMotorRight = new SparkMax(INTAKE_MOTOR_RIGHT_ID, BRUSHLESS);
         intakeMotorLeft = new SparkMax(INTAKE_MOTOR_LEFT_ID, BRUSHLESS);
-        intakeMotorRightConfig = new SparkMaxConfig();
         intakeMotorLeftConfig = new SparkMaxConfig();
 
-        intakeMotorRightController = intakeMotorRight.getClosedLoopController();
-        intakeMotorRightRelativeEncoder = intakeMotorRight.getEncoder();
+        intakeMotorLeftController = intakeMotorLeft.getClosedLoopController();
+        intakeMotorLeftRelativeEncoder = intakeMotorLeft.getEncoder();
         intakePidGains = new PIDGains(1.0, 0.0, 0.0, 0.0); // FIXME
 
         // Intake target variable
@@ -136,26 +131,15 @@ public class IntakeSubsystem extends SubsystemBase {
     }
 
     public void configureMotors() {
-        intakeMotorRightConfig
+        intakeMotorLeftConfig
                 .smartCurrentLimit(INTAKE_SMART_CURRENT_LIMIT)
                 .idleMode(IdleMode.kCoast)
                 .inverted(false);
 
-        intakeMotorRightConfig.closedLoop
+        intakeMotorLeftConfig.closedLoop
                 .p(intakePidGains.p)
                 .i(intakePidGains.i)
                 .d(intakePidGains.d).feedForward.sv(0.0, intakePidGains.FF);
-
-        intakeMotorRight.configure(
-                intakeMotorRightConfig,
-                ResetMode.kResetSafeParameters,
-                PersistMode.kPersistParameters);
-
-        intakeMotorLeftConfig
-                .smartCurrentLimit(INTAKE_SMART_CURRENT_LIMIT)
-                .follow(INTAKE_MOTOR_RIGHT_ID, true) // Changed to true to match the real robot
-                .idleMode(IdleMode.kCoast)
-                .inverted(true);
 
         intakeMotorLeft.configure(
                 intakeMotorLeftConfig,
@@ -179,8 +163,8 @@ public class IntakeSubsystem extends SubsystemBase {
     }
 
     public void updateTelemetry() {
-        intakeSpeedPublisher.set(intakeMotorRight.getAppliedOutput());
-        intakeRpmPublisher.set(intakeMotorRightRelativeEncoder.getVelocity());
+        intakeSpeedPublisher.set(intakeMotorLeft.getAppliedOutput());
+        intakeRpmPublisher.set(intakeMotorLeftRelativeEncoder.getVelocity());
         intakeDesiredSpeedPublisher.set(desiredSpeed);
 
         hingeSpeedPublisher.set(hingeMotor.getAppliedOutput());
@@ -194,7 +178,7 @@ public class IntakeSubsystem extends SubsystemBase {
     }
 
     public void setIntakeDutyCycle(double dutyCycle) {
-        intakeMotorRightController.setSetpoint(dutyCycle, ControlType.kDutyCycle);
+        intakeMotorLeftController.setSetpoint(dutyCycle, ControlType.kDutyCycle);
     }
 
     public Command stopIntake() {
@@ -204,8 +188,8 @@ public class IntakeSubsystem extends SubsystemBase {
 
     public Command holdIntake() {
         desiredSpeed = 0;
-        return Commands.runOnce(() -> intakeMotorRightController
-                .setSetpoint(intakeMotorRightRelativeEncoder.getPosition(), ControlType.kPosition));
+        return Commands.runOnce(() -> intakeMotorLeftController
+                .setSetpoint(intakeMotorLeftRelativeEncoder.getPosition(), ControlType.kPosition));
     }
 
     public Command startIntakeStowSpeed() {

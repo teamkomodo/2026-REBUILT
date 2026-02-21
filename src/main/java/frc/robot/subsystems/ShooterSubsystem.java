@@ -62,8 +62,6 @@ public class ShooterSubsystem extends SubsystemBase {
     private final RelativeEncoder feederEncoder;
     private final PIDGains feederPidGains;
 
-    private final int SHOOTER_MAIN_INVERSION = -1;
-
     private double desiredSpeed; // RPMs
     private double desiredFeederSpeed; // duty cycle for feeder (telemetry)
 

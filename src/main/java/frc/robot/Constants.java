@@ -74,7 +74,7 @@ public final class Constants {
 
   // Shooter
   // The motors on the right side have a CAN id ending in a 2, left side end in 1
-  public static final int SHOOTER_MOTOR_RIGHT_ID = 32;
+  public static final int SHOOTER_MOTOR_RIGHT_ID = 54;
   public static final int SHOOTER_MOTOR_LEFT_ID = 31;
   public static final int SHOOTER_SMART_CURRENT_LIMIT = 30; // FIXME
   public static final double SHOOTER_GEAR_RATIO = 1.5; // 1:1.5 speeding up the flywheel
@@ -88,6 +88,7 @@ public final class Constants {
   public static final int SHOOTER_FEEDER_MOTOR_RIGHT_ID = 52;
   public static final int SHOOTER_FEEDER_MOTOR_LEFT_ID = 51;
   public static final double SHOOTER_FEEDER_ROTATIONS_PER_BALL = 1.0; // FIXME: tune this
+  public static final int SHOOTER_MAIN_INVERSION = -1; // Shooter motor is inverted to achieve correct direction
   public static final double SHOOTER_FEEDER_FEED_SPEED = 0.25; // FIXME: tune this
   public static final int SHOOTER_FEEDER_SMART_CURRENT_LIMIT = 30; // FIXME: Make sure this is a good value
   public static final double BEAMBREAK_DEBOUNCE_DURATION = 2.5; // A delay for bouncy balls
@@ -135,7 +136,6 @@ public final class Constants {
       4545.577, 4607.759, 4669.065, 4730.113, 4793.585, 4857.450, 4919.507, 4981.861, 5046.699 };
 
   // Intake
-  public static final int INTAKE_MOTOR_RIGHT_ID = 42;
   public static final int INTAKE_MOTOR_LEFT_ID = 41;
   public static final int INTAKE_SMART_CURRENT_LIMIT = 30; // FIXME
 

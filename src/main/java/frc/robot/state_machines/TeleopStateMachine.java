@@ -206,6 +206,7 @@ public class TeleopStateMachine extends SubsystemBase {
     private Command onExit(TeleopState previous) {
         return switch (previous) {
             case IDLE -> Commands.none();
+            case MANUAL -> systemSM.requestState(SystemState.TRAVEL, true);
             default -> systemSM.cancelAll();
         };
     }
@@ -215,7 +216,7 @@ public class TeleopStateMachine extends SubsystemBase {
             case IDLE -> Commands.none();
             case STEAL -> systemSM.requestState(SystemState.INTAKE); // TODO: Consider doing INTAKE_AND_SHOOT
             case SCORE -> Commands.none(); // TODO: schedule scoring behavior
-            case MANUAL -> systemSM.requestState(SystemState.MANUAL); // give direct operator control
+            case MANUAL -> systemSM.requestState(SystemState.MANUAL, true); // give direct operator control
             case RESET -> systemSM.requestState(SystemState.RESET);
         };
     }
@@ -338,5 +339,9 @@ public class TeleopStateMachine extends SubsystemBase {
 
     public TeleopState getState() {
         return currentState;
+    }
+
+    public boolean isInState(TeleopState state) {
+        return currentState == state;
     }
 }
