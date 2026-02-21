@@ -7,24 +7,166 @@ package frc.robot;
 import static frc.robot.Constants.DRIVER_XBOX_PORT;
 import static frc.robot.Constants.OPERATOR_XBOX_PORT;
 
+import java.util.function.BooleanSupplier;
+
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import frc.robot.subsystems.DrivetrainSubsystem;
+import frc.robot.subsystems.IntakeSubsystem;
+import frc.robot.subsystems.IndexerSubsystem;
+import frc.robot.subsystems.ShooterSubsystem;
+import frc.robot.state_machines.SystemStateMachine;
+import frc.robot.state_machines.TeleopStateMachine;
+import frc.robot.state_machines.RobotStateMachine;
+import frc.robot.state_machines.SystemStateMachine.SystemState;
+import frc.robot.state_machines.TeleopStateMachine.TeleopState;
 
 public class RobotContainer {
 
+  // Code override
+  private final boolean START_IN_MANUAL = false;
+
+  // Controllers
   private final CommandXboxController driverController = new CommandXboxController(DRIVER_XBOX_PORT);
   private final CommandXboxController operatorController = new CommandXboxController(OPERATOR_XBOX_PORT);
+
+  // Subsystems
+  private final DrivetrainSubsystem drivetrain = new DrivetrainSubsystem();
+  private final IntakeSubsystem intake = new IntakeSubsystem();
+  private final IndexerSubsystem indexer = new IndexerSubsystem();
+  private final ShooterSubsystem shooter = new ShooterSubsystem();
+
+  // Operator override supplier (and underlying value)
+  private boolean operatorOverrideValue = false;
+  private final BooleanSupplier operatorOverrideSupplier = () -> operatorOverrideValue;
+
+  // State machines
+  private final SystemStateMachine systemSM = new SystemStateMachine(intake, shooter, indexer, drivetrain);
+  private final TeleopStateMachine teleopSM = new TeleopStateMachine(systemSM, operatorOverrideSupplier,
+      START_IN_MANUAL);
+  private final RobotStateMachine robotSM = new RobotStateMachine(teleopSM, systemSM, operatorOverrideSupplier);
+
+  // Manual-actions helper from the SystemStateMachine
+  private final SystemStateMachine.ManualActions manual = systemSM.getManualActions();
 
   public RobotContainer() {
     configureBindings();
   }
 
+  /**
+   * Configure controller button -> command bindings.
+   *
+  // @formatter:off
+  /*
+   *   Driver       | Control
+   * Joysticks      | Drive
+   * X Button       | Zero Gyro
+   * Left Bumper    | Toggle Speed Mode
+   * 
+   *   Operator     | Control
+   * POV Up         | Operator Override
+   * Right Trigger  | Intake (System INTAKE)
+   * Left Trigger   | Stow (System DEPLOY)
+   * POV Down       | Eject (System EMPTYING)
+   * POV Left       | Teleop STEAL
+   * POV Right      | Teleop SCORE
+   * A Button       | Shoot Short (System SHOOT)
+   * B Button       | Shoot Long (System SHOOT)
+   * Y Button       | Shoot Pass (System SHOOT)
+   * Right Bumper   | Start Feeding
+   * Left Bumper    | Stop Feeding
+   * X Button       | Feed Once
+   */
+  /*
+   * Manual Control  | System Action
+   *   Operator      | Control
+   * POV Up          | Operator Override Toggle
+   * Right Trigger   | Manual Intake (Duty Cycle)
+   * Left Trigger    | Manual Intake Stow
+   * POV Down        | Manual Eject (Indexer/Intake)
+   * A Button        | Manual Shooter (Short)
+   * B Button        | Manual Shooter (Long)
+   * Y Button        | Manual Shooter (Pass)
+   * Right Bumper    | Manual Indexer Feed Start
+   * Left Bumper     | Manual Indexer Feed Stop
+   * X Button        | Manual Indexer Feed Once
+   */
+  // @formatter:on
   private void configureBindings() {
-    
+    // Driver controls
+    Trigger driverX = driverController.x();
+    Trigger driverLB = driverController.leftBumper();
+    Trigger driverRB = driverController.rightBumper();
+
+    driverX.onTrue(drivetrain.zeroGyroCommand());
+    driverLB.onTrue(drivetrain.disableSpeedModeCommand());
+    driverLB.onFalse(drivetrain.enableSpeedModeCommand());
+    // driverRB reserved for align/auto actions if implemented
+    // driverRB.onTrue(/* some align command */);
+
+    // Operator controls (manual gates are provided by
+    // SystemStateMachine.ManualActions)
+    Trigger operatorRT = operatorController.rightTrigger();
+    Trigger operatorLT = operatorController.leftTrigger();
+    Trigger operatorA = operatorController.a();
+    Trigger operatorB = operatorController.b();
+    Trigger operatorY = operatorController.y();
+    Trigger operatorRB = operatorController.rightBumper();
+    Trigger operatorLB = operatorController.leftBumper();
+    Trigger operatorPOVDown = operatorController.povDown();
+    Trigger operatorPOVUp = operatorController.povUp();
+    Trigger operatorPOVLeft = operatorController.povLeft();
+    Trigger operatorPOVRight = operatorController.povRight();
+
+    // OPERATOR OVERRIDE
+    operatorPOVUp
+        .onTrue(Commands.runOnce(() -> operatorOverrideValue = true))
+        .onFalse(Commands.runOnce(() -> operatorOverrideValue = false));
+
+    // Intake
+    // Call both the non-manual (state request) and the manual-gated action.
+    // Non-manual requests come first so the guard/transition is evaluated before
+    // the manual command (the manual command is gated to MANUAL state).
+    operatorRT.onTrue(Commands.parallel(systemSM.requestState(SystemState.INTAKE), manual.intake()));
+    operatorLT.onTrue(Commands.parallel(systemSM.requestState(SystemState.DEPLOY), manual.intakeStow()));
+    operatorPOVDown.onTrue(Commands.parallel(systemSM.requestState(SystemState.EMPTYING), manual.intakeEject()));
+
+    // Teleop quick switches (non-manual): POV left/right pick STEAL/SCORE modes
+    operatorPOVLeft.onTrue(teleopSM.requestState(TeleopState.STEAL));
+    operatorPOVRight.onTrue(teleopSM.requestState(TeleopState.SCORE));
+
+    // Shooter
+    // Map face buttons to both manual shot commands and a guarded request to enter
+    // SHOOT.
+    // Shooter: request SHOOT + teleop SCORE (so the system and teleop modes align)
+    operatorA.onTrue(Commands.parallel(teleopSM.requestState(TeleopState.SCORE),
+        systemSM.requestState(SystemState.SHOOT), manual.shootShort()));
+    operatorB.onTrue(Commands.parallel(teleopSM.requestState(TeleopState.SCORE),
+        systemSM.requestState(SystemState.SHOOT), manual.shootLong()));
+    operatorY.onTrue(Commands.parallel(teleopSM.requestState(TeleopState.SCORE),
+        systemSM.requestState(SystemState.SHOOT), manual.shootPass()));
+    // Start feeding should normally be part of SHOOT; request SHOOT too.
+    operatorRB.onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT), manual.startFeeding()));
+    // Stopping the feeder is local only (don't force a mode change).
+    operatorLB.onTrue(manual.stopFeeding());
+
+    // Indexer
+    // Example: map a face button to single-feed
+    operatorController.x().onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT), manual.feedOnce()));
+
+    // Default drivetrain command (joystick driving)
+    drivetrain.setDefaultCommand(
+        drivetrain.joystickDriveCommand(
+            () -> (driverController.getLeftY()), // left Y -> robot +X
+            () -> (driverController.getLeftX()), // left X -> robot +Y
+            () -> (driverController.getRightX() / 1.6) // rotation scaled
+        ));
   }
 
   public Command getAutonomousCommand() {
+    // If you later add an auto chooser, return selected command here.
     return null;
   }
 }

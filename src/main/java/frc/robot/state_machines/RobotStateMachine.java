@@ -126,8 +126,7 @@ public class RobotStateMachine extends SubsystemBase {
     }
 
     /**
-     * Request a state transition. Idempotent and returns a Command with a
-     * simple reason.
+     * Request a state transition. Returns a Command.
      */
     public Command requestState(RobotState target) {
         // We use defer so that 'snapshotContext' and 'canTransitionTo'

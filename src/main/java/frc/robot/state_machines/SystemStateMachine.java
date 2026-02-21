@@ -91,6 +91,9 @@ public class SystemStateMachine extends SubsystemBase {
     private final DrivetrainSubsystem drivetrain;
     private final Debouncer debouncer;
 
+    // ManualActions class instance for this instance
+    private final ManualActions manualActions;
+
     private volatile SystemState currentState = SystemState.TRAVEL;
 
     public SystemStateMachine(
@@ -104,6 +107,7 @@ public class SystemStateMachine extends SubsystemBase {
         this.indexer = Objects.requireNonNull(indexer);
         this.drivetrain = Objects.requireNonNull(drivetrain);
         this.debouncer = new Debouncer(BEAMBREAK_DEBOUNCE_DURATION, Debouncer.DebounceType.kRising);
+        this.manualActions = new ManualActions();
         configureTriggers();
     }
 
@@ -227,8 +231,16 @@ public class SystemStateMachine extends SubsystemBase {
             return manualGate(intake.startIntakeCommand());
         }
 
+        public Command intakeStop() {
+            return manualGate(intake.stopIntakeCommand());
+        }
+
         public Command intakeStow() {
             return manualGate(intake.stowIntakeCommand());
+        }
+
+        public Command intakeEject() {
+            return manualGate(intake.ejectIntakeCommand());
         }
 
         // Shooter Controls
@@ -288,6 +300,10 @@ public class SystemStateMachine extends SubsystemBase {
 
     public SystemState getState() {
         return currentState;
+    }
+
+    public ManualActions getManualActions() {
+        return manualActions;
     }
 
     public BooleanSupplier isInState(SystemState state) {

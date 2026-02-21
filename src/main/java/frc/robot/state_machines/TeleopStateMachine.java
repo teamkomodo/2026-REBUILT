@@ -127,6 +127,14 @@ public class TeleopStateMachine extends SubsystemBase {
         this.operatorOverrideSupplier = Objects.requireNonNull(operatorOverrideSupplier);
     }
 
+    public TeleopStateMachine(SystemStateMachine systemSM, BooleanSupplier operatorOverrideSupplier,
+            boolean START_IN_MANUAL) {
+        this(systemSM, operatorOverrideSupplier);
+        if (START_IN_MANUAL) {
+            this.currentState = TeleopState.MANUAL;
+        }
+    }
+
     // Snapshot used for guard evaluation
     public static class Context {
         public final TeleopState currentState;
@@ -216,7 +224,7 @@ public class TeleopStateMachine extends SubsystemBase {
     public Command teleopMasterCommand() {
         return Commands.sequence(
                 // First 10 seconds: SCORE
-                setMatchStage(0), 
+                setMatchStage(0),
                 requestState(TeleopState.SCORE, true),
 
                 // Determine active hub while waiting (10s)
@@ -225,6 +233,8 @@ public class TeleopStateMachine extends SubsystemBase {
                         Commands.waitUntil(canDetermineActiveHubSupplier)),
 
                 // Run the timer and switch states accordingly
+                // Require the TeleopStateMachine for the lifetime of this deferred command
+                // so other commands that would require this subsystem cannot cancel it.
                 Commands.defer(() -> {
                     // boolean ourHubInactiveFirst = isOurHubInactiveFirstSupplier.getAsBoolean();
                     boolean ourHubInactiveFirst = isOurHubInactiveFirst().orElse(false);
@@ -256,11 +266,11 @@ public class TeleopStateMachine extends SubsystemBase {
                             setMatchStage(4),
                             requestState(opposite, true), Commands.waitSeconds(25.0),
                             // Final: SCORE until match ends
-                            setMatchStage(5), 
+                            setMatchStage(5),
                             requestState(TeleopState.SCORE, true));
-                }, Set.of())).withName("TeleopMasterTimeline")
+                }, Set.of(this))).withName("TeleopMasterTimeline")
                 .ignoringDisable(false);
-                // FIXME: !!!! Make sure other commands will not cancel this !!!!
+        // FIXME: !!!! Make sure other commands will not cancel this !!!!
     }
 
     public BooleanSupplier canDetermineActiveHubSupplier = () -> {

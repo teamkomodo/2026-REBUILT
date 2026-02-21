@@ -48,9 +48,11 @@ public class ShooterSubsystem extends SubsystemBase {
     private final SparkMaxConfig shooterMotorRightConfig;
     private final SparkMaxConfig shooterMotorLeftConfig;
 
-    // Feeder motor that moves balls into the flywheel
-    private final SparkMax feederMotor;
-    private final SparkMaxConfig feederMotorConfig;
+    // Feeder motors that move balls into the flywheel (lead + follower)
+    private final SparkMax feederRightMotor;
+    private final SparkMax feederLeftMotor;
+    private final SparkMaxConfig feederRightMotorConfig;
+    private final SparkMaxConfig feederLeftMotorConfig;
 
     private final SparkClosedLoopController shooterMotorRightController;
     private final RelativeEncoder shooterMotorRightRelativeEncoder;
@@ -59,6 +61,8 @@ public class ShooterSubsystem extends SubsystemBase {
     private final SparkClosedLoopController feederController;
     private final RelativeEncoder feederEncoder;
     private final PIDGains feederPidGains;
+
+    private final int SHOOTER_MAIN_INVERSION = -1;
 
     private double desiredSpeed; // RPMs
     private double desiredFeederSpeed; // duty cycle for feeder (telemetry)
@@ -70,15 +74,18 @@ public class ShooterSubsystem extends SubsystemBase {
         shooterMotorRightConfig = new SparkMaxConfig();
         shooterMotorLeftConfig = new SparkMaxConfig();
 
-        feederMotor = new SparkMax(Constants.SHOOTER_FEEDER_MOTOR_ID, BRUSHLESS);
-        feederMotorConfig = new SparkMaxConfig();
+        // Lead feeder (contains encoder & controller), follower mirrors the lead
+        feederRightMotor = new SparkMax(Constants.SHOOTER_FEEDER_MOTOR_LEAD_ID, BRUSHLESS);
+        feederLeftMotor = new SparkMax(Constants.SHOOTER_FEEDER_MOTOR_FOLLOWER_ID, BRUSHLESS);
+        feederRightMotorConfig = new SparkMaxConfig();
+        feederLeftMotorConfig = new SparkMaxConfig();
 
         shooterMotorRightController = shooterMotorRight.getClosedLoopController();
         shooterMotorRightRelativeEncoder = shooterMotorRight.getEncoder();
         shooterPidGains = new PIDGains(1.0, 0.0, 0.0, 0.0); // FIXME: tune these
 
-        feederController = feederMotor.getClosedLoopController();
-        feederEncoder = feederMotor.getEncoder();
+        feederController = feederRightMotor.getClosedLoopController();
+        feederEncoder = feederRightMotor.getEncoder();
         feederPidGains = new PIDGains(1.0, 0.0, 0.0, 0.0); // FIXME: tune these
 
         desiredSpeed = 0.0;
@@ -121,17 +128,28 @@ public class ShooterSubsystem extends SubsystemBase {
                 PersistMode.kPersistParameters);
 
         // Configure feeder motor
-        feederMotorConfig.closedLoop
+        // Lead feeder closed-loop configuration (encoder/controller on lead)
+        feederRightMotorConfig.closedLoop
                 .p(feederPidGains.p)
                 .i(feederPidGains.i)
                 .d(feederPidGains.d).feedForward.sv(0.0, feederPidGains.FF);
 
-        feederMotorConfig
+        feederRightMotorConfig
                 .smartCurrentLimit(SHOOTER_FEEDER_SMART_CURRENT_LIMIT)
                 .idleMode(IdleMode.kBrake);
 
-        feederMotor.configure(
-                feederMotorConfig,
+        feederRightMotor.configure(
+                feederRightMotorConfig,
+                ResetMode.kResetSafeParameters,
+                PersistMode.kPersistParameters);
+
+        // Configure follower to mirror the lead (no inversion)
+        feederLeftMotorConfig.follow(Constants.SHOOTER_FEEDER_MOTOR_LEAD_ID, false)
+                .smartCurrentLimit(SHOOTER_FEEDER_SMART_CURRENT_LIMIT)
+                .idleMode(IdleMode.kBrake);
+
+        feederLeftMotor.configure(
+                feederLeftMotorConfig,
                 ResetMode.kResetSafeParameters,
                 PersistMode.kPersistParameters);
     }
@@ -142,17 +160,17 @@ public class ShooterSubsystem extends SubsystemBase {
         shooterDesiredSpeedPublisher.set(desiredSpeed);
 
         // Feeder telemetry
-        feederSpeedPublisher.set(feederMotor.getAppliedOutput());
+        feederSpeedPublisher.set(feederRightMotor.getAppliedOutput());
         feederRpmPublisher.set(feederEncoder.getVelocity());
         feederDesiredSpeedPublisher.set(desiredFeederSpeed);
     }
 
     public void setShooterDutyCycle(double dutyCycle) {
-        shooterMotorRightController.setSetpoint(dutyCycle, ControlType.kDutyCycle);
+        shooterMotorRightController.setSetpoint(dutyCycle * SHOOTER_MAIN_INVERSION, ControlType.kDutyCycle);
     }
 
     public void setShooterVelocity(double velocity) {
-        shooterMotorRightController.setSetpoint(velocity, ControlType.kVelocity);
+        shooterMotorRightController.setSetpoint(velocity * SHOOTER_MAIN_INVERSION, ControlType.kVelocity);
     }
 
     public void stopShooter() {
@@ -222,10 +240,14 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     public Command startShootingCommand() {
-        double distanceToHub = 4.0;
-        // FIXME: need to call out to navx for this
-        // Ask @Bora A
-        return updateShooterSpeed(ShooterLookupTable.findShooterSpeed(distanceToHub)); // 4m is a placeholder for now
+        double distanceToHub = 4.0; // 4m is a placeholder for now; FIXME
+        /*
+         * FIXME: need to call out to navx for this
+         * Ask @Bora A
+         * TODO: Do I need to consider increasing distance by ball radius to account
+         * for a potential offset between limelight and shooter exit center?
+         */
+        return updateShooterSpeed(ShooterLookupTable.findShooterSpeed(distanceToHub));
     }
 
     public Command shortShotCommand() {

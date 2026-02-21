@@ -103,7 +103,7 @@ public class IndexerSubsystem extends SubsystemBase {
             updateSpeed(Math.abs(desiredSpeed == 0 ? INDEXER_SPEED : desiredSpeed));
         }, this);
     }
-    
+
     public void updateSpeed(double desiredSpeed) {
         this.desiredSpeed = desiredSpeed;
         setSpeed(desiredSpeed);
