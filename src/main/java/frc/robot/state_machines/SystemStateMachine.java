@@ -112,16 +112,16 @@ public class SystemStateMachine extends SubsystemBase {
     }
 
     private void configureTriggers() {
-        // If we are currently INTAKING and the indexer reports FULL, move to TRAVEL
-        // automatically
-        new Trigger(indexer::isIndexerFull)
-                .and(new Trigger(isInState(SystemState.INTAKE)))
-                .onTrue(requestState(SystemState.TRAVEL));
+        // // If we are currently INTAKING and the indexer reports FULL, move to TRAVEL
+        // // automatically
+        // new Trigger(indexer::isIndexerFull)
+        //         .and(new Trigger(isInState(SystemState.INTAKE)))
+        //         .onTrue(requestState(SystemState.TRAVEL));
 
-        // If we are currently SHOOTING and the indexer reports EMPTY, move to TRAVEL
-        new Trigger(indexer::isEmpty)
-                .and(new Trigger(isInState(SystemState.SHOOT)))
-                .onTrue(requestState(SystemState.TRAVEL));
+        // // If we are currently SHOOTING and the indexer reports EMPTY, move to TRAVEL
+        // new Trigger(indexer::isEmpty)
+        //         .and(new Trigger(isInState(SystemState.SHOOT)))
+        //         .onTrue(requestState(SystemState.TRAVEL));
 
     }
 
@@ -211,10 +211,11 @@ public class SystemStateMachine extends SubsystemBase {
                     // 2. Wait until the sensors confirm we are at the target RPM
                     Commands.waitUntil(shooter::isAtTargetSpeed),
                     // 3. Only then, run the indexer to fire the ball
-                    shooter.startFeedingCommand(),
+                    shooter.startFeedingCommand()
                     // Stop when the indexer is empty
-                    Commands.waitUntil(() -> debouncer.calculate(indexer.isEmpty())),
-                    shooter.stopFeedingCommand());
+                    // Commands.waitUntil(() -> debouncer.calculate(indexer.isEmpty())),
+                    // shooter.stopFeedingCommand()
+                    );
             case EMPTYING -> Commands.parallel(intake.ejectIntakeCommand(), indexer.reverseCommand());
             case UNJAM -> Commands.parallel(indexer.reverseCommand(), intake.ejectIntakeCommand());
             case RESET -> Commands.parallel(intake.stopIntake(), shooter.stopShooterCommand(), indexer.stopCommand());

@@ -27,10 +27,10 @@ public class IndexerSubsystem extends SubsystemBase {
     private final NetworkTable indexerTable = NetworkTableInstance.getDefault().getTable("indexer");
 
     private final DoublePublisher indexerSpeedPublisher = indexerTable.getDoubleTopic("indexer-speed").publish();
-    private final BooleanPublisher indexerFullSensorPublisher = indexerTable.getBooleanTopic("indexer-full-sensor")
-            .publish();
-    private final BooleanPublisher indexerReadySensorPublisher = indexerTable.getBooleanTopic("indexer-ready-sensor")
-            .publish();
+    // private final BooleanPublisher indexerFullSensorPublisher = indexerTable.getBooleanTopic("indexer-full-sensor")
+            // .publish();
+    // private final BooleanPublisher indexerReadySensorPublisher = indexerTable.getBooleanTopic("indexer-ready-sensor")
+            // .publish();
 
     private final StringPublisher indexerStatePublisher = indexerTable.getStringTopic("indexer-state").publish();
 
@@ -42,8 +42,8 @@ public class IndexerSubsystem extends SubsystemBase {
     private final PIDGains indexerPidGains;
 
     // Beambreaks for indexerFull and indexerEmpty
-    private final DigitalInput beamBreakIsFull;
-    private final DigitalInput beamBreakIsReady;
+    // private final DigitalInput beamBreakIsFull;
+    // private final DigitalInput beamBreakIsReady;
 
     private double desiredSpeed;
 
@@ -69,8 +69,8 @@ public class IndexerSubsystem extends SubsystemBase {
         desiredSpeed = 0.0;
 
         // Initialize beam-break sensors (DIO channels in Constants)
-        beamBreakIsFull = new DigitalInput(INDEXER_BEAM_BREAK_FULL_CHANNEL);
-        beamBreakIsReady = new DigitalInput(INDEXER_BEAM_BREAK_READY_CHANNEL);
+        // beamBreakIsFull = new DigitalInput(INDEXER_BEAM_BREAK_FULL_CHANNEL);
+        // beamBreakIsReady = new DigitalInput(INDEXER_BEAM_BREAK_READY_CHANNEL);
 
         indexerState = IndexerState.IDLE;
 
@@ -147,31 +147,31 @@ public class IndexerSubsystem extends SubsystemBase {
         indexerStatePublisher.set(indexerState.toString());
         // Publish beam-break sensor states (true means circuit closed / sensor
         // triggered)
-        try {
-            indexerFullSensorPublisher.set(beamBreakIsFull.get());
-        } catch (Exception e) {
-            indexerFullSensorPublisher.set(false);
-        }
-        try {
-            indexerReadySensorPublisher.set(beamBreakIsReady.get());
-        } catch (Exception e) {
-            indexerReadySensorPublisher.set(false);
-        }
+        // try {
+        //     indexerFullSensorPublisher.set(beamBreakIsFull.get());
+        // } catch (Exception e) {
+        //     indexerFullSensorPublisher.set(false);
+        // }
+        // try {
+        //     indexerReadySensorPublisher.set(beamBreakIsReady.get());
+        // } catch (Exception e) {
+        //     indexerReadySensorPublisher.set(false);
+        // }
     }
 
-    /** Returns true if the indexer full beam-break is triggered. */
-    public boolean isIndexerFull() {
-        return beamBreakIsFull.get();
-    }
+    // /** Returns true if the indexer full beam-break is triggered. */
+    // public boolean isIndexerFull() {
+    //     return beamBreakIsFull.get();
+    // }
 
-    /**
-     * Returns true if the indexer ready (piece present) beam-break is triggered.
-     */
-    public boolean isPieceReady() {
-        return beamBreakIsReady.get();
-    }
+    // /**
+    //  * Returns true if the indexer ready (piece present) beam-break is triggered.
+    //  */
+    // public boolean isPieceReady() {
+    //     return beamBreakIsReady.get();
+    // }
 
-    public boolean isEmpty() {
-        return !isPieceReady() && !isIndexerFull();
-    }
+    // public boolean isEmpty() {
+    //     return !isPieceReady() && !isIndexerFull();
+    // }
 }

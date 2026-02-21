@@ -25,6 +25,9 @@ import edu.wpi.first.wpilibj2.command.WaitCommand;
 import frc.robot.util.PIDGains;
 
 public class IntakeSubsystem extends SubsystemBase {
+
+    public static final boolean USE_ABSOLUTE_ENCODER = true; // Whether to use the absolute encoder for hinge position control (instead of relative encoder)
+
     /* NetworkTable */
     private final NetworkTable intakeTable = NetworkTableInstance.getDefault().getTable("intake");
 
@@ -111,7 +114,11 @@ public class IntakeSubsystem extends SubsystemBase {
         desiredPosition = 0.0;
 
         // Hinge absolute encoder
-        hingeAbsoluteEncoder = hingeMotor.getAbsoluteEncoder();
+        if (USE_ABSOLUTE_ENCODER) {
+            hingeAbsoluteEncoder = hingeMotor.getAbsoluteEncoder();
+        } else {
+            hingeAbsoluteEncoder = null;
+        }
 
         // State variable
         intakeState = IntakeState.IDLE;
@@ -179,7 +186,9 @@ public class IntakeSubsystem extends SubsystemBase {
         hingeSpeedPublisher.set(hingeMotor.getAppliedOutput());
         hingeRpmPublisher.set(hingeMotorRelativeEncoder.getVelocity());
         hingeDesiredPositionPublisher.set(desiredPosition);
-        hingeAbsolutePositionPublisher.set(hingeAbsoluteEncoder.getPosition());
+        if (USE_ABSOLUTE_ENCODER) {
+            hingeAbsolutePositionPublisher.set(hingeAbsoluteEncoder.getPosition());
+        }
 
         intakeStatePublisher.set(getState().toString());
     }
@@ -218,13 +227,17 @@ public class IntakeSubsystem extends SubsystemBase {
 
     public Command holdHinge() {
         // Prefer absolute encoder for a stable hinge hold position
-        desiredPosition = hingeAbsoluteEncoder.getPosition();
+        if (USE_ABSOLUTE_ENCODER) {
+            desiredPosition = hingeAbsoluteEncoder.getPosition();
+        } else {
+            desiredPosition = hingeMotorRelativeEncoder.getPosition();
+        }
         return Commands.runOnce(() -> hingeMotorController.setSetpoint(desiredPosition, ControlType.kPosition));
     }
 
     /** Return the hinge absolute encoder position. */
     public double getHingeAbsolutePosition() {
-        return hingeAbsoluteEncoder.getPosition();
+        return USE_ABSOLUTE_ENCODER? hingeAbsoluteEncoder.getPosition() : hingeMotorRelativeEncoder.getPosition();
     }
 
     public Command updateHingePosition(double desiredPosition) {

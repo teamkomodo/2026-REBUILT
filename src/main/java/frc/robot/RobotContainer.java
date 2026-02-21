@@ -13,6 +13,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.subsystems.DrivetrainSubsystem;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.IndexerSubsystem;
@@ -98,7 +99,7 @@ public class RobotContainer {
     // Driver controls
     Trigger driverX = driverController.x();
     Trigger driverLB = driverController.leftBumper();
-    Trigger driverRB = driverController.rightBumper();
+    // Trigger driverRB = driverController.rightBumper(); // Currently unused
 
     driverX.onTrue(drivetrain.zeroGyroCommand());
     driverLB.onTrue(drivetrain.disableSpeedModeCommand());
@@ -149,8 +150,9 @@ public class RobotContainer {
         systemSM.requestState(SystemState.SHOOT), manual.shootPass()));
     // Start feeding should normally be part of SHOOT; request SHOOT too.
     operatorRB.onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT), manual.startFeeding()));
-    // Stopping the feeder is local only (don't force a mode change).
-    operatorLB.onTrue(manual.stopFeeding());
+    // Stopping the feeder: run manual stop when in MANUAL, and always issue a
+    // non-manual stop to ensure feeding halts regardless of system state.
+    operatorLB.onTrue(Commands.parallel(manual.stopFeeding(), shooter.stopFeedingCommand()));
 
     // Indexer
     // Example: map a face button to single-feed
@@ -168,5 +170,18 @@ public class RobotContainer {
   public Command getAutonomousCommand() {
     // If you later add an auto chooser, return selected command here.
     return null;
+  }
+
+  public void startTeleop() {
+    // Request the top-level robot state machine to enter TELEOP and start the
+    // teleop timeline (non-blocking; these return Commands and are scheduled).
+    CommandScheduler.getInstance().schedule(robotSM.requestState(RobotStateMachine.RobotState.TELEOP));
+    CommandScheduler.getInstance().schedule(teleopSM.teleopMasterCommand());
+  }
+
+  public void enterDisabledMode() {
+    // Ensure the RobotStateMachine transitions to DISABLED and put teleop into safe state.
+    CommandScheduler.getInstance().schedule(robotSM.requestState(RobotStateMachine.RobotState.DISABLED));
+    teleopSM.enterDisabled();
   }
 }
