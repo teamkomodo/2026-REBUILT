@@ -3,8 +3,11 @@ package frc.robot.state_machines;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
+import edu.wpi.first.networktables.NetworkTable;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.StringPublisher;
+import edu.wpi.first.networktables.DoublePublisher;
 import java.util.function.BooleanSupplier;
 
 import edu.wpi.first.wpilibj.DriverStation;
@@ -31,12 +34,14 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
  * - Most active TeleopState switches (IDLE/STEAL/SCORE/MANUAL) are permitted
  * freely.
  * 
- * todo: Wire automatic transitions. Done!
- * TODO: Add testing code; should be handled via smart dashboard, not hardcoded.
  */
 public class TeleopStateMachine extends SubsystemBase {
 
-    private static final Logger logger = Logger.getLogger(TeleopStateMachine.class.getName());
+    // NetworkTables telemetry
+    private final NetworkTable teleopTable = NetworkTableInstance.getDefault().getTable("teleop_state");
+    private final StringPublisher teleopStatePublisher = teleopTable.getStringTopic("teleop-state").publish();
+    private final StringPublisher teleopLogPublisher = teleopTable.getStringTopic("log").publish();
+    private final DoublePublisher teleopMatchStagePublisher = teleopTable.getDoubleTopic("match-stage").publish();
 
     // For testing, this being true will always permit those transitions that are
     // normally restricted to automatic triggers.
@@ -160,8 +165,7 @@ public class TeleopStateMachine extends SubsystemBase {
 
                 // The enum logic handles the "allowed" check
                 if (!currentState.canTransitionTo(target, ctx)) {
-                    logger.log(Level.FINE, () -> String.format(
-                            "Teleop transition %s -> %s rejected", currentState, target));
+                    teleopLog(String.format("FINE: Teleop transition %s -> %s rejected", currentState, target));
                     return Commands.none();
                 }
 
@@ -185,7 +189,7 @@ public class TeleopStateMachine extends SubsystemBase {
                 // 3) Update state variable and log
                 Commands.runOnce(() -> {
                     currentState = target;
-                    logger.log(Level.INFO, String.format("Teleop transitioned %s -> %s", previous, target));
+                    teleopLog(String.format("INFO: Teleop transitioned %s -> %s", previous, target));
                 }),
                 // 4) Execute new state entry (returns a Command)
                 onEntry(target, snapshotContext())).withName("TeleopTransition_" + target);
@@ -256,6 +260,7 @@ public class TeleopStateMachine extends SubsystemBase {
                             requestState(TeleopState.SCORE, true));
                 }, Set.of())).withName("TeleopMasterTimeline")
                 .ignoringDisable(false);
+                // FIXME: !!!! Make sure other commands will not cancel this !!!!
     }
 
     public BooleanSupplier canDetermineActiveHubSupplier = () -> {
@@ -299,6 +304,26 @@ public class TeleopStateMachine extends SubsystemBase {
         // Put teleop state machine into a safe disabled state.
         systemSM.cancelAll();
         currentState = TeleopState.IDLE;
+    }
+
+    @Override
+    public void periodic() {
+        updateTelemetry();
+    }
+
+    /** Publish lightweight teleop telemetry. */
+    public void updateTelemetry() {
+        try {
+            teleopStatePublisher.set(currentState.toString());
+            teleopMatchStagePublisher.set(matchStage);
+        } catch (Exception e) {
+            // ignore NetworkTables errors
+        }
+    }
+
+    private void teleopLog(String value) {
+        teleopLogPublisher.set(value);
+        System.out.println("TeleopStateMachine: " + value);
     }
 
     public TeleopState getState() {

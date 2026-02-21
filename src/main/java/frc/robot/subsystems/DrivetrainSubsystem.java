@@ -139,7 +139,7 @@ public class DrivetrainSubsystem implements Subsystem {
         frontLeft = new NeoSwerveModule(
                 FRONT_LEFT_DRIVE_MOTOR_ID,
                 FRONT_LEFT_STEER_MOTOR_ID,
-                FONT_LEFT_STEER_ENCODER_ID,
+                FRONT_LEFT_STEER_ENCODER_ID,
                 FRONT_LEFT_STEER_OFFSET,
                 new PIDGains(1.0, 0, 0),
                 new PIDGains(1, 1.0e-6, 0),

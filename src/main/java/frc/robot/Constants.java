@@ -35,7 +35,7 @@ public final class Constants {
 
   public static final int FRONT_LEFT_DRIVE_MOTOR_ID = 36;
   public static final int FRONT_LEFT_STEER_MOTOR_ID = 37;
-  public static final int FONT_LEFT_STEER_ENCODER_ID = 23;
+  public static final int FRONT_LEFT_STEER_ENCODER_ID = 23;
   public static final double FRONT_LEFT_STEER_OFFSET = 1.7006;
 
   public static final double WHEEL_DIAMETER = 0.1016;
@@ -58,7 +58,6 @@ public final class Constants {
 
   public static final boolean FIELD_RELATIVE_DRIVE = true;
   public static final boolean ALIGNMENT_DRIVE = false;
-  public static final int FRONT_LEFT_STEER_ENCODER_ID = 10;
 
   public static final double MAX_MODULE_VELOCITY = 4.058; // physical maximum attainable speed of swerve modules
   public static final double MAX_MODULE_ACCEL = 21; // physical maximum attainable accel of swerve modules
@@ -81,6 +80,7 @@ public final class Constants {
   public static final int SHOOTER_FEEDER_MOTOR_ID = 0; // FIXME: set real CAN ID
   public static final double SHOOTER_FEEDER_ROTATIONS_PER_BALL = 1.0; // FIXME: tune this
   public static final double SHOOTER_FEEDER_FEED_SPEED = 0.25; // FIXME: tune this
+  public static final int SHOOTER_FEEDER_SMART_CURRENT_LIMIT = 30; // FIXME: Make sure this is a good value
   public static final double BEAMBREAK_DEBOUNCE_DURATION = 2.5; // A delay for bouncy balls
 
   // Shooter physics simulation constants
@@ -102,6 +102,7 @@ public final class Constants {
   public static final double FLYWHEEL_SURFACE_TO_BALL_SPEED_RATIO = 0.5;
   public static final double MAX_FLYWHEEL_RPM = 6700;
 
+  // Manual shot RPMs
   public static final double SHORT_BASELINE_RPM = 3000;
   public static final double LONG_BASELINE_RPM = 4500;
   public static final double PASS_SHOT_RPM = 5500;

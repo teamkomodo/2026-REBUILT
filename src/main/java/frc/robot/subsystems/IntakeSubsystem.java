@@ -159,7 +159,7 @@ public class IntakeSubsystem extends SubsystemBase{
         
         intakeMotorLeftConfig
             .smartCurrentLimit(INTAKE_SMART_CURRENT_LIMIT)
-            .follow(INTAKE_MOTOR_RIGHT_ID)
+            .follow(INTAKE_MOTOR_RIGHT_ID, true) // Changed to true to match the real robot
             .idleMode(IdleMode.kCoast)
             .inverted(true);
         

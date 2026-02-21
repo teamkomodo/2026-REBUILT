@@ -28,12 +28,19 @@ import frc.robot.util.PIDGains;
  */
 
 public class ShooterSubsystem extends SubsystemBase {
-
+    // Main networkTable
     private final NetworkTable shooterTable = NetworkTableInstance.getDefault().getTable("shooter");
 
+    // Shooter telementry
     private final DoublePublisher shooterSpeedPublisher = shooterTable.getDoubleTopic("shooter-speed").publish();
     private final DoublePublisher shooterRpmPublisher = shooterTable.getDoubleTopic("shooter-rpm").publish();
     private final DoublePublisher shooterDesiredSpeedPublisher = shooterTable.getDoubleTopic("shooter-desired-speed")
+            .publish();
+
+    // Feeder telemetry
+    private final DoublePublisher feederSpeedPublisher = shooterTable.getDoubleTopic("feeder-speed").publish();
+    private final DoublePublisher feederRpmPublisher = shooterTable.getDoubleTopic("feeder-rpm").publish();
+    private final DoublePublisher feederDesiredSpeedPublisher = shooterTable.getDoubleTopic("feeder-desired-speed")
             .publish();
 
     private final SparkMax shooterMotorRight;
@@ -51,8 +58,10 @@ public class ShooterSubsystem extends SubsystemBase {
 
     private final SparkClosedLoopController feederController;
     private final RelativeEncoder feederEncoder;
+    private final PIDGains feederPidGains;
 
     private double desiredSpeed; // RPMs
+    private double desiredFeederSpeed; // duty cycle for feeder (telemetry)
 
     public ShooterSubsystem() {
 
@@ -66,12 +75,14 @@ public class ShooterSubsystem extends SubsystemBase {
 
         shooterMotorRightController = shooterMotorRight.getClosedLoopController();
         shooterMotorRightRelativeEncoder = shooterMotorRight.getEncoder();
-        shooterPidGains = new PIDGains(1.0, 0.0, 0.0, 0.0);
+        shooterPidGains = new PIDGains(1.0, 0.0, 0.0, 0.0); // FIXME: tune these
 
         feederController = feederMotor.getClosedLoopController();
         feederEncoder = feederMotor.getEncoder();
+        feederPidGains = new PIDGains(1.0, 0.0, 0.0, 0.0); // FIXME: tune these
 
         desiredSpeed = 0.0;
+        desiredFeederSpeed = 0.0;
         configureMotors();
     }
 
@@ -110,8 +121,13 @@ public class ShooterSubsystem extends SubsystemBase {
                 PersistMode.kPersistParameters);
 
         // Configure feeder motor
+        feederMotorConfig.closedLoop
+                .p(feederPidGains.p)
+                .i(feederPidGains.i)
+                .d(feederPidGains.d).feedForward.sv(0.0, feederPidGains.FF);
+
         feederMotorConfig
-                .smartCurrentLimit(SHOOTER_SMART_CURRENT_LIMIT)
+                .smartCurrentLimit(SHOOTER_FEEDER_SMART_CURRENT_LIMIT)
                 .idleMode(IdleMode.kBrake);
 
         feederMotor.configure(
@@ -124,6 +140,11 @@ public class ShooterSubsystem extends SubsystemBase {
         shooterSpeedPublisher.set(shooterMotorRight.getAppliedOutput());
         shooterRpmPublisher.set(shooterMotorRightRelativeEncoder.getVelocity());
         shooterDesiredSpeedPublisher.set(desiredSpeed);
+
+        // Feeder telemetry
+        feederSpeedPublisher.set(feederMotor.getAppliedOutput());
+        feederRpmPublisher.set(feederEncoder.getVelocity());
+        feederDesiredSpeedPublisher.set(desiredFeederSpeed);
     }
 
     public void setShooterDutyCycle(double dutyCycle) {
@@ -144,14 +165,19 @@ public class ShooterSubsystem extends SubsystemBase {
 
     // --- Feeder controls -------------------------------------------------
 
+    public void updateFeederDutyCycle(double dutycycle) {
+        desiredFeederSpeed = dutycycle;
+        setFeederDutyCycle(dutycycle);
+    }
+
     /** Start continuous feeding (runs at configured feed speed). */
     public void startFeeding() {
-        setFeederDutyCycle(SHOOTER_FEEDER_FEED_SPEED);
+        updateFeederDutyCycle(SHOOTER_FEEDER_FEED_SPEED);
     }
 
     /** Stop the feeder motor. */
     public void stopFeeding() {
-        setFeederDutyCycle(0.0);
+        updateFeederDutyCycle(0.0);
     }
 
     /** Advance the feeder by the configured rotations-per-ball. */
@@ -192,7 +218,7 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     public boolean isAtTargetSpeed() {
-        return shooterMotorRightRelativeEncoder.getVelocity() > desiredSpeed - MAX_SHOOTER_SPEED_TOLERANCE;
+        return Math.abs(shooterMotorRightRelativeEncoder.getVelocity() - desiredSpeed) < MAX_SHOOTER_SPEED_TOLERANCE;
     }
 
     public Command startShootingCommand() {

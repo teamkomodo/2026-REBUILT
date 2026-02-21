@@ -3,11 +3,11 @@ package frc.robot.state_machines;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import frc.robot.state_machines.TeleopStateMachine;
+
+import edu.wpi.first.networktables.NetworkTable;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.StringPublisher;
 import frc.robot.state_machines.TeleopStateMachine.TeleopState;
-import frc.robot.state_machines.SystemStateMachine;
 import frc.robot.state_machines.SystemStateMachine.SystemState;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -42,9 +42,12 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
  * 
  * TODO: Wire automatic transitions.
  */
-public class RobotStateMachine {
+public class RobotStateMachine extends SubsystemBase {
 
-    private static final Logger logger = Logger.getLogger(RobotStateMachine.class.getName());
+    // NetworkTables telemetry
+    private final NetworkTable robotTable = NetworkTableInstance.getDefault().getTable("robot_state");
+    private final StringPublisher robotStatePublisher = robotTable.getStringTopic("robot-state").publish();
+    private final StringPublisher robotLogPublisher = robotTable.getStringTopic("log").publish();
 
     public enum RobotState {
         DISABLED,
@@ -104,8 +107,26 @@ public class RobotStateMachine {
                 operatorOverrideSupplier.getAsBoolean());
     }
 
+    @Override
+    public void periodic() {
+        updateTelemetry();
+    }
+
+    public void updateTelemetry() {
+        try {
+            robotStatePublisher.set(currentState.toString());
+        } catch (Exception e) {
+            // ignore NetworkTables errors
+        }
+    }
+
+    private void robotLog(String value) {
+        robotLogPublisher.set(value);
+        System.out.println("RobotStateMachine: " + value);
+    }
+
     /**
-     * Request a state transition. Idempotent and returns a RequestResult with a
+     * Request a state transition. Idempotent and returns a Command with a
      * simple reason.
      */
     public Command requestState(RobotState target) {
@@ -136,7 +157,7 @@ public class RobotStateMachine {
     }
 
     private void logReject(Context ctx, RobotState target, RequestResult reason) {
-        logger.log(Level.FINE, () -> String.format("Transition %s -> %s rejected: %s (override=%s)",
+        robotLog(String.format("FINE: Transition %s -> %s rejected: %s (override=%s)",
                 ctx.robotState, target, reason, ctx.operatorOverride));
     }
 
@@ -185,7 +206,7 @@ public class RobotStateMachine {
         return Commands.sequence(
                 // 1) Run the exit command for the previous state
                 onExit(previous)
-                        .handleInterrupt(() -> logger.log(Level.WARNING, "onExit interrupted for " + previous)),
+                        .handleInterrupt(() -> robotLog("WARNING: onExit interrupted for " + previous)),
 
                 // 2) Cleanup existing long-running activities
                 new InstantCommand(() -> cancelModeActivities(previous)),
@@ -193,12 +214,12 @@ public class RobotStateMachine {
                 // 3) Update the state variable & log (The "Hook")
                 new InstantCommand(() -> {
                     currentState = target;
-                    logger.log(Level.INFO, String.format("Robot transitioned from %s to %s", previous, target));
+                    robotLog(String.format("INFO: Robot transitioned from %s to %s", previous, target));
                 }),
 
                 // 4) Run the entry command for the new state
                 onEntry(target, snapshotContext())
-                        .handleInterrupt(() -> logger.log(Level.WARNING, "onEntry interrupted for " + target)))
+                        .handleInterrupt(() -> robotLog("WARNING: onEntry interrupted for " + target)))
                 .withName("Transition_" + previous + "_to_" + target);
     }
 

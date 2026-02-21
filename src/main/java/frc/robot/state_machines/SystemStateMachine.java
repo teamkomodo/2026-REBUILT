@@ -5,9 +5,11 @@ import static frc.robot.Constants.*;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
-import java.util.function.DoubleSupplier;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
+import edu.wpi.first.networktables.NetworkTable;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.StringPublisher;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -32,9 +34,12 @@ import frc.robot.subsystems.DrivetrainSubsystem;
  * Keep onEntry/onExit fast. Schedule multi-step actions with Commands or the
  * subsystem's own async APIs.
  */
-public class SystemStateMachine {
+public class SystemStateMachine extends SubsystemBase {
 
-    private static final Logger logger = Logger.getLogger(SystemStateMachine.class.getName());
+    // NetworkTables telemetry
+    private final NetworkTable systemTable = NetworkTableInstance.getDefault().getTable("system_state");
+    private final StringPublisher systemStatePublisher = systemTable.getStringTopic("system-state").publish();
+    private final StringPublisher systemLogPublisher = systemTable.getStringTopic("log").publish();
 
     public enum SystemState {
         OFF,
@@ -139,8 +144,8 @@ public class SystemStateMachine {
                 Context ctx = snapshotContext();
 
                 if (!currentState.canTransitionTo(ctx.currentState, target)) {
-                    logger.log(Level.FINE, () -> String.format(
-                            "System transition %s -> %s rejected", currentState, target));
+                    systemLogPublisher
+                            .set(String.format("FINE: System transition %s -> %s rejected", currentState, target));
                     return Commands.none();
                 }
 
@@ -166,7 +171,7 @@ public class SystemStateMachine {
                 cancelAll(),
                 Commands.runOnce(() -> {
                     currentState = target;
-                    logger.log(Level.INFO, String.format("System: %s -> %s", previous, target));
+                    systemLog(String.format("INFO: System: %s -> %s", previous, target));
                 }),
                 onEntry(target, snapshotContext())).withName("TransitionTo_" + target);
     }
@@ -260,6 +265,25 @@ public class SystemStateMachine {
             // Gate a command with a check for MANUAL state
             return action.onlyIf(() -> currentState == SystemState.MANUAL);
         }
+    }
+
+    @Override
+    public void periodic() {
+        updateTelemetry();
+    }
+
+    /** Publish lightweight telemetry about the system state. */
+    public void updateTelemetry() {
+        try {
+            systemStatePublisher.set(currentState.toString());
+        } catch (Exception e) {
+            // ignore NetworkTables errors
+        }
+    }
+
+    private void systemLog(String value) {
+        systemLogPublisher.set(value);
+        System.out.println("SystemStateMachine: " + value);
     }
 
     public SystemState getState() {
