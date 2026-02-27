@@ -5,10 +5,10 @@ import static frc.robot.Constants.*;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.spark.SparkClosedLoopController;
 import com.revrobotics.spark.SparkBase.ControlType;
-import com.revrobotics.spark.SparkMax;
+import com.revrobotics.spark.SparkFlex;
 import com.revrobotics.ResetMode;
 import com.revrobotics.PersistMode;
-import com.revrobotics.spark.config.SparkMaxConfig;
+import com.revrobotics.spark.config.SparkFlexConfig;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 
 import edu.wpi.first.networktables.DoublePublisher;
@@ -32,8 +32,8 @@ public class IndexerSubsystem extends SubsystemBase {
 
     private final StringPublisher indexerStatePublisher = indexerTable.getStringTopic("indexer-state").publish();
 
-    private final SparkMax indexerMotor;
-    private final SparkMaxConfig indexerMotorConfig;
+    private final SparkFlex indexerMotor;
+    private final SparkFlexConfig indexerMotorConfig;
 
     private final SparkClosedLoopController indexerMotorController;
     private final RelativeEncoder indexerMotorRelativeEncoder;
@@ -57,8 +57,8 @@ public class IndexerSubsystem extends SubsystemBase {
 
     public IndexerSubsystem() {
 
-        indexerMotor = new SparkMax(INDEXER_MOTOR_ID, BRUSHLESS);
-        indexerMotorConfig = new SparkMaxConfig();
+        indexerMotor = new SparkFlex(INDEXER_MOTOR_ID, BRUSHLESS);
+        indexerMotorConfig = new SparkFlexConfig();
 
         indexerMotorController = indexerMotor.getClosedLoopController();
         indexerMotorRelativeEncoder = indexerMotor.getEncoder();

@@ -7,11 +7,11 @@ import java.util.List;
 
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.spark.SparkClosedLoopController;
-import com.revrobotics.spark.SparkMax;
+import com.revrobotics.spark.SparkFlex;
 import com.revrobotics.spark.SparkBase.ControlType;
 import com.revrobotics.PersistMode;
 import com.revrobotics.ResetMode;
-import com.revrobotics.spark.config.SparkMaxConfig;
+import com.revrobotics.spark.config.SparkFlexConfig;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 
 import edu.wpi.first.networktables.DoublePublisher;
@@ -43,16 +43,16 @@ public class ShooterSubsystem extends SubsystemBase {
     private final DoublePublisher feederDesiredSpeedPublisher = shooterTable.getDoubleTopic("feeder-desired-speed")
             .publish();
 
-    private final SparkMax shooterMotorRight;
-    private final SparkMax shooterMotorLeft;
-    private final SparkMaxConfig shooterMotorRightConfig;
-    private final SparkMaxConfig shooterMotorLeftConfig;
+    private final SparkFlex shooterMotorRight;
+    private final SparkFlex shooterMotorLeft;
+    private final SparkFlexConfig shooterMotorRightConfig;
+    private final SparkFlexConfig shooterMotorLeftConfig;
 
     // Feeder motors that move balls into the flywheel (lead + follower)
-    private final SparkMax feederRightMotor;
-    private final SparkMax feederLeftMotor;
-    private final SparkMaxConfig feederRightMotorConfig;
-    private final SparkMaxConfig feederLeftMotorConfig;
+    private final SparkFlex feederRightMotor;
+    private final SparkFlex feederLeftMotor;
+    private final SparkFlexConfig feederRightMotorConfig;
+    private final SparkFlexConfig feederLeftMotorConfig;
 
     private final SparkClosedLoopController shooterMotorRightController;
     private final RelativeEncoder shooterMotorRightRelativeEncoder;
@@ -67,16 +67,16 @@ public class ShooterSubsystem extends SubsystemBase {
 
     public ShooterSubsystem() {
 
-        shooterMotorRight = new SparkMax(SHOOTER_MOTOR_RIGHT_ID, BRUSHLESS);
-        shooterMotorLeft = new SparkMax(SHOOTER_MOTOR_LEFT_ID, BRUSHLESS);
-        shooterMotorRightConfig = new SparkMaxConfig();
-        shooterMotorLeftConfig = new SparkMaxConfig();
+        shooterMotorRight = new SparkFlex(SHOOTER_MOTOR_RIGHT_ID, BRUSHLESS);
+        shooterMotorLeft = new SparkFlex(SHOOTER_MOTOR_LEFT_ID, BRUSHLESS);
+        shooterMotorRightConfig = new SparkFlexConfig();
+        shooterMotorLeftConfig = new SparkFlexConfig();
 
         // Lead feeder (contains encoder & controller), follower mirrors the lead
-        feederRightMotor = new SparkMax(Constants.SHOOTER_FEEDER_MOTOR_RIGHT_ID, BRUSHLESS);
-        feederLeftMotor = new SparkMax(Constants.SHOOTER_FEEDER_MOTOR_LEFT_ID, BRUSHLESS);
-        feederRightMotorConfig = new SparkMaxConfig();
-        feederLeftMotorConfig = new SparkMaxConfig();
+        feederRightMotor = new SparkFlex(Constants.SHOOTER_FEEDER_MOTOR_RIGHT_ID, BRUSHLESS);
+        feederLeftMotor = new SparkFlex(Constants.SHOOTER_FEEDER_MOTOR_LEFT_ID, BRUSHLESS);
+        feederRightMotorConfig = new SparkFlexConfig();
+        feederLeftMotorConfig = new SparkFlexConfig();
 
         shooterMotorRightController = shooterMotorRight.getClosedLoopController();
         shooterMotorRightRelativeEncoder = shooterMotorRight.getEncoder();
