@@ -155,11 +155,11 @@ public class RobotContainer {
     operatorY.onTrue(Commands.parallel(Commands.none(), manual.shootLong()));
     operatorPOVUp.onTrue(Commands.parallel(Commands.none(), manual.shootPass()));
     // Start feeding should normally be part of SHOOT; request SHOOT too.
-    operatorRB
-        .onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT), manual.startFeeding()))
-        .onFalse(Commands.parallel(shooter.stopFeedingCommand(), manual.stopFeeding()));
-    // Shoot once
-    operatorB.onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT), manual.feedOnce()));
+    // operatorRB
+    //     .onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT), manual.startFeeding()))
+    //     .onFalse(Commands.parallel(shooter.stopFeedingCommand(), manual.stopFeeding()));
+    // // Shoot once
+    // operatorB.onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT), manual.feedOnce()));
 
     // Default drivetrain command (joystick driving)
     drivetrain.setDefaultCommand(

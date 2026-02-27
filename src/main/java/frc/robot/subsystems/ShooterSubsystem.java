@@ -108,7 +108,7 @@ public class ShooterSubsystem extends SubsystemBase {
         shooterMotorRightConfig.closedLoop
                 .p(shooterPidGains.p)
                 .i(shooterPidGains.i)
-                .d(shooterPidGains.d).feedForward.sv(0.0, shooterPidGains.FF);
+                .d(shooterPidGains.d);
 
         shooterMotorRight.configure(
                 shooterMotorRightConfig,
@@ -130,7 +130,7 @@ public class ShooterSubsystem extends SubsystemBase {
         feederRightMotorConfig.closedLoop
                 .p(feederPidGains.p)
                 .i(feederPidGains.i)
-                .d(feederPidGains.d).feedForward.sv(0.0, feederPidGains.FF);
+                .d(feederPidGains.d);
 
         feederRightMotorConfig
                 .smartCurrentLimit(SHOOTER_FEEDER_SMART_CURRENT_LIMIT)

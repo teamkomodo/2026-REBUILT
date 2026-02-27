@@ -141,7 +141,7 @@ public class IntakeSubsystem extends SubsystemBase {
         intakeMotorLeftConfig.closedLoop
                 .p(intakePidGains.p)
                 .i(intakePidGains.i)
-                .d(intakePidGains.d).feedForward.sv(0.0, intakePidGains.FF);
+                .d(intakePidGains.d);
 
         intakeMotorLeft.configure(
                 intakeMotorLeftConfig,
@@ -156,7 +156,7 @@ public class IntakeSubsystem extends SubsystemBase {
         hingeMotorConfig.closedLoop
                 .p(hingePidGains.p)
                 .i(hingePidGains.i)
-                .d(hingePidGains.d).feedForward.sv(0.0, hingePidGains.FF);
+                .d(hingePidGains.d);
 
         hingeMotor.configure(
                 hingeMotorConfig,

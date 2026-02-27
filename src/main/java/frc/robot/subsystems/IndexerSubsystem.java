@@ -132,7 +132,7 @@ public class IndexerSubsystem extends SubsystemBase {
         indexerMotorConfig.closedLoop
                 .p(indexerPidGains.p)
                 .i(indexerPidGains.i)
-                .d(indexerPidGains.d).feedForward.sv(0.0, indexerPidGains.FF);
+                .d(indexerPidGains.d);
 
         indexerMotor.configure(
                 indexerMotorConfig,
