@@ -149,7 +149,7 @@ public class IntakeSubsystem extends SubsystemBase {
                 PersistMode.kPersistParameters);
 
         hingeMotorConfig
-                .smartCurrentLimit(INTAKE_SMART_CURRENT_LIMIT)
+                .smartCurrentLimit(HINGE_SMART_CURRENT_LIMIT)
                 .idleMode(IdleMode.kBrake)
                 .inverted(false);
 

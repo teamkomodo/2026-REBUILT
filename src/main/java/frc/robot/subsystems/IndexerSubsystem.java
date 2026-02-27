@@ -93,20 +93,21 @@ public class IndexerSubsystem extends SubsystemBase {
     public Command reverseCommand() {
         return Commands.runOnce(() -> {
             indexerState = IndexerState.REVERSE;
-            updateSpeed(-Math.abs(desiredSpeed == 0 ? INDEXER_SPEED : desiredSpeed));
+            updateSpeed(-Math.abs(desiredSpeed == 0 ? INDEXER_DUTYCYCLE : desiredSpeed));
         }, this);
     }
 
     public Command startCommand() {
         return Commands.runOnce(() -> {
             indexerState = IndexerState.AGITATING;
-            updateSpeed(Math.abs(desiredSpeed == 0 ? INDEXER_SPEED : desiredSpeed));
+            System.out.println("==== Starting indexer");
+            updateSpeed(INDEXER_DUTYCYCLE);
         }, this);
     }
 
     public void updateSpeed(double desiredSpeed) {
         this.desiredSpeed = desiredSpeed;
-        setSpeed(desiredSpeed);
+        setDutyCycle(desiredSpeed);
     }
 
     public void setSpeed(double speed) {
@@ -129,7 +130,7 @@ public class IndexerSubsystem extends SubsystemBase {
         indexerMotorConfig
                 .smartCurrentLimit(INDEXER_SMART_CURRENT_LIMIT)
                 .idleMode(IdleMode.kCoast)
-                .inverted(false);
+                .inverted(true);
 
         indexerMotorConfig.closedLoop
                 .p(indexerPidGains.p)

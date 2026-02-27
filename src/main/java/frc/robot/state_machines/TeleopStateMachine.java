@@ -44,6 +44,7 @@ public class TeleopStateMachine extends SubsystemBase {
     private final DoublePublisher teleopMatchStagePublisher = teleopTable.getDoubleTopic("match-stage").publish();
     private final BooleanPublisher wasOurHubInactiveFirstPublisher = teleopTable
             .getBooleanTopic("was-our-hub-inactive-first").publish();
+    private final BooleanPublisher operatorOverridePublisher = teleopTable.getBooleanTopic("OperatorOverrideValue").publish();
 
     // For testing, this being true will always permit those transitions that are
     // normally restricted to automatic triggers.
@@ -361,6 +362,7 @@ public class TeleopStateMachine extends SubsystemBase {
             teleopStatePublisher.set(currentState.toString());
             teleopMatchStagePublisher.set(matchStage);
             wasOurHubInactiveFirstPublisher.set(wasOurHubInactiveFirst);
+            operatorOverridePublisher.set(operatorOverrideSupplier.getAsBoolean());
         } catch (Exception e) {
             // ignore NetworkTables errors
         }
@@ -368,7 +370,7 @@ public class TeleopStateMachine extends SubsystemBase {
 
     private void teleopLog(String value) {
         teleopLogPublisher.set(value);
-        System.out.println("TeleopStateMachine: " + value);
+        System.out.println("==== TeleopStateMachine: " + value);
     }
 
     public TeleopState getState() {

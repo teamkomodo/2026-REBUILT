@@ -76,7 +76,7 @@ public final class Constants {
   // The motors on the right side have a CAN id ending in a 2, left side end in 1
   public static final int SHOOTER_MOTOR_RIGHT_ID = 54;
   public static final int SHOOTER_MOTOR_LEFT_ID = 31;
-  public static final int SHOOTER_SMART_CURRENT_LIMIT = 50; // FIXME
+  public static final int SHOOTER_SMART_CURRENT_LIMIT = 100; // FIXME
   public static final double SHOOTER_GEAR_RATIO = 1.5; // 1:1.5 speeding up the flywheel
   public static final double MAX_SHOOTER_SPEED_TOLERANCE = 50.0; // RPM tolerance for considering shooter at target
                                                                  // speed
@@ -89,8 +89,8 @@ public final class Constants {
   public static final int SHOOTER_FEEDER_MOTOR_LEFT_ID = 51;
   public static final double SHOOTER_FEEDER_ROTATIONS_PER_BALL = 1.0; // FIXME: tune this
   public static final int SHOOTER_MAIN_INVERSION = -1; // Shooter motor is inverted to achieve correct direction
-  public static final double SHOOTER_FEEDER_FEED_SPEED = 0.25; // FIXME: tune this
-  public static final int SHOOTER_FEEDER_SMART_CURRENT_LIMIT = 30; // FIXME: Make sure this is a good value
+  public static final double SHOOTER_FEEDER_FEED_SPEED = 0.5; // FIXME: tune this
+  public static final int SHOOTER_FEEDER_SMART_CURRENT_LIMIT = 50; // FIXME: Make sure this is a good value
   public static final double BEAMBREAK_DEBOUNCE_DURATION = 2.5; // A delay for bouncy balls
 
   // Shooter physics simulation constants
@@ -118,7 +118,7 @@ public final class Constants {
   // Manual shot RPMs
   public static final double SHORT_BASELINE_RPM = 3000;
   public static final double LONG_BASELINE_RPM = 4500;
-  public static final double PASS_SHOT_RPM = 5500;
+  public static final double PASS_SHOT_RPM = 20500;
 
   // Finished table
   // These values are pre-generated using the ShooterTableGenerator class in
@@ -154,15 +154,13 @@ public final class Constants {
   public static final double HINGE_FEED_POSITION = 0.0; // FIXME
   public static final double HINGE_INTAKE_POSITION = 0.0; // FIXME
   public static final double HINGE_EJECT_POSITION = 0.0; // FIXME
+  public static final int HINGE_SMART_CURRENT_LIMIT = 30; // FIXME
 
   // Indexer
   public static final int INDEXER_MOTOR_ID = 43;
   public static final int INDEXER_SMART_CURRENT_LIMIT = 30; // FIXME
 
-  public static final double INDEXER_SPEED = 0.3; // FIXME
-  // Indexer beam-break sensor DIO channels (update to real wiring)
-  public static final int INDEXER_BEAM_BREAK_FULL_CHANNEL = 0; // Indexer is full sensor //FIXME
-  public static final int INDEXER_BEAM_BREAK_READY_CHANNEL = 1; // Indexer is empty sensor //FIXME
+  public static final double INDEXER_DUTYCYCLE = 0.5; // FIXME
 
   // Basic constants
   public static final SparkMax.MotorType BRUSHLESS = SparkMax.MotorType.kBrushless;

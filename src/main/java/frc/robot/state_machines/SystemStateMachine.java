@@ -55,7 +55,7 @@ public class SystemStateMachine extends SubsystemBase {
          */
         public boolean canTransitionTo(SystemState from, SystemState to) {
             // Global escapes allowed from any state
-            if (to == RESET || to == UNJAM || to == OFF) {
+            if (to == UNJAM || to == OFF) {
                 return true;
             }
 
@@ -70,7 +70,7 @@ public class SystemStateMachine extends SubsystemBase {
                 case RESET -> Set.of(TRAVEL, INTAKE, STOW).contains(to);
                 case STOW -> Set.of(INTAKE, TRAVEL, RESET).contains(to);
                 case EMPTYING -> Set.of(TRAVEL, INTAKE, RESET).contains(to);
-                case MANUAL -> Set.of(TRAVEL, INTAKE, ALIGNING, SHOOT, RESET).contains(to);
+                case MANUAL -> Set.of().contains(to);
                 case UNJAM -> Set.of(TRAVEL, RESET).contains(to);
             };
         }
@@ -248,8 +248,8 @@ public class SystemStateMachine extends SubsystemBase {
             return manualGate(intake.stowIntakeCommand());
         }
 
-        public Command intakeEject() {
-            return manualGate(intake.ejectIntakeCommand());
+        public Command eject() {
+            return manualGate(Commands.parallel(intake.ejectIntakeCommand(), indexer.reverseCommand()));
         }
 
         // Shooter Controls
@@ -266,20 +266,29 @@ public class SystemStateMachine extends SubsystemBase {
         }
 
         public Command feedOnce() {
-            return manualGate(shooter.feedOnceCommand());
+            return manualGate(Commands.parallel(shooter.feedOnceCommand(), indexer.startCommand()));
         }
 
         public Command startFeeding() {
-            return manualGate(shooter.startFeedingCommand());
+            return manualGate(Commands.parallel(shooter.startFeedingCommand(), indexer.startCommand()));
         }
 
         public Command stopFeeding() {
             return manualGate(shooter.stopFeedingCommand());
         }
 
+        public Command stopFeedingUngated() {
+            return shooter.stopFeedingCommand();
+        }
+
         // Indexer Controls
         public Command startIndexer() {
             return manualGate(indexer.startCommand());
+        }
+
+        // Reset
+        public Command reset() {
+            return Commands.parallel(intake.stopIntake(), intake.stowIntakeCommand(), shooter.stopShooterCommand(), indexer.stopIndexerCommand());
         }
 
         private Command manualGate(Command action) {
@@ -304,7 +313,7 @@ public class SystemStateMachine extends SubsystemBase {
 
     private void systemLog(String value) {
         systemLogPublisher.set(value);
-        System.out.println("SystemStateMachine: " + value);
+        System.out.println("=== SystemStateMachine: " + value);
     }
 
     public SystemState getState() {

@@ -88,10 +88,10 @@ public class RobotContainer {
    * Left Trigger    | Manual Intake Stow
    * POV Down        | Manual Eject (Indexer/Intake)
    * A Button        | Manual Shooter (Short)
-   * Y Button        | Manual Shooter (Long)
+   * Y Button       | Reset Robot
    * POV Up          | Manual Shooter (Pass)
-   * Right Bumper    | Manual Indexer Feed Start/Stop (pressed/unpressed)
-   * B Button        | Manual Indexer Feed Once
+   * Right Bumper    | Manual Shooter Feed Start/Stop (pressed/unpressed)
+   * B Button        | Manual Shooter Feed Once
    */
   // @formatter:on
   private void configureBindings() {
@@ -127,13 +127,14 @@ public class RobotContainer {
         .onFalse(Commands.runOnce(() -> operatorOverrideValue = false));
 
     // Enter Manual Mode
-    operatorX.onTrue(
-        Commands.defer(() -> {
-          TeleopState targetState = teleopSM.isInState(TeleopState.MANUAL) ? TeleopState.SCORE : TeleopState.MANUAL;
-          Command requestCommand = teleopSM.requestState(targetState);
-          return requestCommand;
-        },
-            Set.of(teleopSM)));
+    // operatorX.onTrue(
+    //     Commands.defer(() -> {
+    //       System.out.println("==== Attempting to toggle MANUAL state. Current state is manual: "+teleopSM.isInState(TeleopState.MANUAL));
+    //       TeleopState targetState = teleopSM.isInState(TeleopState.MANUAL) ? TeleopState.SCORE : TeleopState.MANUAL;
+    //       Command requestCommand = teleopSM.requestState(targetState);
+    //       return requestCommand;
+    //     }));
+    operatorX.onTrue(teleopSM.requestState(TeleopState.MANUAL));
 
     // Intake
     // Call both the non-manual (state request) and the manual-gated action.
@@ -141,7 +142,7 @@ public class RobotContainer {
     // the manual command (the manual command is gated to MANUAL state).
     operatorRT.onTrue(Commands.parallel(systemSM.requestState(SystemState.INTAKE), manual.intake()));
     operatorLT.onTrue(Commands.parallel(systemSM.requestState(SystemState.STOW), manual.intakeStow()));
-    operatorPOVDown.onTrue(Commands.parallel(systemSM.requestState(SystemState.EMPTYING), manual.intakeEject()));
+    operatorPOVDown.onTrue(Commands.parallel(systemSM.requestState(SystemState.EMPTYING), manual.eject()));
 
     // Teleop quick switches (non-manual): POV left/right pick STEAL/SCORE modes
     operatorPOVLeft.onTrue(teleopSM.requestState(TeleopState.STEAL));
@@ -152,14 +153,16 @@ public class RobotContainer {
     // SHOOT.
     // Shooter: request SHOOT + teleop SCORE (so the system and teleop modes align)
     operatorA.onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT), manual.shootShort()));
-    operatorY.onTrue(Commands.parallel(systemSM.requestState(SystemState.RESET), manual.shootLong()));
-    operatorPOVUp.onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT), manual.shootPass()));
+    operatorY.onTrue(Commands.parallel(systemSM.requestState(SystemState.RESET), manual.reset()));
+    // operatorY.onTrue(Commands.runOnce(() -> shooter.setShooterDutyCycle(1))); <- DANGER BUT AWESOME
+    // operatorPOVUp.onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT), manual.shootPass()));
+    operatorPOVUp.onTrue(Commands.runOnce(() -> shooter.setShooterDutyCycle(0.5)));
     // Start feeding should normally be part of SHOOT; request SHOOT too.
-    // operatorRB
-    //     .onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT), manual.startFeeding()))
-    //     .onFalse(Commands.parallel(shooter.stopFeedingCommand(), manual.stopFeeding()));
+    operatorRB
+        .onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT), manual.startFeeding()))
+        .onFalse(Commands.parallel(manual.stopFeedingUngated()));
     // // Shoot once
-    // operatorB.onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT), manual.feedOnce()));
+    operatorB.onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT), manual.feedOnce()));
 
     // Default drivetrain command (joystick driving)
     drivetrain.setDefaultCommand(

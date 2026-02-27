@@ -142,7 +142,8 @@ public class ShooterSubsystem extends SubsystemBase {
                 PersistMode.kPersistParameters);
 
         // Configure follower to mirror the lead (no inversion)
-        feederLeftMotorConfig.follow(Constants.SHOOTER_FEEDER_MOTOR_RIGHT_ID, false)
+        feederLeftMotorConfig
+                .follow(Constants.SHOOTER_FEEDER_MOTOR_RIGHT_ID, true)
                 .smartCurrentLimit(SHOOTER_FEEDER_SMART_CURRENT_LIMIT)
                 .idleMode(IdleMode.kBrake);
 
@@ -216,6 +217,7 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     public void setFeederDutyCycle(double dutyCycle) {
+        System.out.println("========================= Starting feeder: " + dutyCycle);
         feederController.setSetpoint(dutyCycle, ControlType.kDutyCycle);
     }
 
@@ -230,6 +232,7 @@ public class ShooterSubsystem extends SubsystemBase {
 
     public Command updateFlywheelSpeedRPM(double desiredFlywheelSpeed) {
         double targetSpeed = desiredFlywheelSpeed / Constants.SHOOTER_GEAR_RATIO;
+        System.out.println("-----------------UPDATING SHOOTER RPM: " + desiredFlywheelSpeed);
         return updateShooterSpeed(targetSpeed);
     }
 
