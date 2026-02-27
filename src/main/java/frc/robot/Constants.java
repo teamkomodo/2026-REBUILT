@@ -136,7 +136,7 @@ public final class Constants {
       4545.577, 4607.759, 4669.065, 4730.113, 4793.585, 4857.450, 4919.507, 4981.861, 5046.699 };
 
   // Intake
-  public static final int INTAKE_MOTOR_LEFT_ID = 43;
+  public static final int INTAKE_MOTOR_LEFT_ID = 41;
   public static final int INTAKE_SMART_CURRENT_LIMIT = 30; // FIXME
 
   public static final double INTAKE_INTAKE_SPEED = 0.3; // FIXME
@@ -156,7 +156,7 @@ public final class Constants {
   public static final double HINGE_EJECT_POSITION = 0.0; // FIXME
 
   // Indexer
-  public static final int INDEXER_MOTOR_ID = 41;
+  public static final int INDEXER_MOTOR_ID = 43;
   public static final int INDEXER_SMART_CURRENT_LIMIT = 30; // FIXME
 
   public static final double INDEXER_SPEED = 0.3; // FIXME
