@@ -76,7 +76,7 @@ public final class Constants {
   // The motors on the right side have a CAN id ending in a 2, left side end in 1
   public static final int SHOOTER_MOTOR_RIGHT_ID = 54;
   public static final int SHOOTER_MOTOR_LEFT_ID = 31;
-  public static final int SHOOTER_SMART_CURRENT_LIMIT = 30; // FIXME
+  public static final int SHOOTER_SMART_CURRENT_LIMIT = 50; // FIXME
   public static final double SHOOTER_GEAR_RATIO = 1.5; // 1:1.5 speeding up the flywheel
   public static final double MAX_SHOOTER_SPEED_TOLERANCE = 50.0; // RPM tolerance for considering shooter at target
                                                                  // speed

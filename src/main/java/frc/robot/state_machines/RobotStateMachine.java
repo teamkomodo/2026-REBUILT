@@ -39,8 +39,6 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
  * run onEntry for the new state.
  * - onEntry should schedule long-running work (Commands) rather than performing
  * it inline.
- * 
- * TODO: Wire automatic transitions.
  */
 public class RobotStateMachine extends SubsystemBase {
 
@@ -273,9 +271,8 @@ public class RobotStateMachine extends SubsystemBase {
                 ).withName("Entry_Auto");
 
             case TELEOP -> Commands.parallel(
-                    teleopSM.requestState(TeleopState.SCORE)
-                // systemSM.someTeleopCommand()
-                ).withName("Entry_Teleop");
+                    teleopSM.requestState(TeleopState.SCORE),
+                    systemSM.requestState(SystemState.TRAVEL)).withName("Entry_Teleop");
 
             default -> Commands.none();
         };

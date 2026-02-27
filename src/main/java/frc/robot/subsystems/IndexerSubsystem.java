@@ -25,10 +25,12 @@ public class IndexerSubsystem extends SubsystemBase {
     private final NetworkTable indexerTable = NetworkTableInstance.getDefault().getTable("indexer");
 
     private final DoublePublisher indexerSpeedPublisher = indexerTable.getDoubleTopic("indexer-speed").publish();
-    // private final BooleanPublisher indexerFullSensorPublisher = indexerTable.getBooleanTopic("indexer-full-sensor")
-            // .publish();
-    // private final BooleanPublisher indexerReadySensorPublisher = indexerTable.getBooleanTopic("indexer-ready-sensor")
-            // .publish();
+    // private final BooleanPublisher indexerFullSensorPublisher =
+    // indexerTable.getBooleanTopic("indexer-full-sensor")
+    // .publish();
+    // private final BooleanPublisher indexerReadySensorPublisher =
+    // indexerTable.getBooleanTopic("indexer-ready-sensor")
+    // .publish();
 
     private final StringPublisher indexerStatePublisher = indexerTable.getStringTopic("indexer-state").publish();
 
@@ -81,7 +83,7 @@ public class IndexerSubsystem extends SubsystemBase {
         return indexerState;
     }
 
-    public Command stopCommand() {
+    public Command stopIndexerCommand() {
         return Commands.runOnce(() -> {
             indexerState = IndexerState.IDLE;
             updateSpeed(0);
@@ -146,30 +148,30 @@ public class IndexerSubsystem extends SubsystemBase {
         // Publish beam-break sensor states (true means circuit closed / sensor
         // triggered)
         // try {
-        //     indexerFullSensorPublisher.set(beamBreakIsFull.get());
+        // indexerFullSensorPublisher.set(beamBreakIsFull.get());
         // } catch (Exception e) {
-        //     indexerFullSensorPublisher.set(false);
+        // indexerFullSensorPublisher.set(false);
         // }
         // try {
-        //     indexerReadySensorPublisher.set(beamBreakIsReady.get());
+        // indexerReadySensorPublisher.set(beamBreakIsReady.get());
         // } catch (Exception e) {
-        //     indexerReadySensorPublisher.set(false);
+        // indexerReadySensorPublisher.set(false);
         // }
     }
 
     // /** Returns true if the indexer full beam-break is triggered. */
     // public boolean isIndexerFull() {
-    //     return beamBreakIsFull.get();
+    // return beamBreakIsFull.get();
     // }
 
     // /**
-    //  * Returns true if the indexer ready (piece present) beam-break is triggered.
-    //  */
+    // * Returns true if the indexer ready (piece present) beam-break is triggered.
+    // */
     // public boolean isPieceReady() {
-    //     return beamBreakIsReady.get();
+    // return beamBreakIsReady.get();
     // }
 
     // public boolean isEmpty() {
-    //     return !isPieceReady() && !isIndexerFull();
+    // return !isPieceReady() && !isIndexerFull();
     // }
 }

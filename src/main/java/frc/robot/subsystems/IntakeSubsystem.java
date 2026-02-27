@@ -91,7 +91,7 @@ public class IntakeSubsystem extends SubsystemBase {
 
         intakeMotorLeftController = intakeMotorLeft.getClosedLoopController();
         intakeMotorLeftRelativeEncoder = intakeMotorLeft.getEncoder();
-        intakePidGains = new PIDGains(1.0, 0.0, 0.0, 0.0); // FIXME
+        intakePidGains = new PIDGains(1.0, 0.0, 0.0, 0.0); // FIXME: Tune pid constants
 
         // Intake target variable
         desiredSpeed = 0.0;
@@ -103,7 +103,7 @@ public class IntakeSubsystem extends SubsystemBase {
 
         hingeMotorController = hingeMotor.getClosedLoopController();
         hingeMotorRelativeEncoder = hingeMotor.getEncoder();
-        hingePidGains = new PIDGains(1.0, 0.0, 0.0, 0.0); // FIXME
+        hingePidGains = new PIDGains(1.0, 0.0, 0.0, 0.0); // FIXME: Tune pid constants
 
         // Hinge target variable
         desiredPosition = 0.0;

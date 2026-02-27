@@ -71,11 +71,11 @@ public class RobotContainer {
    * Right Trigger  | Intake (System INTAKE)
    * Left Trigger   | Stow (System STOW)
    * POV Down       | Eject (System EMPTYING)
+   * A Button       | SHOOT (System SHOOT)
+   * Y Button       | Reset Robot
+   * POV Up         | Long SHOOT
    * POV Left       | Teleop STEAL (needs Operator Override)
    * POV Right      | Teleop SCORE (needs Operator Override)
-   * A Button       | SHOOT (System SHOOT)
-   * Y Button       | --- (only used in manual mode)
-   * POV Up         | --- (only used in manual mode)
    * Right Bumper   | Start/Stop Feeding (pressed/unpressed) (System SHOOT)
    * B Button       | Feed Once (Shoot once)
    */
@@ -152,8 +152,8 @@ public class RobotContainer {
     // SHOOT.
     // Shooter: request SHOOT + teleop SCORE (so the system and teleop modes align)
     operatorA.onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT), manual.shootShort()));
-    operatorY.onTrue(Commands.parallel(Commands.none(), manual.shootLong()));
-    operatorPOVUp.onTrue(Commands.parallel(Commands.none(), manual.shootPass()));
+    operatorY.onTrue(Commands.parallel(systemSM.requestState(SystemState.RESET), manual.shootLong()));
+    operatorPOVUp.onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT), manual.shootPass()));
     // Start feeding should normally be part of SHOOT; request SHOOT too.
     operatorRB
         .onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT), manual.startFeeding()))

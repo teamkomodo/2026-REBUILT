@@ -80,11 +80,11 @@ public class ShooterSubsystem extends SubsystemBase {
 
         shooterMotorRightController = shooterMotorRight.getClosedLoopController();
         shooterMotorRightRelativeEncoder = shooterMotorRight.getEncoder();
-        shooterPidGains = new PIDGains(1.0, 0.0, 0.0, 0.0); // FIXME: tune these
+        shooterPidGains = new PIDGains(0.0001, 0.0, 0.0, 0.0001); // FIXME: tune these; Add d for faster comeback
 
         feederController = feederRightMotor.getClosedLoopController();
         feederEncoder = feederRightMotor.getEncoder();
-        feederPidGains = new PIDGains(1.0, 0.0, 0.0, 0.0); // FIXME: tune these
+        feederPidGains = new PIDGains(1.0, 0.0, 0.0, 0.0); // FIXME: Tune pid constants
 
         desiredSpeed = 0.0;
         desiredFeederSpeed = 0.0;
@@ -238,7 +238,7 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     public Command startShootingCommand() {
-        double distanceToHub = 4.0; // 4m is a placeholder for now; FIXME
+        double distanceToHub = 4.0; // 4m is a placeholder for now; FIXME: Replace placeholder
         /*
          * FIXME: need to call out to navx for this
          * Ask @Bora A

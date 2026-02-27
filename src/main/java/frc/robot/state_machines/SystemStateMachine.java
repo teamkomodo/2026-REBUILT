@@ -60,17 +60,18 @@ public class SystemStateMachine extends SubsystemBase {
             }
 
             return switch (from) {
-                case OFF -> to == TRAVEL;
-                case TRAVEL -> Set.of(INTAKE, ALIGNING, STOW, EMPTYING).contains(to);
-                case INTAKE -> Set.of(TRAVEL, ALIGNING, STOW, EMPTYING).contains(to);
-                case ALIGNING -> Set.of(SHOOT, TRAVEL).contains(to);
-                case SHOOT -> Set.of(TRAVEL, EMPTYING, INTAKE).contains(to);
-                case SHOOT_ONCE -> Set.of(TRAVEL, EMPTYING, INTAKE).contains(to);
+                /* MANUAL mode is only allowed via automatic transition */
+                case OFF -> Set.of(TRAVEL, RESET).contains(to);
+                case TRAVEL -> Set.of(INTAKE, ALIGNING, STOW, EMPTYING, RESET, SHOOT, SHOOT_ONCE).contains(to);
+                case INTAKE -> Set.of(TRAVEL, ALIGNING, STOW, EMPTYING, RESET, SHOOT, SHOOT_ONCE).contains(to);
+                case ALIGNING -> Set.of(SHOOT, SHOOT_ONCE, TRAVEL, RESET).contains(to);
+                case SHOOT -> Set.of(TRAVEL, EMPTYING, INTAKE, RESET).contains(to);
+                case SHOOT_ONCE -> Set.of(TRAVEL, EMPTYING, INTAKE, RESET).contains(to);
                 case RESET -> Set.of(TRAVEL, INTAKE, STOW).contains(to);
-                case STOW -> Set.of(INTAKE, TRAVEL).contains(to);
-                case EMPTYING -> Set.of(TRAVEL, INTAKE).contains(to);
-                case MANUAL -> Set.of(TRAVEL, INTAKE, ALIGNING, SHOOT).contains(to);
-                case UNJAM -> to == TRAVEL;
+                case STOW -> Set.of(INTAKE, TRAVEL, RESET).contains(to);
+                case EMPTYING -> Set.of(TRAVEL, INTAKE, RESET).contains(to);
+                case MANUAL -> Set.of(TRAVEL, INTAKE, ALIGNING, SHOOT, RESET).contains(to);
+                case UNJAM -> Set.of(TRAVEL, RESET).contains(to);
             };
         }
     }
@@ -185,7 +186,7 @@ public class SystemStateMachine extends SubsystemBase {
         return Commands.parallel(
                 intake.stopIntake(),
                 shooter.stopShooterCommand(),
-                indexer.stopCommand()).withName("SystemCancelAll");
+                indexer.stopIndexerCommand()).withName("SystemCancelAll");
     }
 
     private Command onExit(SystemState previous) {
@@ -210,6 +211,7 @@ public class SystemStateMachine extends SubsystemBase {
                     shooter.startShootingCommand(),
                     // 2. Wait until the sensors confirm we are at the target RPM
                     Commands.waitUntil(shooter::isAtTargetSpeed),
+                    // Commands.waitUntil(drivetrain::isAlignedToTarget), // TODO: implement this method in DrivetrainSubsystem
                     // 3. Only then, run the indexer to fire the ball
                     shooter.startFeedingCommand()
                 // Stop when the indexer is empty
@@ -223,7 +225,8 @@ public class SystemStateMachine extends SubsystemBase {
                 );
             case EMPTYING -> Commands.parallel(intake.ejectIntakeCommand(), indexer.reverseCommand());
             case UNJAM -> Commands.parallel(indexer.reverseCommand(), intake.ejectIntakeCommand());
-            case RESET -> Commands.parallel(intake.stopIntake(), shooter.stopShooterCommand(), indexer.stopCommand());
+            case OFF -> Commands.parallel(intake.stopIntake(), shooter.stopShooterCommand(), indexer.stopIndexerCommand());
+            case RESET -> Commands.parallel(intake.stopIntake(), intake.stowIntakeCommand(), shooter.stopShooterCommand(), indexer.stopIndexerCommand());
             default -> Commands.none();
         }).withName("SystemEntry_" + target);
     }
