@@ -21,6 +21,7 @@ import frc.robot.subsystems.ShooterSubsystem;
 import frc.robot.state_machines.SystemStateMachine;
 import frc.robot.state_machines.TeleopStateMachine;
 import frc.robot.state_machines.RobotStateMachine;
+import frc.robot.state_machines.RobotStateMachine.RobotState;
 import frc.robot.state_machines.SystemStateMachine.SystemState;
 import frc.robot.state_machines.TeleopStateMachine.TeleopState;
 
@@ -127,12 +128,14 @@ public class RobotContainer {
 
     // Enter Manual Mode
     // operatorX.onTrue(
-    //     Commands.defer(() -> {
-    //       System.out.println("==== Attempting to toggle MANUAL state. Current state is manual: "+teleopSM.isInState(TeleopState.MANUAL));
-    //       TeleopState targetState = teleopSM.isInState(TeleopState.MANUAL) ? TeleopState.SCORE : TeleopState.MANUAL;
-    //       Command requestCommand = teleopSM.requestState(targetState);
-    //       return requestCommand;
-    //     }));
+    // Commands.defer(() -> {
+    // System.out.println("==== Attempting to toggle MANUAL state. Current state is
+    // manual: "+teleopSM.isInState(TeleopState.MANUAL));
+    // TeleopState targetState = teleopSM.isInState(TeleopState.MANUAL) ?
+    // TeleopState.SCORE : TeleopState.MANUAL;
+    // Command requestCommand = teleopSM.requestState(targetState);
+    // return requestCommand;
+    // }));
     operatorX.onTrue(teleopSM.requestState(TeleopState.MANUAL));
 
     // Intake
@@ -153,10 +156,11 @@ public class RobotContainer {
     // Shooter: request SHOOT + teleop SCORE (so the system and teleop modes align)
     operatorA.onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT), manual.shootShort()));
     operatorY.onTrue(Commands.parallel(systemSM.requestState(SystemState.RESET), manual.reset()));
-    // operatorY.onTrue(Commands.runOnce(() -> shooter.setShooterDutyCycle(1))); <- DANGER BUT AWESOME
-    // operatorPOVUp.onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT), manual.shootPass()));
-    
-    operatorPOVUp.onTrue(Commands.runOnce(() -> shooter.setShooterDutyCycle(0.5))); // FIXME: TEMPORARY EDIT, PLEASE UNCOMMNENT!!!!
+    // operatorY.onTrue(Commands.runOnce(() -> shooter.setShooterDutyCycle(1))); <-
+    // DANGER BUT AWESOME
+    // operatorPOVUp.onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT),
+    // manual.shootPass()));
+    operatorPOVUp.onTrue(Commands.runOnce(() -> shooter.setShooterDutyCycle(0.5)));
     // Start feeding should normally be part of SHOOT; request SHOOT too.
     operatorRB
         .onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT), manual.startFeeding()))
@@ -182,14 +186,16 @@ public class RobotContainer {
   public void startTeleop() {
     // Request the top-level robot state machine to enter TELEOP and start the
     // teleop timeline (non-blocking; these return Commands and are scheduled).
-    CommandScheduler.getInstance().schedule(robotSM.requestState(RobotStateMachine.RobotState.TELEOP));
+    CommandScheduler.getInstance().schedule(robotSM.requestState(RobotState.TELEOP));
     CommandScheduler.getInstance().schedule(teleopSM.teleopMasterCommand());
   }
 
   public void enterDisabledMode() {
     // Ensure the RobotStateMachine transitions to DISABLED and put teleop into safe
     // state.
-    CommandScheduler.getInstance().schedule(robotSM.requestState(RobotStateMachine.RobotState.DISABLED));
-    teleopSM.enterDisabled();
+    CommandScheduler.getInstance().schedule(
+        Commands.sequence(
+            robotSM.requestState(RobotState.DISABLED),
+            teleopSM.enterDisabled()));
   }
 }
