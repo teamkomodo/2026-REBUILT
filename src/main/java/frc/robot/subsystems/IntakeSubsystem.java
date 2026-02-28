@@ -278,7 +278,7 @@ public class IntakeSubsystem extends SubsystemBase {
         return new SequentialCommandGroup(
                 setState(IntakeState.INTAKE),
                 new ParallelCommandGroup(
-                        updateHingePosition(HINGE_INTAKE_POSITION),
+                        Commands.runOnce(() -> deployIntake()),
                         updateIntakeSpeed(INTAKE_INTAKE_SPEED)),
                 stopHinge());
     }
@@ -286,7 +286,6 @@ public class IntakeSubsystem extends SubsystemBase {
     public Command feedIntakeCommand() {
         return new ParallelCommandGroup(
                 setState(IntakeState.FEED),
-                updateHingePosition(HINGE_FEED_POSITION),
                 updateIntakeSpeed(INTAKE_FEED_SPEED));
     }
 
@@ -294,7 +293,6 @@ public class IntakeSubsystem extends SubsystemBase {
         return new SequentialCommandGroup(
                 setState(IntakeState.EJECT),
                 holdIntake(),
-                updateHingePosition(HINGE_EJECT_POSITION),
                 updateIntakeSpeed(INTAKE_EJECT_SPEED),
                 new WaitCommand(INTAKE_EJECT_TIME),
                 stowIntakeCommand());
@@ -303,9 +301,7 @@ public class IntakeSubsystem extends SubsystemBase {
     public Command stowIntakeCommand() {
         return new SequentialCommandGroup(
                 setState(IntakeState.STOW),
-                holdIntake(),
-                updateHingePosition(HINGE_STOW_POSITION),
-                stopIntake());
+                Commands.runOnce(() -> stowIntake()));
     }
 
     public Command stopIntakeCommand() {
