@@ -102,17 +102,11 @@ public class DrivetrainSubsystem implements Subsystem {
                     this));
 
     // Swerve
-    private final Translation2d frontLeftPosition = new Translation2d(DRIVETRAIN_WIDTH / 2D, DRIVETRAIN_LENGTH / 2D); // All
-                                                                                                                      // translations
-                                                                                                                      // are
-                                                                                                                      // relative
-                                                                                                                      // to
-                                                                                                                      // center
-                                                                                                                      // of
-                                                                                                                      // rotation
-    private final Translation2d frontRightPosition = new Translation2d(DRIVETRAIN_WIDTH / 2D, -DRIVETRAIN_LENGTH / 2D);
-    private final Translation2d backLeftPosition = new Translation2d(-DRIVETRAIN_WIDTH / 2D, DRIVETRAIN_LENGTH / 2D);
-    private final Translation2d backRightPosition = new Translation2d(-DRIVETRAIN_WIDTH / 2D, -DRIVETRAIN_LENGTH / 2D);
+    // WPILib: x = forward/back (length), y = left/right (width)
+    private final Translation2d frontLeftPosition = new Translation2d(DRIVETRAIN_LENGTH / 2D,  DRIVETRAIN_WIDTH / 2D);
+    private final Translation2d frontRightPosition = new Translation2d(DRIVETRAIN_LENGTH / 2D, -DRIVETRAIN_WIDTH / 2D);
+    private final Translation2d backLeftPosition  = new Translation2d(-DRIVETRAIN_LENGTH / 2D,  DRIVETRAIN_WIDTH / 2D);
+    private final Translation2d backRightPosition = new Translation2d(-DRIVETRAIN_LENGTH / 2D, -DRIVETRAIN_WIDTH / 2D);
 
     private SwerveModule frontLeft;
     private final SwerveModule frontRight;

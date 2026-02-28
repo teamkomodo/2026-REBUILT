@@ -253,7 +253,7 @@ public class RobotStateMachine extends SubsystemBase {
     private Command onEntry(RobotState target, Context ctx) {
         return switch (target) {
             case DISABLED -> Commands.parallel(
-                    systemSM.requestState(SystemState.OFF),
+                    systemSM.requestState(SystemState.TRAVEL),
                     teleopSM.requestState(TeleopState.IDLE),
                     systemSM.cancelAll()).withName("Entry_Disabled");
 

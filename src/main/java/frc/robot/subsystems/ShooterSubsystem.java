@@ -80,7 +80,7 @@ public class ShooterSubsystem extends SubsystemBase {
 
         shooterMotorRightController = shooterMotorRight.getClosedLoopController();
         shooterMotorRightRelativeEncoder = shooterMotorRight.getEncoder();
-        shooterPidGains = new PIDGains(0.0001, 0.0, 0.0, 0.0001); // FIXME: tune these; Add d for faster comeback
+        shooterPidGains = new PIDGains(0.0004, 0.0, 0.0, 0.0002); // FIXME: tune these; Add d for faster comeback
 
         feederController = feederRightMotor.getClosedLoopController();
         feederEncoder = feederRightMotor.getEncoder();
@@ -108,7 +108,8 @@ public class ShooterSubsystem extends SubsystemBase {
         shooterMotorRightConfig.closedLoop
                 .p(shooterPidGains.p)
                 .i(shooterPidGains.i)
-                .d(shooterPidGains.d);
+                .d(shooterPidGains.d)
+                .feedForward.sv(0.0, shooterPidGains.FF);
 
         shooterMotorRight.configure(
                 shooterMotorRightConfig,
@@ -130,7 +131,8 @@ public class ShooterSubsystem extends SubsystemBase {
         feederRightMotorConfig.closedLoop
                 .p(feederPidGains.p)
                 .i(feederPidGains.i)
-                .d(feederPidGains.d);
+                .d(feederPidGains.d)
+                .feedForward.sv(0.0, feederPidGains.FF);
 
         feederRightMotorConfig
                 .smartCurrentLimit(SHOOTER_FEEDER_SMART_CURRENT_LIMIT)
