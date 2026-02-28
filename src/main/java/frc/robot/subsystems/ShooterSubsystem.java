@@ -293,7 +293,6 @@ public class ShooterSubsystem extends SubsystemBase {
         // default stow behavior: stop shooter for now
         return stopShooterCommand();
     }
-
     // Shooting calculation:
     public class ShooterLookupTable {
         // Distance in meters, RPM in rotations per minute

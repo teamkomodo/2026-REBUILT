@@ -8,6 +8,7 @@ import static frc.robot.Constants.*;
 
 import java.util.Set;
 import java.util.function.BooleanSupplier;
+import edu.wpi.first.wpilibj.DataLogManager;
 
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -59,6 +60,7 @@ public class RobotContainer {
 
   public RobotContainer() {
     configureBindings();
+    
   }
 
   // Configure controller button -> command bindings.
