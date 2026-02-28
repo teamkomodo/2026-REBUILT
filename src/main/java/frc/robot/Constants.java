@@ -55,7 +55,7 @@ public final class Constants {
     public static double MAX_ATTAINABLE_VELOCITY = 4.5;
 
     public static final double LINEAR_VELOCITY_CONSTRAINT = MAX_ATTAINABLE_VELOCITY;
-    public static final double LINEAR_ACCEL_CONSTRAINT = 12.0;
+    public static final double LINEAR_ACCEL_CONSTRAINT = 3.0; // 12 ORGINALL
 
     public static final double ANGULAR_VELOCITY_CONSTRAINT = (LINEAR_VELOCITY_CONSTRAINT * Math.PI)
             / (DRIVETRAIN_WIDTH * DRIVETRAIN_WIDTH + DRIVETRAIN_LENGTH * DRIVETRAIN_LENGTH) * 0.8;
@@ -69,7 +69,7 @@ public final class Constants {
     public static final double MAX_MODULE_ACCEL = 21; // physical maximum attainable accel of swerve modules
 
     public static final double MAX_ANGULAR_VELOCITY = 4.0 * Math.PI; // constraint for angular velocity
-    public static final double MAX_ANGULAR_ACCEL = 4.0 * Math.PI; // constraint for angular acceleration
+    public static final double MAX_ANGULAR_ACCEL = 2.0 * Math.PI; // constraint for angular acceleration // 4 ORIGINALS
 
     public static final PIDConstants DRIVE_PID = new PIDConstants(2, 0, 0);
     public static final PIDConstants STEER_PID = new PIDConstants(1, 0, 0.0002);
@@ -121,7 +121,8 @@ public final class Constants {
     // Manual shot RPMs
     public static final double SHORT_BASELINE_RPM = 2500;
     public static final double LONG_BASELINE_RPM = 3000;
-    public static final double PASS_SHOT_RPM = 4500;
+    public static final double PASS_SHOT_RPM = 3000;
+
 
     // Finished table
     // These values are pre-generated using the ShooterTableGenerator class in

@@ -55,7 +55,7 @@ public class SystemStateMachine extends SubsystemBase {
          */
         public boolean canTransitionTo(SystemState from, SystemState to) {
             // Global escapes allowed from any state
-            if (to == UNJAM || to == OFF) {
+            if (to == OFF && from != MANUAL) {
                 return true;
             }
 
@@ -213,18 +213,15 @@ public class SystemStateMachine extends SubsystemBase {
                     // method in DrivetrainSubsystem
                     // 3. Only then, run the indexer to fire the ball
                     shooter.startFeedingCommand()
-                // Stop when the indexer is empty
-                // Commands.waitUntil(() -> debouncer.calculate(indexer.isEmpty())),
-                // shooter.stopFeedingCommand()
                 );
             case SHOOT_ONCE -> Commands.sequence(
                     shooter.startShootingCommand(),
                     Commands.waitUntil(shooter::isAtTargetSpeed),
                     shooter.feedOnceCommand());
-            case EMPTYING -> Commands.parallel(intake.ejectIntakeCommand(), indexer.reverseCommand());
+            case EMPTYING -> Commands.parallel(intake.ejectIntakeCommand());
             case UNJAM -> Commands.parallel(indexer.reverseCommand(), intake.ejectIntakeCommand());
             case OFF ->
-                Commands.parallel(intake.stopIntake(), shooter.stopShooterCommand(), indexer.stopIndexerCommand());
+                Commands.parallel(intake.stopIntake(), intake.stopHinge(), shooter.stopShooterCommand(), indexer.stopIndexerCommand());
             case RESET -> Commands.parallel(intake.stopIntake(), intake.stopHinge(),
                     shooter.stopShooterCommand(), indexer.stopIndexerCommand());
             default -> Commands.none();
@@ -268,24 +265,27 @@ public class SystemStateMachine extends SubsystemBase {
         }
 
         public Command feedOnce() {
-            return manualGate(Commands.parallel(shooter.feedOnceCommand(), indexer.startCommand()));
+            return manualGate(Commands.parallel(shooter.feedOnceCommand()
+            // , indexer.startCommand()
+            ));
         }
 
         public Command startFeeding() {
-            return manualGate(Commands.parallel(shooter.startFeedingCommand(), indexer.startCommand()));
+            return manualGate(Commands.parallel(shooter.startFeedingCommand()
+            // , indexer.startCommand()
+            ));
         }
 
         public Command stopFeeding() {
             return manualGate(shooter.stopFeedingCommand());
         }
 
-        public Command stopFeedingUngated() {
-            return shooter.stopFeedingCommand();
-        }
-
         // Indexer Controls
         public Command startIndexer() {
-            return manualGate(indexer.startCommand());
+            return manualGate(
+                Commands.none()
+                // indexer.startCommand()
+            );
         }
 
         // Reset
