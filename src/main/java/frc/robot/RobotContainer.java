@@ -8,6 +8,9 @@ import static frc.robot.Constants.*;
 
 import java.util.Set;
 import java.util.function.BooleanSupplier;
+
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.auto.NamedCommands;
 import edu.wpi.first.wpilibj.DataLogManager;
 
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -23,6 +26,7 @@ import frc.robot.subsystems.IndexerSubsystem;
 import frc.robot.subsystems.ShooterSubsystem;
 import frc.robot.state_machines.SystemStateMachine;
 import frc.robot.state_machines.TeleopStateMachine;
+import frc.robot.commands.auto.CompleteScoreCommand;
 import frc.robot.state_machines.RobotStateMachine;
 import frc.robot.state_machines.RobotStateMachine.RobotState;
 import frc.robot.state_machines.SystemStateMachine.SystemState;
@@ -60,6 +64,7 @@ public class RobotContainer {
   public RobotContainer() {
     configureBindings();
     
+    registerNamedCommands();
   }
 
   // Configure controller button -> command bindings.
@@ -187,7 +192,11 @@ public class RobotContainer {
 
   public Command getAutonomousCommand() {
     // If you later add an auto chooser, return selected command here.
-    return null;
+    return AutoBuilder.buildAuto("Shoot");
+  }
+
+  private void registerNamedCommands() {
+    NamedCommands.registerCommand("Reset", new CompleteScoreCommand(intake, shooter, indexer));
   }
 
   public void startTeleop() {

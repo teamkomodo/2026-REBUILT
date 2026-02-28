@@ -117,7 +117,10 @@ public class ShooterSubsystem extends SubsystemBase {
     public void configureMotors() {
         // Configure shooter motors
         shooterMotorRightConfig
+<<<<<<< HEAD
 
+=======
+>>>>>>> 33d87eec325dd54d800adf28c2b7b7d79bf7d851
                 .smartCurrentLimit(
                     SHOOTER_SMART_CURRENT_LIMIT, 
                     SHOOTER_SMART_CURRENT_LIMIT,
@@ -182,7 +185,10 @@ public class ShooterSubsystem extends SubsystemBase {
 
     public void updateTelemetry() {
         shooterSpeedPublisher.set(shooterMotorRight.getAppliedOutput());
+<<<<<<< HEAD
         shooterRpmPublisher.set(shooterMotorRightRelativeEncoder.getVelocity() * SHOOTER_MAIN_INVERSION);
+=======
+>>>>>>> 33d87eec325dd54d800adf28c2b7b7d79bf7d851
         shooterRpmPublisher.set(shooterMotorRightRelativeEncoder.getVelocity());
         shooterDesiredSpeedPublisher.set(desiredFlywheelSpeed);
 
