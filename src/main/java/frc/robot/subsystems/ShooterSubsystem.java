@@ -70,6 +70,7 @@ public class ShooterSubsystem extends SubsystemBase {
     private double shooterI = 0;
     private double shooterD = 0;
     private double shooterFF = 0.0002;
+    private double shooterRPM = 0;
 
     public ShooterSubsystem() {
 
@@ -101,6 +102,7 @@ public class ShooterSubsystem extends SubsystemBase {
         SmartDashboard.putNumber("Shooter I", shooterI);
         SmartDashboard.putNumber("Shooter D", shooterD);
         SmartDashboard.putNumber("Shooter FF", shooterFF);
+        SmartDashboard.putNumber("shooter RPM", shooterRPM);
     }
 
     public void teleopInit() {
@@ -185,6 +187,21 @@ public class ShooterSubsystem extends SubsystemBase {
         feederSpeedPublisher.set(feederRightMotor.getAppliedOutput());
         feederRpmPublisher.set(feederEncoder.getVelocity());
         feederDesiredSpeedPublisher.set(desiredFeederSpeed);
+    }
+
+    public void reconfigureRobotTuning() {
+        shooterMotorRightConfig.closedLoop
+            .p(SmartDashboard.getNumber("Shooter P", shooterPidGains.p))
+            .i(SmartDashboard.getNumber("Shooter I", shooterPidGains.i))
+            .d(SmartDashboard.getNumber("Shooter D", shooterPidGains.d))
+            .velocityFF(SmartDashboard.getNumber("Shooter FF", shooterPidGains.FF));
+        
+        shooterMotorLeft.configure(
+            shooterMotorLeftConfig,
+            ResetMode.kResetSafeParameters,
+            PersistMode.kPersistParameters);
+        
+        updateFlywheelSpeedRPM(SmartDashboard.getNumber("Shooter RPM", shooterRPM));
     }
 
     public void setShooterDutyCycle(double dutyCycle) {
