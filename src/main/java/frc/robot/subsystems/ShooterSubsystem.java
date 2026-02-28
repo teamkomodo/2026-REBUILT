@@ -112,7 +112,8 @@ public class ShooterSubsystem extends SubsystemBase {
         .p(shooterPidGains.p)
         .i(shooterPidGains.i)
         .d(shooterPidGains.d)
-        .velocityFF(shooterPidGains.FF);
+        .velocityFF(shooterPidGains.FF)
+        .outputRange(-SHOOTER_MAX_RPM, SHOOTER_MAX_RPM);
 
         shooterMotorRight.configure(
                 shooterMotorRightConfig,
@@ -242,7 +243,6 @@ public class ShooterSubsystem extends SubsystemBase {
 
     /** Command the shooter using motor RPM (kept for compatibility). */
     public Command updateShooterSpeed(double desiredMotorRPM) {
-        
         return Commands.runOnce(() -> setShooterMotorVelocityRPM(desiredMotorRPM), this);
     }
 

@@ -78,6 +78,7 @@ public final class Constants {
     // The motors on the right side have a CAN id ending in a 2, left side end in 1
     public static final int SHOOTER_MOTOR_RIGHT_ID = 54;
     public static final int SHOOTER_MOTOR_LEFT_ID = 31;
+    public static final double SHOOTER_MAX_RPM = 4000; // Neo550 free speed
     public static final int SHOOTER_SMART_CURRENT_LIMIT = 100; // FIXME
     public static final double SHOOTER_GEAR_RATIO = 1.5; // 1:1.5 speeding up the flywheel
     public static final double MAX_SHOOTER_SPEED_TOLERANCE = 50.0; // RPM tolerance for considering shooter at target
@@ -118,9 +119,9 @@ public final class Constants {
     public static final double MAX_FLYWHEEL_RPM = 6700;
 
     // Manual shot RPMs
-    public static final double SHORT_BASELINE_RPM = 3000;
-    public static final double LONG_BASELINE_RPM = 4500;
-    public static final double PASS_SHOT_RPM = 20500;
+    public static final double SHORT_BASELINE_RPM = 2500;
+    public static final double LONG_BASELINE_RPM = 3000;
+    public static final double PASS_SHOT_RPM = 4500;
 
     // Finished table
     // These values are pre-generated using the ShooterTableGenerator class in
