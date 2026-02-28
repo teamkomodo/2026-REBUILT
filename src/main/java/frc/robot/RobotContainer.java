@@ -175,10 +175,7 @@ public class RobotContainer {
         .onFalse(Commands.parallel(manual.stopFeedingUngated()));
     // // Shoot once
 
-    operatorB.onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT), manual.feedOnce())); // FIXME: BORA
-                                                                                                      // COMMENTED THIS
-                                                                                                      // TEMPORARILY,
-                                                                                                      // uncomment!!!!
+    operatorB.onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT), manual.feedOnce()));
 
     // Default drivetrain command (joystick driving)
     drivetrain.setDefaultCommand(
