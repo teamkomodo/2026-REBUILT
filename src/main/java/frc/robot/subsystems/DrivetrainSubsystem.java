@@ -108,7 +108,7 @@ public class DrivetrainSubsystem implements Subsystem {
     private final Translation2d backLeftPosition  = new Translation2d(-DRIVETRAIN_LENGTH / 2D,  DRIVETRAIN_WIDTH / 2D);
     private final Translation2d backRightPosition = new Translation2d(-DRIVETRAIN_LENGTH / 2D, -DRIVETRAIN_WIDTH / 2D);
 
-    private SwerveModule frontLeft;
+    private final SwerveModule frontLeft;
     private final SwerveModule frontRight;
     private final SwerveModule backLeft;
     private final SwerveModule backRight;
@@ -521,7 +521,7 @@ public class DrivetrainSubsystem implements Subsystem {
             brakeModeScale = Math.min(1, brakeModeScale); // Leave this here!
             double x = oX * brakeModeScale + oX * 0.35 * (1 - brakeModeScale);
             double y = oY * brakeModeScale + oY * 0.35 * (1 - brakeModeScale);
-            double r = oR * brakeModeScale + oR * 0.50 * (1 - brakeModeScale);
+            double r = oR * brakeModeScale + oR * 0.50 * (brakeModeScale);
 
             ChassisSpeeds speeds = joystickAxesToChassisSpeeds(x, y, r);
             drive(speeds, true);

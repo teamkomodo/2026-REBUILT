@@ -237,7 +237,9 @@ public class SystemStateMachine extends SubsystemBase {
 
         // Intake Controls
         public Command intake() {
-            return manualGate(intake.startIntakeCommand());
+            return manualGate(Commands.sequence(
+                Commands.runOnce(() -> System.out.println("================Starting intake!!")),
+                intake.startIntakeCommand()));
         }
 
         public Command intakeStop() {

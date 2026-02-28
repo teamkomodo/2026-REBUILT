@@ -12,6 +12,7 @@ import java.util.function.BooleanSupplier;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.button.CommandPS4Controller;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
@@ -151,8 +152,11 @@ public class RobotContainer {
     operatorPOVDown.onTrue(Commands.parallel(systemSM.requestState(SystemState.EMPTYING), manual.eject()));
 
     // Teleop quick switches (non-manual): POV left/right pick STEAL/SCORE modes
-    operatorPOVLeft.onTrue(teleopSM.requestState(TeleopState.STEAL));
-    operatorPOVRight.onTrue(teleopSM.requestState(TeleopState.SCORE));
+    // operatorPOVLeft.onTrue(teleopSM.requestState(TeleopState.STEAL)); // FIXME UNCOMMENT
+    // operatorPOVRight.onTrue(teleopSM.requestState(TeleopState.SCORE)); // FIXME UNCOMMENT
+    operatorPOVLeft.onTrue(Commands.runOnce(() -> intake.updateIntakeSpeed(0.5)));
+    //operatorPOVRight.onTrue(intake.updateIntakeSpeed(0.5));
+    //operatorPOVLeft.onT
 
     // Shooter
     // Map face buttons to both manual shot commands and a guarded request to enter
@@ -176,8 +180,8 @@ public class RobotContainer {
     // Default drivetrain command (joystick driving)
     drivetrain.setDefaultCommand(
         drivetrain.joystickDriveCommand(
-            () -> (driverController.getLeftY()), // left Y -> robot +X
-            () -> (driverController.getLeftX()), // left X -> robot +Y
+            () -> (driverController.getLeftX()), // left Y -> robot +X
+            () -> (driverController.getLeftY()), // left X -> robot +Y
             () -> (driverController.getRightX() / 1.6) // rotation scaled
         ));
   }
