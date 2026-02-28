@@ -17,6 +17,7 @@ import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -40,8 +41,7 @@ public class ShooterSubsystem extends SubsystemBase {
     // Feeder telemetry
     private final DoublePublisher feederSpeedPublisher = shooterTable.getDoubleTopic("feeder-speed").publish();
     private final DoublePublisher feederRpmPublisher = shooterTable.getDoubleTopic("feeder-rpm").publish();
-    private final DoublePublisher feederDesiredSpeedPublisher = shooterTable.getDoubleTopic("feeder-desired-speed")
-            .publish();
+    private final DoublePublisher feederDesiredSpeedPublisher = shooterTable.getDoubleTopic("feeder-desired-speed").publish();
 
     private final SparkFlex shooterMotorRight;
     private final SparkFlex shooterMotorLeft;
@@ -66,6 +66,11 @@ public class ShooterSubsystem extends SubsystemBase {
     private double desiredFlywheelSpeed; // Flywheel RPMs (for readability/telemetry)
     private double desiredFeederSpeed; // duty cycle for feeder (telemetry)
 
+    private double shooterP = 0.0004;
+    private double shooterI = 0;
+    private double shooterD = 0;
+    private double shooterFF = 0.0002;
+
     public ShooterSubsystem() {
 
         shooterMotorRight = new SparkFlex(SHOOTER_MOTOR_RIGHT_ID, BRUSHLESS);
@@ -81,16 +86,21 @@ public class ShooterSubsystem extends SubsystemBase {
 
         shooterMotorRightController = shooterMotorRight.getClosedLoopController();
         shooterMotorRightRelativeEncoder = shooterMotorRight.getEncoder();
-    shooterPidGains = new PIDGains(0.0004, 0.0, 0.0, 0.0002); // FIXME: tune these; Add d/FF for faster comeback
+        shooterPidGains = new PIDGains(0.0004, 0.0, 0.0, 0.0002); // FIXME: tune these; Add d/FF for faster comeback
 
         feederController = feederRightMotor.getClosedLoopController();
         feederEncoder = feederRightMotor.getEncoder();
         feederPidGains = new PIDGains(1.0, 0.0, 0.0, 0.0); // FIXME: Tune pid constants
 
-    desiredMotorSpeed = 0.0;
-    desiredFlywheelSpeed = 0.0;
+        desiredMotorSpeed = 0.0;
+        desiredFlywheelSpeed = 0.0;
         desiredFeederSpeed = 0.0;
         configureMotors();
+
+        SmartDashboard.putNumber("Shooter P", shooterP);
+        SmartDashboard.putNumber("Shooter I", shooterI);
+        SmartDashboard.putNumber("Shooter D", shooterD);
+        SmartDashboard.putNumber("Shooter FF", shooterFF);
     }
 
     public void teleopInit() {
