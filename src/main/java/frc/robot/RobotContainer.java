@@ -9,6 +9,7 @@ import static frc.robot.Constants.*;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
 
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -95,6 +96,7 @@ public class RobotContainer {
    */
   // @formatter:on
   private void configureBindings() {
+    SmartDashboard.putNumber("LEFT_STEER_OFFSET", FRONT_LEFT_STEER_OFFSET);
     // Driver controls
     Trigger driverX = driverController.x();
     Trigger driverLB = driverController.leftBumper();

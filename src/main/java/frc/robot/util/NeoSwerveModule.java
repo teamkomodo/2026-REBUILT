@@ -17,7 +17,6 @@ import com.revrobotics.spark.FeedbackSensor;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 
-
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
@@ -32,8 +31,7 @@ import edu.wpi.first.wpilibj.RobotController;
 
 import static frc.robot.Constants.*;
 
-
-public class NeoSwerveModule implements SwerveModule{
+public class NeoSwerveModule implements SwerveModule {
 
     private final DoublePublisher normalizedVelocityError;
     private final DoublePublisher rotationErrorPublisher;
@@ -75,14 +73,15 @@ public class NeoSwerveModule implements SwerveModule{
 
     private final SparkClosedLoopController steerController;
     private final SparkClosedLoopController driverController;
-        
+
     private SimpleMotorFeedforward driveFeedforward; // Gains from SysId Analysis
-    
+
     private double steeringOffset;
     // private double relativeSteerAdjustmentFactor = 0.1;
-   // public Rotation2d angle = Rotation2d.kZero;
+    // public Rotation2d angle = Rotation2d.kZero;
 
-    public NeoSwerveModule(int driveMotorId, int steerMotorId, int steerAbsoluteEncoderId,double steerOffset, PIDGains steerPIDGains, PIDGains drivePIDGains, FFGains driveFFGains, NetworkTable moduleNT) {
+    public NeoSwerveModule(int driveMotorId, int steerMotorId, int steerAbsoluteEncoderId, double steerOffset,
+            PIDGains steerPIDGains, PIDGains drivePIDGains, FFGains driveFFGains, NetworkTable moduleNT) {
         this.driveMotor = new SparkMax(driveMotorId, MotorType.kBrushless);
         this.steerMotor = new SparkMax(steerMotorId, MotorType.kBrushless);
         this.steerAbsoluteEncoder = new CANcoder(steerAbsoluteEncoderId);
@@ -97,26 +96,26 @@ public class NeoSwerveModule implements SwerveModule{
         driveConfig = new SparkMaxConfig();
 
         steerAbsoluteEncoder.getConfigurator().apply(
-            new MagnetSensorConfigs()
-            .withMagnetOffset(0.0/*steerOffset / (2 * Math.PI*)*/)
-            .withAbsoluteSensorDiscontinuityPoint(getAbsoluteSensorDiscontinuity())); //correct replacement
-        
+                new MagnetSensorConfigs()
+                        .withMagnetOffset(0.0/* steerOffset / (2 * Math.PI*) */)
+                        .withAbsoluteSensorDiscontinuityPoint(getAbsoluteSensorDiscontinuity())); // correct replacement
+
         steerRelativeEncoder = steerMotor.getEncoder();
-            
-        //steerController = steerMotor.getPIDController();
+
+        // steerController = steerMotor.getPIDController();
         steerController = steerMotor.getClosedLoopController();
         driverController = driveMotor.getClosedLoopController();
 
         steeringOffset = steerOffset;
 
         configureMotors(steerPIDGains);
-     
+
         // Telemetry
         normalizedVelocityError = moduleNT.getDoubleTopic("normvelocityerror").publish();
         rotationErrorPublisher = moduleNT.getDoubleTopic("rotationerror").publish();
         dutyCyclePublisher = moduleNT.getDoubleTopic("dutycycle").publish();
         velocityPublisher = moduleNT.getDoubleTopic("velocity").publish();
-        
+
         drivekPEntry = moduleNT.getDoubleTopic("tuning/drivekP").getEntry(drivePIDGains.p);
         drivekIEntry = moduleNT.getDoubleTopic("tuning/drivekI").getEntry(drivePIDGains.i);
         drivekDEntry = moduleNT.getDoubleTopic("tuning/drivekD").getEntry(drivePIDGains.d);
@@ -159,37 +158,38 @@ public class NeoSwerveModule implements SwerveModule{
     @SuppressWarnings("removal")
     private void configureMotors(PIDGains steerGains) {
 
-        //Drive Motors
+        // Drive Motors
         driveConfig
-        .inverted(false)
-        .idleMode(IdleMode.kBrake);
+                .inverted(false)
+                .idleMode(IdleMode.kBrake);
 
-        double wheelPositionConversionFactor = Math.PI * WHEEL_DIAMETER * DRIVE_REDUCTION; // motor rotations -> wheel travel in meters
+        double wheelPositionConversionFactor = Math.PI * WHEEL_DIAMETER * DRIVE_REDUCTION; // motor rotations -> wheel
+                                                                                           // travel in meters
 
         driveConfig.encoder
-        .positionConversionFactor(wheelPositionConversionFactor)
-        .velocityConversionFactor(wheelPositionConversionFactor / 60); // motor RPM -> wheel speed in m/s
+                .positionConversionFactor(wheelPositionConversionFactor)
+                .velocityConversionFactor(wheelPositionConversionFactor / 60); // motor RPM -> wheel speed in m/s
 
         driveMotor.configure(driveConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
 
-        //Steer Motor
+        // Steer Motor
         steerConfig.inverted(true)
-        .idleMode(IdleMode.kBrake);
+                .idleMode(IdleMode.kBrake);
 
         steerConfig.encoder
-        .positionConversionFactor(2 * Math.PI * STEER_REDUCTION)
-        .velocityConversionFactor(2 * Math.PI * STEER_REDUCTION / 60);
+                .positionConversionFactor(2 * Math.PI * STEER_REDUCTION)
+                .velocityConversionFactor(2 * Math.PI * STEER_REDUCTION / 60);
 
         steerConfig.closedLoop
-        .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
-        .positionWrappingEnabled(true)
-        .positionWrappingMaxInput(Math.PI)
-        .positionWrappingMinInput(-Math.PI)
-        .pid(steerGains.p, steerGains.i,steerGains.d);
+                .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
+                .positionWrappingEnabled(true)
+                .positionWrappingMaxInput(Math.PI)
+                .positionWrappingMinInput(-Math.PI)
+                .pid(steerGains.p, steerGains.i, steerGains.d);
 
         steerMotor.configure(steerConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
-        
-       steerRelativeEncoder.setPosition(getAbsoluteModuleRotation().getRadians());
+
+        steerRelativeEncoder.setPosition(getAbsoluteModuleRotation().getRadians());
     }
 
     public void updateSysIDValues() {
@@ -202,39 +202,45 @@ public class NeoSwerveModule implements SwerveModule{
         steerVoltageEntry.set(getSteerVoltage());
     }
 
-    public void updateTelemetry(){
-        normalizedVelocityError.set((desiredState.speedMetersPerSecond - getDriveVelocity()) * Math.signum(desiredState.speedMetersPerSecond));
-        rotationErrorPublisher.set(MathUtil.angleModulus(desiredState.angle.getRadians() - getModuleRotation().getRadians()));
+    public void updateTelemetry() {
+        normalizedVelocityError.set((desiredState.speedMetersPerSecond - getDriveVelocity())
+                * Math.signum(desiredState.speedMetersPerSecond));
+        rotationErrorPublisher
+                .set(MathUtil.angleModulus(desiredState.angle.getRadians() - getModuleRotation().getRadians()));
         dutyCyclePublisher.set(driveMotor.get());
         velocityPublisher.set(getDriveVelocity(), RobotController.getFPGATime() - 200000);
 
-        if(!TUNING_MODE)
+        if (!TUNING_MODE)
             return;
 
         double newDrivekP = drivekPEntry.get();
-        if(newDrivekP != driveController.getP()) driveController.setP(newDrivekP);
+        if (newDrivekP != driveController.getP())
+            driveController.setP(newDrivekP);
 
         double newDrivekI = drivekIEntry.get();
-        if(newDrivekI != driveController.getI()) driveController.setI(newDrivekI);
+        if (newDrivekI != driveController.getI())
+            driveController.setI(newDrivekI);
 
         double newDrivekD = drivekDEntry.get();
-        if(newDrivekD != driveController.getD()) driveController.setD(newDrivekD);
+        if (newDrivekD != driveController.getD())
+            driveController.setD(newDrivekD);
 
         double newDrivekS = drivekSEntry.get();
         double newDrivekV = drivekVEntry.get();
         double newDrivekA = drivekAEntry.get();
 
-        if(newDrivekS != driveFeedforward.getKs() || newDrivekV != driveFeedforward.getKv() || newDrivekA != driveFeedforward.getKa())
+        if (newDrivekS != driveFeedforward.getKs() || newDrivekV != driveFeedforward.getKv()
+                || newDrivekA != driveFeedforward.getKa())
             driveFeedforward = new SimpleMotorFeedforward(newDrivekS, newDrivekV, newDrivekA);
     }
-    
+
     public SwerveModuleState getState() {
         return new SwerveModuleState(driveRelativeEncoder.getVelocity(), getModuleRotation());
     }
 
-    public SwerveModuleState getDesiredState(){
+    public SwerveModuleState getDesiredState() {
         return desiredState;
-       // return null;
+        // return null;
     }
 
     public SwerveModulePosition getPosition() {
@@ -242,15 +248,16 @@ public class NeoSwerveModule implements SwerveModule{
     }
 
     public void setDesiredState(SwerveModuleState inputSwerveState) {
-       inputSwerveState.optimize(getModuleRotation());
-       this.desiredState = inputSwerveState;
+        inputSwerveState.optimize(getModuleRotation());
+        this.desiredState = inputSwerveState;
     }
 
     @Override
     public void periodic() {
-        final double driveOutput = driveController.calculate(driveRelativeEncoder.getVelocity(), desiredState.speedMetersPerSecond);
+        final double driveOutput = driveController.calculate(driveRelativeEncoder.getVelocity(),
+                desiredState.speedMetersPerSecond);
         final double driveFeedforward = this.driveFeedforward.calculate(desiredState.speedMetersPerSecond);
-        //System.out.println(driveFeedforward);
+        // System.out.println(driveFeedforward);
         driveMotor.setVoltage(driveOutput + driveFeedforward);
         steerController.setSetpoint(desiredState.angle.getRadians(), ControlType.kPosition);
         updateSysIDValues();
@@ -261,23 +268,24 @@ public class NeoSwerveModule implements SwerveModule{
     }
 
     public Rotation2d getAbsoluteModuleRotation() {
-        return new Rotation2d(steerAbsoluteEncoder.getAbsolutePosition().getValueAsDouble() * 2 * Math.PI + steeringOffset);
+        return new Rotation2d(
+                steerAbsoluteEncoder.getAbsolutePosition().getValueAsDouble() * 2 * Math.PI + steeringOffset);
     }
-    
-    private double getDriveVelocity(){
+
+    private double getDriveVelocity() {
         return driveRelativeEncoder.getVelocity();
     }
 
-    private double getSteerVelocity(){
+    private double getSteerVelocity() {
         return steerRelativeEncoder.getVelocity();
     }
 
     private double getDriveVoltage() {
-        return driveMotor.getOutputCurrent() * driveMotor.getBusVoltage(); 
+        return driveMotor.getOutputCurrent() * driveMotor.getBusVoltage();
     }
 
     private double getSteerVoltage() {
-        return steerMotor.getAppliedOutput() * steerMotor.getBusVoltage(); 
+        return steerMotor.getAppliedOutput() * steerMotor.getBusVoltage();
     }
 
     public double getDrivePosition() {
@@ -288,7 +296,7 @@ public class NeoSwerveModule implements SwerveModule{
         return steerRelativeEncoder.getPosition();
     }
 
-    private Angle getAbsoluteSensorDiscontinuity(){
+    private Angle getAbsoluteSensorDiscontinuity() {
         return new MagnetSensorConfigs().getAbsoluteSensorDiscontinuityPointMeasure();
     }
 
