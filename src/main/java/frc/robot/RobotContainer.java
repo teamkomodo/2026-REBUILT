@@ -54,6 +54,8 @@ public class RobotContainer {
   // Manual-actions helper from the SystemStateMachine
   private final SystemStateMachine.ManualActions manual = systemSM.getManualActions();
 
+  private Command teleopMasterCommand; // the master command that runs the teleop timeline (scheduled in startTeleop)
+
   public RobotContainer() {
     configureBindings();
   }
@@ -189,12 +191,17 @@ public class RobotContainer {
     // Request the top-level robot state machine to enter TELEOP and start the
     // teleop timeline (non-blocking; these return Commands and are scheduled).
     CommandScheduler.getInstance().schedule(robotSM.requestState(RobotState.TELEOP));
-    CommandScheduler.getInstance().schedule(teleopSM.teleopMasterCommand());
+    CommandScheduler.getInstance().schedule(
+      teleopMasterCommand = teleopSM.teleopMasterCommand());
   }
 
   public void enterDisabledMode() {
     // Ensure the RobotStateMachine transitions to DISABLED and put teleop into safe
     // state.
+    if (teleopMasterCommand != null) {
+        teleopMasterCommand.cancel();
+        teleopMasterCommand = null;
+    }
     CommandScheduler.getInstance().schedule(
         Commands.sequence(
             robotSM.requestState(RobotState.DISABLED),

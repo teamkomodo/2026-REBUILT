@@ -44,7 +44,8 @@ public class TeleopStateMachine extends SubsystemBase {
     private final DoublePublisher teleopMatchStagePublisher = teleopTable.getDoubleTopic("match-stage").publish();
     private final BooleanPublisher wasOurHubInactiveFirstPublisher = teleopTable
             .getBooleanTopic("was-our-hub-inactive-first").publish();
-    private final BooleanPublisher operatorOverridePublisher = teleopTable.getBooleanTopic("OperatorOverrideValue").publish();
+    private final BooleanPublisher operatorOverridePublisher = teleopTable.getBooleanTopic("OperatorOverrideValue")
+            .publish();
 
     // For testing, this being true will always permit those transitions that are
     // normally restricted to automatic triggers.
@@ -235,9 +236,9 @@ public class TeleopStateMachine extends SubsystemBase {
                 Commands.deferredProxy(() -> requestState(TeleopState.SCORE, true)),
 
                 // Determine active hub while waiting (10s)
-                new ParallelDeadlineGroup(
+                Commands.deferredProxy(() -> new ParallelDeadlineGroup(
                         Commands.waitSeconds(10.0),
-                        Commands.waitUntil(canDetermineActiveHubSupplier)),
+                        Commands.waitUntil(canDetermineActiveHubSupplier))),
 
                 // Run the timer and switch states accordingly
                 // Require the TeleopStateMachine for the lifetime of this deferred command
@@ -264,31 +265,29 @@ public class TeleopStateMachine extends SubsystemBase {
                             // Shift 1 (25s)
                             Commands.deadline(
                                     Commands.waitSeconds(25.0),
-                                    setMatchStage(1),
-                                    requestState(initial, true)),
+                                    Commands.deferredProxy(() -> setMatchStage(1)),
+                                    Commands.deferredProxy(() -> requestState(initial, true))),
                             // Shift 2 (25s)
                             Commands.deadline(
                                     Commands.waitSeconds(25.0),
-                                    setMatchStage(2),
-                                    requestState(opposite, true)),
+                                    Commands.deferredProxy(() -> setMatchStage(2)),
+                                    Commands.deferredProxy(() -> requestState(opposite, true))),
                             // Shift 3 (25s)
                             Commands.deadline(
                                     Commands.waitSeconds(25.0),
-                                    setMatchStage(3),
-                                    requestState(initial, true)),
+                                    Commands.deferredProxy(() -> setMatchStage(3)),
+                                    Commands.deferredProxy(() -> requestState(initial, true))),
                             // Shift 4 (25s)
                             Commands.deadline(
                                     Commands.waitSeconds(25.0),
-                                    setMatchStage(4),
-                                    requestState(opposite, true)),
+                                    Commands.deferredProxy(() -> setMatchStage(4)),
+                                    Commands.deferredProxy(() -> requestState(opposite, true))),
                             // Final: SCORE until match ends
                             Commands.parallel(
-                                    setMatchStage(5),
-                                    requestState(TeleopState.SCORE, true)));
-                }, Set.of(this))).withName("TeleopMasterTimeline")
-                .withInterruptBehavior(Command.InterruptionBehavior.kCancelIncoming)
-                .ignoringDisable(false);
-        // FIXME: !!!! Make sure other commands will not cancel this !!!!
+                                    Commands.deferredProxy(() -> setMatchStage(5)),
+                                    Commands.deferredProxy(() -> requestState(TeleopState.SCORE, true)))
+                    );
+                }, Set.of(this))).withName("TeleopMasterTimeline");
     }
 
     public BooleanSupplier canDetermineActiveHubSupplier = () -> {
