@@ -251,7 +251,7 @@ public class SystemStateMachine extends SubsystemBase {
         }
 
         public Command eject() {
-            return manualGate(Commands.parallel(intake.ejectIntakeCommand(), indexer.reverseCommand()));
+            return manualGate(Commands.parallel(intake.ejectIntakeCommand(), indexer.stopIndexerCommand()));
         }
 
         // Shooter Controls
@@ -290,7 +290,7 @@ public class SystemStateMachine extends SubsystemBase {
 
         // Reset
         public Command reset() {
-            return Commands.parallel(intake.stopIntake(), intake.stowIntakeCommand(), shooter.stopShooterCommand(),
+            return Commands.parallel(intake.stopIntake(), intake.stopHinge(), shooter.stopShooterCommand(),
                     indexer.stopIndexerCommand());
         }
 

@@ -137,6 +137,7 @@ public class RobotContainer {
           System.out.println("==== Attempting to toggle MANUAL state. Current state is manual?: "
               + teleopSM.isInState(TeleopState.MANUAL));
           TeleopState targetState = teleopSM.isInState(TeleopState.MANUAL) ? TeleopState.SCORE : TeleopState.MANUAL;
+        
           Command requestCommand = teleopSM.requestState(targetState);
           return requestCommand;
         }, Set.of(teleopSM)));
@@ -150,13 +151,8 @@ public class RobotContainer {
     operatorPOVDown.onTrue(Commands.parallel(systemSM.requestState(SystemState.EMPTYING), manual.eject()));
 
     // Teleop quick switches (non-manual): POV left/right pick STEAL/SCORE modes
-    // operatorPOVLeft.onTrue(teleopSM.requestState(TeleopState.STEAL)); // FIXME
-    // UNCOMMENT
-    // operatorPOVRight.onTrue(teleopSM.requestState(TeleopState.SCORE)); // FIXME
-    // UNCOMMENT
-    operatorPOVRight.onTrue(intake.updateIntakeSpeed(0.5));
-    // operatorPOVRight.onTrue(intake.updateIntakeSpeed(0.5));
-    operatorPOVLeft.onTrue(Commands.runOnce(() -> intake.setIntakeDutyCycle(0.3)));
+    operatorPOVLeft.onTrue(teleopSM.requestState(TeleopState.STEAL));
+    operatorPOVRight.onTrue(teleopSM.requestState(TeleopState.SCORE));
 
     // Shooter
     // Map face buttons to both manual shot commands and a guarded request to enter
@@ -164,10 +160,7 @@ public class RobotContainer {
     // Shooter: request SHOOT + teleop SCORE (so the system and teleop modes align)
     operatorA.onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT), manual.shootShort()));
     operatorY.onTrue(Commands.parallel(systemSM.requestState(SystemState.RESET), manual.reset()));
-    // operatorY.onTrue(Commands.runOnce(() -> shooter.setShooterDutyCycle(1))); <-
-    // DANGER BUT AWESOME
-    // operatorPOVUp.onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT),
-    // manual.shootPass()));
+    // operatorPOVUp.onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT), manual.shootPass()));
     operatorPOVUp.onTrue(Commands.runOnce(() -> shooter.setShooterDutyCycle(0.5)));
     // Start feeding should normally be part of SHOOT; request SHOOT too.
     operatorRB
@@ -180,7 +173,7 @@ public class RobotContainer {
     // Default drivetrain command (joystick driving)
     drivetrain.setDefaultCommand(
         drivetrain.joystickDriveCommand(
-            () -> (driverController.getLeftX()), // left Y -> robot +X
+            () -> (-driverController.getLeftX()), // left Y -> robot +X
             () -> (driverController.getLeftY()), // left X -> robot +Y
             () -> (driverController.getRightX() / 1.6) // rotation scaled
         ));
