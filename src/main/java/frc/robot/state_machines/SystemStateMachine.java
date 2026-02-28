@@ -145,9 +145,7 @@ public class SystemStateMachine extends SubsystemBase {
             synchronized (this) {
                 if (target == currentState)
                     return Commands.none();
-
                 Context ctx = snapshotContext();
-
                 if (!force && !currentState.canTransitionTo(ctx.currentState, target)) {
                     systemLogPublisher
                             .set(String.format("FINE: System transition %s -> %s rejected", currentState, target));
@@ -211,7 +209,8 @@ public class SystemStateMachine extends SubsystemBase {
                     shooter.startShootingCommand(),
                     // 2. Wait until the sensors confirm we are at the target RPM
                     Commands.waitUntil(shooter::isAtTargetSpeed),
-                    // Commands.waitUntil(drivetrain::isAlignedToTarget), // TODO: implement this method in DrivetrainSubsystem
+                    // Commands.waitUntil(drivetrain::isAlignedToTarget), // TODO: implement this
+                    // method in DrivetrainSubsystem
                     // 3. Only then, run the indexer to fire the ball
                     shooter.startFeedingCommand()
                 // Stop when the indexer is empty
@@ -221,12 +220,13 @@ public class SystemStateMachine extends SubsystemBase {
             case SHOOT_ONCE -> Commands.sequence(
                     shooter.startShootingCommand(),
                     Commands.waitUntil(shooter::isAtTargetSpeed),
-                    shooter.feedOnceCommand()
-                );
+                    shooter.feedOnceCommand());
             case EMPTYING -> Commands.parallel(intake.ejectIntakeCommand(), indexer.reverseCommand());
             case UNJAM -> Commands.parallel(indexer.reverseCommand(), intake.ejectIntakeCommand());
-            case OFF -> Commands.parallel(intake.stopIntake(), shooter.stopShooterCommand(), indexer.stopIndexerCommand());
-            case RESET -> Commands.parallel(intake.stopIntake(), intake.stowIntakeCommand(), shooter.stopShooterCommand(), indexer.stopIndexerCommand());
+            case OFF ->
+                Commands.parallel(intake.stopIntake(), shooter.stopShooterCommand(), indexer.stopIndexerCommand());
+            case RESET -> Commands.parallel(intake.stopIntake(), intake.stowIntakeCommand(),
+                    shooter.stopShooterCommand(), indexer.stopIndexerCommand());
             default -> Commands.none();
         }).withName("SystemEntry_" + target);
     }
@@ -288,7 +288,8 @@ public class SystemStateMachine extends SubsystemBase {
 
         // Reset
         public Command reset() {
-            return Commands.parallel(intake.stopIntake(), intake.stowIntakeCommand(), shooter.stopShooterCommand(), indexer.stopIndexerCommand());
+            return Commands.parallel(intake.stopIntake(), intake.stowIntakeCommand(), shooter.stopShooterCommand(),
+                    indexer.stopIndexerCommand());
         }
 
         private Command manualGate(Command action) {

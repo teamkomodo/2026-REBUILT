@@ -93,7 +93,7 @@ public class IndexerSubsystem extends SubsystemBase {
     public Command reverseCommand() {
         return Commands.runOnce(() -> {
             indexerState = IndexerState.REVERSE;
-            updateSpeed(-Math.abs(desiredSpeed == 0 ? INDEXER_DUTYCYCLE : desiredSpeed));
+            updateSpeed(-Math.abs(desiredSpeed == 0 ? INDEXER_DUTYCYCLE_REVERSE : desiredSpeed));
         }, this);
     }
 
@@ -101,7 +101,7 @@ public class IndexerSubsystem extends SubsystemBase {
         return Commands.runOnce(() -> {
             indexerState = IndexerState.AGITATING;
             System.out.println("==== Starting indexer");
-            updateSpeed(INDEXER_DUTYCYCLE);
+            updateSpeed(INDEXER_DUTYCYCLE_FORWARD);
         }, this);
     }
 
@@ -159,6 +159,8 @@ public class IndexerSubsystem extends SubsystemBase {
         // indexerReadySensorPublisher.set(false);
         // }
     }
+
+
 
     // /** Returns true if the indexer full beam-break is triggered. */
     // public boolean isIndexerFull() {

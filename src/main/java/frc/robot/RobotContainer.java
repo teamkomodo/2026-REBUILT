@@ -4,8 +4,7 @@
 
 package frc.robot;
 
-import static frc.robot.Constants.DRIVER_XBOX_PORT;
-import static frc.robot.Constants.OPERATOR_XBOX_PORT;
+import static frc.robot.Constants.*;
 
 import java.util.Set;
 import java.util.function.BooleanSupplier;
@@ -88,7 +87,7 @@ public class RobotContainer {
    * Left Trigger    | Manual Intake Stow
    * POV Down        | Manual Eject (Indexer/Intake)
    * A Button        | Manual Shooter (Short)
-   * Y Button       | Reset Robot
+   * Y Button        | Reset Robot
    * POV Up          | Manual Shooter (Pass)
    * Right Bumper    | Manual Shooter Feed Start/Stop (pressed/unpressed)
    * B Button        | Manual Shooter Feed Once
@@ -156,13 +155,15 @@ public class RobotContainer {
     operatorY.onTrue(Commands.parallel(systemSM.requestState(SystemState.RESET), manual.reset()));
     // operatorY.onTrue(Commands.runOnce(() -> shooter.setShooterDutyCycle(1))); <- DANGER BUT AWESOME
     // operatorPOVUp.onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT), manual.shootPass()));
-    operatorPOVUp.onTrue(Commands.runOnce(() -> shooter.setShooterDutyCycle(0.5)));
+    
+    operatorPOVUp.onTrue(Commands.runOnce(() -> shooter.setShooterDutyCycle(0.5))); // FIXME: TEMPORARY EDIT, PLEASE UNCOMMNENT!!!!
     // Start feeding should normally be part of SHOOT; request SHOOT too.
     operatorRB
         .onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT), manual.startFeeding()))
         .onFalse(Commands.parallel(manual.stopFeedingUngated()));
     // // Shoot once
-    operatorB.onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT), manual.feedOnce()));
+
+    operatorB.onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT), manual.feedOnce())); //FIXME: BORA COMMENTED THIS TEMPORARILY, uncomment!!!!
 
     // Default drivetrain command (joystick driving)
     drivetrain.setDefaultCommand(

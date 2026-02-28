@@ -21,7 +21,7 @@ public final class Constants {
                                                           // meters
 
   public static final int BACK_RIGHT_DRIVE_MOTOR_ID = 20;
-  public static final int BACK_RIGHT_STEER_MOTOR_ID = 24;
+  public static final int BACK_RIGHT_STEER_MOTOR_ID = 38;
   public static final int BACK_RIGHT_STEER_ENCODER_ID = 23;
   public static final double BACK_RIGHT_STEER_OFFSET = 5.277;
 
@@ -150,17 +150,21 @@ public final class Constants {
   // Intake hinge uses a single motor (right-side convention kept historically)
   public static final int HINGE_MOTOR_ID = 44;
 
-  public static final double HINGE_STOW_POSITION = 0.0; // FIXME
-  public static final double HINGE_FEED_POSITION = 0.0; // FIXME
-  public static final double HINGE_INTAKE_POSITION = 0.0; // FIXME
-  public static final double HINGE_EJECT_POSITION = 0.0; // FIXME
-  public static final int HINGE_SMART_CURRENT_LIMIT = 30; // FIXME
+  public static final double HINGE_STOW_POSITION = 0.1; // FIXME
+  public static final double HINGE_FEED_POSITION = -6.3; // FIXME
+  public static final double HINGE_INTAKE_POSITION = -6.3; // FIXME
+  public static final double HINGE_EJECT_POSITION = 0; // FIXME
+  public static final int HINGE_SMART_CURRENT_LIMIT = 50; // FIXME
+  public static final double HINGE_DEPLOY_DUTY_CYCLE = -0.2;
+  public static final double HINGE_STOW_DUTY_CYCLE = 0.2;
+
 
   // Indexer
   public static final int INDEXER_MOTOR_ID = 43;
   public static final int INDEXER_SMART_CURRENT_LIMIT = 30; // FIXME
 
-  public static final double INDEXER_DUTYCYCLE = 0.5; // FIXME
+  public static final double INDEXER_DUTYCYCLE_FORWARD = 0.5; // FIXME
+  public static final double INDEXER_DUTYCYCLE_REVERSE = 1;
 
   // Basic constants
   public static final SparkMax.MotorType BRUSHLESS = SparkMax.MotorType.kBrushless;
