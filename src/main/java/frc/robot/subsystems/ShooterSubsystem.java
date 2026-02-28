@@ -115,8 +115,16 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     public void configureMotors() {
+        // Configure shooter motors
         shooterMotorRightConfig
+<<<<<<< HEAD
                 .smartCurrentLimit(SHOOTER_SMART_CURRENT_LIMIT)
+=======
+                .smartCurrentLimit(
+                    SHOOTER_SMART_CURRENT_LIMIT, 
+                    SHOOTER_SMART_CURRENT_LIMIT,
+                    SHOOTER_MAX_RPM)
+>>>>>>> be22cf0b100eccd18408dee26b483ec2d7899c0c
                 .voltageCompensation(12.0) // stabilize against battery sag
                 .idleMode(IdleMode.kCoast)
                 .inverted(false);
@@ -125,8 +133,14 @@ public class ShooterSubsystem extends SubsystemBase {
                 .p(shooterPidGains.p)
                 .i(shooterPidGains.i)
                 .d(shooterPidGains.d)
+<<<<<<< HEAD
                 .velocityFF(shooterPidGains.FF);
         // .outputRange(-SHOOTER_MAX_RPM, SHOOTER_MAX_RPM);
+=======
+                .velocityFF(shooterPidGains.FF)
+                // Limit max speed to prevent exploding robot (which happened)
+                .outputRange(-SHOOTER_MAX_DUTYCYCLE, SHOOTER_MAX_DUTYCYCLE);
+>>>>>>> be22cf0b100eccd18408dee26b483ec2d7899c0c
 
         shooterMotorRight.configure(
                 shooterMotorRightConfig,
@@ -134,7 +148,10 @@ public class ShooterSubsystem extends SubsystemBase {
                 PersistMode.kPersistParameters);
 
         shooterMotorLeftConfig
-                .smartCurrentLimit(SHOOTER_SMART_CURRENT_LIMIT)
+                .smartCurrentLimit(
+                    SHOOTER_SMART_CURRENT_LIMIT, 
+                    SHOOTER_SMART_CURRENT_LIMIT,
+                    SHOOTER_MAX_RPM)
                 .follow(SHOOTER_MOTOR_RIGHT_ID, true)
                 .idleMode(IdleMode.kCoast);
 
@@ -173,7 +190,11 @@ public class ShooterSubsystem extends SubsystemBase {
 
     public void updateTelemetry() {
         shooterSpeedPublisher.set(shooterMotorRight.getAppliedOutput());
+<<<<<<< HEAD
         shooterRpmPublisher.set(shooterMotorRightRelativeEncoder.getVelocity() * SHOOTER_MAIN_INVERSION);
+=======
+        shooterRpmPublisher.set(shooterMotorRightRelativeEncoder.getVelocity());
+>>>>>>> be22cf0b100eccd18408dee26b483ec2d7899c0c
         shooterDesiredSpeedPublisher.set(desiredFlywheelSpeed);
 
         // Feeder telemetry

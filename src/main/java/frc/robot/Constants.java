@@ -78,8 +78,9 @@ public final class Constants {
     // The motors on the right side have a CAN id ending in a 2, left side end in 1
     public static final int SHOOTER_MOTOR_RIGHT_ID = 54;
     public static final int SHOOTER_MOTOR_LEFT_ID = 31;
-    public static final double SHOOTER_MAX_RPM = 4000; // Neo550 free speed
-    public static final int SHOOTER_SMART_CURRENT_LIMIT = 100; // FIXME
+    public static final double SHOOTER_MAX_DUTYCYCLE = 0.7;
+    public static final int SHOOTER_MAX_RPM = 4000;
+    public static final int SHOOTER_SMART_CURRENT_LIMIT = 80; // FIXME
     public static final double SHOOTER_GEAR_RATIO = 1.5; // 1:1.5 speeding up the flywheel
     public static final double MAX_SHOOTER_SPEED_TOLERANCE = 50.0; // RPM tolerance for considering shooter at target
                                                                    // speed
@@ -104,7 +105,7 @@ public final class Constants {
     public static final double BALL_AREA = Math.PI * Math.pow(BALL_RADIUS, 2); // Cross-sectional area of the ball
     public static final double BALL_MASS = 0.215; // Mass of FUEL ball in kg
     public static final double DELTA_TIME = 0.002; // Increased precision for validation
-    public static final double LAUNCH_ANGLE = 70.0;
+    public static final double LAUNCH_ANGLE = 70.0; // Degrees
     public static final double HUB_OPENING_HEIGHT_FROM_GROUND = 72.0 / INCHES_PER_METER;
     public static final double SHOOTER_HEIGHT_FROM_GROUND = (19.5 - 5.91 / 2) / INCHES_PER_METER;
     // ^ Estimated height of the shooter from the ground (ball exit point)
