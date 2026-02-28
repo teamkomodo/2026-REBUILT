@@ -103,11 +103,12 @@ public class RobotContainer {
     // Driver controls
     Trigger driverX = driverController.x();
     Trigger driverLB = driverController.leftBumper();
-    // Trigger driverRB = driverController.rightBumper(); // Currently unused
+    Trigger driverRB = driverController.rightBumper(); // Currently unused
 
     driverX.onTrue(drivetrain.zeroGyroCommand());
     driverLB.onTrue(drivetrain.disableSpeedModeCommand());
     driverLB.onFalse(drivetrain.enableSpeedModeCommand());
+    driverRB.onTrue(Commands.runOnce(() -> shooter.reconfigureRobotTuning()));
     // driverRB reserved for align/auto actions if implemented
     // driverRB.onTrue(/* some align command */);
 
