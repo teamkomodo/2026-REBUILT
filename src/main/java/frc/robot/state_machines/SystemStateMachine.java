@@ -38,7 +38,6 @@ public class SystemStateMachine extends SubsystemBase {
     private final StringPublisher systemLogPublisher = systemTable.getStringTopic("log").publish();
 
     public enum SystemState {
-        OFF,
         TRAVEL,
         INTAKE,
         ALIGNING,
@@ -54,14 +53,8 @@ public class SystemStateMachine extends SubsystemBase {
          * Defines the valid "next steps" from the current state.
          */
         public boolean canTransitionTo(SystemState from, SystemState to) {
-            // Global escapes allowed from any state
-            if (to == OFF && from != MANUAL) {
-                return true;
-            }
-
             return switch (from) {
                 /* MANUAL mode is only allowed via automatic transition */
-                case OFF -> Set.of(TRAVEL, RESET).contains(to);
                 case TRAVEL -> Set.of(INTAKE, ALIGNING, STOW, EMPTYING, RESET, SHOOT, SHOOT_ONCE).contains(to);
                 case INTAKE -> Set.of(TRAVEL, ALIGNING, STOW, EMPTYING, RESET, SHOOT, SHOOT_ONCE).contains(to);
                 case ALIGNING -> Set.of(SHOOT, SHOOT_ONCE, TRAVEL, RESET).contains(to);
@@ -220,8 +213,6 @@ public class SystemStateMachine extends SubsystemBase {
                     shooter.feedOnceCommand());
             case EMPTYING -> Commands.parallel(intake.ejectIntakeCommand());
             case UNJAM -> Commands.parallel(indexer.reverseCommand(), intake.ejectIntakeCommand());
-            case OFF ->
-                Commands.parallel(intake.stopIntake(), intake.stopHinge(), shooter.stopShooterCommand(), indexer.stopIndexerCommand());
             case RESET -> Commands.parallel(intake.stopIntake(), intake.stopHinge(),
                     shooter.stopShooterCommand(), indexer.stopIndexerCommand());
             default -> Commands.none();

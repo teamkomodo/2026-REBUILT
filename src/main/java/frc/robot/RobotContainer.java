@@ -49,8 +49,7 @@ public class RobotContainer {
 
   // State machines
   private final SystemStateMachine systemSM = new SystemStateMachine(intake, shooter, indexer, drivetrain);
-  private final TeleopStateMachine teleopSM = new TeleopStateMachine(systemSM, operatorOverrideSupplier,
-      START_IN_MANUAL);
+  private final TeleopStateMachine teleopSM = new TeleopStateMachine(systemSM, operatorOverrideSupplier);
   private final RobotStateMachine robotSM = new RobotStateMachine(teleopSM, systemSM, operatorOverrideSupplier);
 
   // Manual-actions helper from the SystemStateMachine
@@ -94,6 +93,7 @@ public class RobotContainer {
    * Left Trigger    | Manual Intake Stow
    * POV Down        | Manual Eject (Stop Indexer/Reverse Intake)
    * A Button        | Manual Shooter (Short)
+   * 
    * Y Button        | Reset Robot
    * POV Up          | Manual Shooter (Pass)
    * POV Left        | ----
@@ -171,7 +171,7 @@ public class RobotContainer {
     // Start feeding should normally be part of SHOOT; request SHOOT too.
     operatorRB
         .onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT), manual.startFeeding()))
-        .onFalse(Commands.parallel(systemSM.requestState(SystemState.OFF), manual.stopFeeding()));
+        .onFalse(Commands.parallel(manual.stopFeeding()));
     // // Shoot once
 
     operatorB.onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT), manual.feedOnce()));
@@ -196,6 +196,9 @@ public class RobotContainer {
     CommandScheduler.getInstance().schedule(robotSM.requestState(RobotState.TELEOP));
     // No master command; it is not helping
     // CommandScheduler.getInstance().schedule(teleopMasterCommand = teleopSM.teleopMasterCommand());
+    if (START_IN_MANUAL) {
+      CommandScheduler.getInstance().schedule(teleopSM.requestState(TeleopState.MANUAL));
+    }
   }
 
   public void enterDisabledMode() {
