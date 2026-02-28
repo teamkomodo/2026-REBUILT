@@ -345,10 +345,9 @@ public class TeleopStateMachine extends SubsystemBase {
         }, Set.of(this));
     }
 
-    public void enterDisabled() {
+    public Command enterDisabled() {
         // Put teleop state machine into a safe disabled state.
-        systemSM.cancelAll();
-        currentState = TeleopState.IDLE;
+        return systemSM.cancelAll().andThen(Commands.runOnce(() -> currentState = TeleopState.IDLE));
     }
 
     @Override

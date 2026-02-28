@@ -206,7 +206,7 @@ public class RobotStateMachine extends SubsystemBase {
                         .handleInterrupt(() -> robotLog("WARNING: onExit interrupted for " + previous)),
 
                 // 2) Cleanup existing long-running activities
-                new InstantCommand(() -> cancelModeActivities(previous)),
+                cancelModeActivities(previous),
 
                 // 3) Update the state variable & log (The "Hook")
                 new InstantCommand(() -> {
@@ -222,17 +222,11 @@ public class RobotStateMachine extends SubsystemBase {
 
     // Lightweight cancel hook: ensure current mode's long-running activities are
     // stopped immediately.
-    private void cancelModeActivities(RobotState previous) {
-        switch (previous) {
-            case TELEOP:
-            case AUTO:
-            case DISABLED:
-                cancelAll();
-                break;
-            default:
-                // nothing to cancel
-                break;
-        }
+    private Command cancelModeActivities(RobotState previous) {
+        return switch (previous) {
+            case TELEOP, AUTO, DISABLED -> cancelAll();
+            default -> Commands.none();
+        };
     }
 
     /**
@@ -261,9 +255,7 @@ public class RobotStateMachine extends SubsystemBase {
             case DISABLED -> Commands.parallel(
                     systemSM.requestState(SystemState.OFF),
                     teleopSM.requestState(TeleopState.IDLE),
-                    Commands.runOnce(() -> {
-                        systemSM.cancelAll();
-                    })).withName("Entry_Disabled");
+                    systemSM.cancelAll()).withName("Entry_Disabled");
 
             case AUTO -> Commands.parallel(
                     teleopSM.requestState(TeleopState.IDLE)
@@ -278,9 +270,9 @@ public class RobotStateMachine extends SubsystemBase {
         };
     }
 
-    public void cancelAll() {
+    public Command cancelAll() {
         // Cancel all activities in both state machines
-        systemSM.cancelAll();
+        return systemSM.cancelAll();
     }
 
     public RobotState getCurrentState() {
