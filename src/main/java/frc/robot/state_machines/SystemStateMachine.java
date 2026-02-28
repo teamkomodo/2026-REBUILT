@@ -225,7 +225,7 @@ public class SystemStateMachine extends SubsystemBase {
             case UNJAM -> Commands.parallel(indexer.reverseCommand(), intake.ejectIntakeCommand());
             case OFF ->
                 Commands.parallel(intake.stopIntake(), shooter.stopShooterCommand(), indexer.stopIndexerCommand());
-            case RESET -> Commands.parallel(intake.stopIntake(), intake.stowIntakeCommand(),
+            case RESET -> Commands.parallel(intake.stopIntake(), intake.stopHinge(),
                     shooter.stopShooterCommand(), indexer.stopIndexerCommand());
             default -> Commands.none();
         }).withName("SystemEntry_" + target);

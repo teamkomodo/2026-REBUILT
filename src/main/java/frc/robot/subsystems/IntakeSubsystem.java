@@ -204,7 +204,7 @@ public class IntakeSubsystem extends SubsystemBase {
 
     public Command updateIntakeSpeed(double desiredSpeed) {
         return Commands.runOnce(() -> {
-            System.out.println("====== RUNNING INTAKE");
+            System.out.println("======RUNNING INTAKE");
             this.desiredSpeed = desiredSpeed;
             setIntakeDutyCycle(desiredSpeed);
         });

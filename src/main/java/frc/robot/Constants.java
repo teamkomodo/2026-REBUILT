@@ -144,11 +144,11 @@ public final class Constants {
 
     // Intake
     public static final int INTAKE_MOTOR_LEFT_ID = 41;
-    public static final int INTAKE_SMART_CURRENT_LIMIT = 30; // FIXME
+    public static final int INTAKE_SMART_CURRENT_LIMIT = 70; // FIXME
 
-    public static final double INTAKE_INTAKE_SPEED = 0.3; // FIXME
-    public static final double INTAKE_FEED_SPEED = 0.2; // FIXME
-    public static final double INTAKE_EJECT_SPEED = -0.3; // FIXME
+    public static final double INTAKE_INTAKE_SPEED = -0.4; // FIXME
+    public static final double INTAKE_FEED_SPEED = -0.4; // FIXME
+    public static final double INTAKE_EJECT_SPEED = 0.4; // FIXME
 
     public static final double INTAKE_EJECT_TIME = 0.3; // FIXME
     public static final double INTAKE_STOWING_SPEED = 0.1; // FIXME

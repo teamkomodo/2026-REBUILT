@@ -132,16 +132,14 @@ public class RobotContainer {
         .onFalse(Commands.runOnce(() -> operatorOverrideValue = false));
 
     // Enter Manual Mode
-    // operatorX.onTrue(
-    // Commands.defer(() -> {
-    // System.out.println("==== Attempting to toggle MANUAL state. Current state is
-    // manual: "+teleopSM.isInState(TeleopState.MANUAL));
-    // TeleopState targetState = teleopSM.isInState(TeleopState.MANUAL) ?
-    // TeleopState.SCORE : TeleopState.MANUAL;
-    // Command requestCommand = teleopSM.requestState(targetState);
-    // return requestCommand;
-    // }));
-    operatorX.onTrue(teleopSM.requestState(TeleopState.MANUAL));
+    operatorX.onTrue(
+        Commands.defer(() -> {
+          System.out.println("==== Attempting to toggle MANUAL state. Current state is manual?: "
+              + teleopSM.isInState(TeleopState.MANUAL));
+          TeleopState targetState = teleopSM.isInState(TeleopState.MANUAL) ? TeleopState.SCORE : TeleopState.MANUAL;
+          Command requestCommand = teleopSM.requestState(targetState);
+          return requestCommand;
+        }, Set.of(teleopSM)));
 
     // Intake
     // Call both the non-manual (state request) and the manual-gated action.
@@ -152,11 +150,13 @@ public class RobotContainer {
     operatorPOVDown.onTrue(Commands.parallel(systemSM.requestState(SystemState.EMPTYING), manual.eject()));
 
     // Teleop quick switches (non-manual): POV left/right pick STEAL/SCORE modes
-    // operatorPOVLeft.onTrue(teleopSM.requestState(TeleopState.STEAL)); // FIXME UNCOMMENT
-    // operatorPOVRight.onTrue(teleopSM.requestState(TeleopState.SCORE)); // FIXME UNCOMMENT
-    operatorPOVLeft.onTrue(Commands.runOnce(() -> intake.updateIntakeSpeed(0.5)));
-    //operatorPOVRight.onTrue(intake.updateIntakeSpeed(0.5));
-    //operatorPOVLeft.onT
+    // operatorPOVLeft.onTrue(teleopSM.requestState(TeleopState.STEAL)); // FIXME
+    // UNCOMMENT
+    // operatorPOVRight.onTrue(teleopSM.requestState(TeleopState.SCORE)); // FIXME
+    // UNCOMMENT
+    operatorPOVRight.onTrue(intake.updateIntakeSpeed(0.5));
+    // operatorPOVRight.onTrue(intake.updateIntakeSpeed(0.5));
+    operatorPOVLeft.onTrue(Commands.runOnce(() -> intake.setIntakeDutyCycle(0.3)));
 
     // Shooter
     // Map face buttons to both manual shot commands and a guarded request to enter
@@ -175,7 +175,10 @@ public class RobotContainer {
         .onFalse(Commands.parallel(manual.stopFeedingUngated()));
     // // Shoot once
 
-    operatorB.onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT), manual.feedOnce())); //FIXME: BORA COMMENTED THIS TEMPORARILY, uncomment!!!!
+    operatorB.onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT), manual.feedOnce())); // FIXME: BORA
+                                                                                                      // COMMENTED THIS
+                                                                                                      // TEMPORARILY,
+                                                                                                      // uncomment!!!!
 
     // Default drivetrain command (joystick driving)
     drivetrain.setDefaultCommand(
@@ -196,15 +199,15 @@ public class RobotContainer {
     // teleop timeline (non-blocking; these return Commands and are scheduled).
     CommandScheduler.getInstance().schedule(robotSM.requestState(RobotState.TELEOP));
     CommandScheduler.getInstance().schedule(
-      teleopMasterCommand = teleopSM.teleopMasterCommand());
+        teleopMasterCommand = teleopSM.teleopMasterCommand());
   }
 
   public void enterDisabledMode() {
     // Ensure the RobotStateMachine transitions to DISABLED and put teleop into safe
     // state.
     if (teleopMasterCommand != null) {
-        teleopMasterCommand.cancel();
-        teleopMasterCommand = null;
+      teleopMasterCommand.cancel();
+      teleopMasterCommand = null;
     }
     CommandScheduler.getInstance().schedule(
         Commands.sequence(
