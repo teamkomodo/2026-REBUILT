@@ -17,6 +17,7 @@ import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -62,8 +63,15 @@ public class ShooterSubsystem extends SubsystemBase {
     private final RelativeEncoder feederEncoder;
     private final PIDGains feederPidGains;
 
-    private double desiredSpeed; // RPMs
+    private double desiredMotorSpeed; // Motor RPMs
+    private double desiredFlywheelSpeed; // Flywheel RPMs (for readability/telemetry)
     private double desiredFeederSpeed; // duty cycle for feeder (telemetry)
+
+    private double shooterP = 0.0004;
+    private double shooterI = 0;
+    private double shooterD = 0;
+    private double shooterFF = 0.00045;
+    private double shooterRPM = 0;
 
     public ShooterSubsystem() {
 
@@ -80,15 +88,22 @@ public class ShooterSubsystem extends SubsystemBase {
 
         shooterMotorRightController = shooterMotorRight.getClosedLoopController();
         shooterMotorRightRelativeEncoder = shooterMotorRight.getEncoder();
-        shooterPidGains = new PIDGains(0.0004, 0.0, 0.0, 0.0002); // FIXME: tune these; Add d for faster comeback
+        shooterPidGains = new PIDGains(0.0004, 0.0, 0.0, 0.00045); // FIXME: tune these; Add d/FF for faster comeback
 
         feederController = feederRightMotor.getClosedLoopController();
         feederEncoder = feederRightMotor.getEncoder();
         feederPidGains = new PIDGains(1.0, 0.0, 0.0, 0.0); // FIXME: Tune pid constants
 
-        desiredSpeed = 0.0;
+        desiredMotorSpeed = 0.0;
+        desiredFlywheelSpeed = 0.0;
         desiredFeederSpeed = 0.0;
         configureMotors();
+
+        SmartDashboard.putNumber("Shooter P", shooterP);
+        SmartDashboard.putNumber("Shooter I", shooterI);
+        SmartDashboard.putNumber("Shooter D", shooterD);
+        SmartDashboard.putNumber("Shooter FF", shooterFF);
+        SmartDashboard.putNumber("Shooter RPM", shooterRPM);
     }
 
     public void teleopInit() {
@@ -100,15 +115,27 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     public void configureMotors() {
+        // Configure shooter motors
         shooterMotorRightConfig
-                .smartCurrentLimit(SHOOTER_SMART_CURRENT_LIMIT)
+<<<<<<< HEAD
+
+=======
+>>>>>>> 33d87eec325dd54d800adf28c2b7b7d79bf7d851
+                .smartCurrentLimit(
+                    SHOOTER_SMART_CURRENT_LIMIT, 
+                    SHOOTER_SMART_CURRENT_LIMIT,
+                    SHOOTER_MAX_RPM)
+                .voltageCompensation(12.0) // stabilize against battery sag
                 .idleMode(IdleMode.kCoast)
                 .inverted(false);
 
         shooterMotorRightConfig.closedLoop
                 .p(shooterPidGains.p)
                 .i(shooterPidGains.i)
-                .d(shooterPidGains.d);
+                .d(shooterPidGains.d)
+                .velocityFF(shooterPidGains.FF)
+                // Limit max speed to prevent exploding robot (which happened)
+                .outputRange(-SHOOTER_MAX_DUTYCYCLE, SHOOTER_MAX_DUTYCYCLE);
 
         shooterMotorRight.configure(
                 shooterMotorRightConfig,
@@ -116,7 +143,10 @@ public class ShooterSubsystem extends SubsystemBase {
                 PersistMode.kPersistParameters);
 
         shooterMotorLeftConfig
-                .smartCurrentLimit(SHOOTER_SMART_CURRENT_LIMIT)
+                .smartCurrentLimit(
+                    SHOOTER_SMART_CURRENT_LIMIT, 
+                    SHOOTER_SMART_CURRENT_LIMIT,
+                    SHOOTER_MAX_RPM)
                 .follow(SHOOTER_MOTOR_RIGHT_ID, true)
                 .idleMode(IdleMode.kCoast);
 
@@ -155,8 +185,12 @@ public class ShooterSubsystem extends SubsystemBase {
 
     public void updateTelemetry() {
         shooterSpeedPublisher.set(shooterMotorRight.getAppliedOutput());
+<<<<<<< HEAD
+        shooterRpmPublisher.set(shooterMotorRightRelativeEncoder.getVelocity() * SHOOTER_MAIN_INVERSION);
+=======
+>>>>>>> 33d87eec325dd54d800adf28c2b7b7d79bf7d851
         shooterRpmPublisher.set(shooterMotorRightRelativeEncoder.getVelocity());
-        shooterDesiredSpeedPublisher.set(desiredSpeed);
+        shooterDesiredSpeedPublisher.set(desiredFlywheelSpeed);
 
         // Feeder telemetry
         feederSpeedPublisher.set(feederRightMotor.getAppliedOutput());
@@ -164,12 +198,40 @@ public class ShooterSubsystem extends SubsystemBase {
         feederDesiredSpeedPublisher.set(desiredFeederSpeed);
     }
 
+    public Command reconfigureRobotTuningCommand() {
+        return Commands.sequence(
+                Commands.runOnce(() -> {
+                    shooterMotorRightConfig.closedLoop
+                            .p(SmartDashboard.getNumber("Shooter P", shooterPidGains.p))
+                            .i(SmartDashboard.getNumber("Shooter I", shooterPidGains.i))
+                            .d(SmartDashboard.getNumber("Shooter D", shooterPidGains.d))
+                            .velocityFF(SmartDashboard.getNumber("Shooter FF", shooterPidGains.FF));
+
+                    shooterMotorRight.configure(
+                            shooterMotorRightConfig,
+                            ResetMode.kResetSafeParameters,
+                            PersistMode.kNoPersistParameters);
+                }),
+                updateFlywheelSpeedRPM(SmartDashboard.getNumber("Shooter RPM", shooterRPM)));
+    }
+
     public void setShooterDutyCycle(double dutyCycle) {
         shooterMotorRightController.setSetpoint(dutyCycle * SHOOTER_MAIN_INVERSION, ControlType.kDutyCycle);
     }
 
-    public void setShooterVelocity(double velocity) {
-        shooterMotorRightController.setSetpoint(velocity * SHOOTER_MAIN_INVERSION, ControlType.kVelocity);
+    /** Set motor velocity in motor RPM (internal helper). */
+    private void setShooterMotorVelocityRPM(double motorRPM) {
+        desiredMotorSpeed = motorRPM;
+        desiredFlywheelSpeed = motorRPM * Constants.SHOOTER_GEAR_RATIO;
+        shooterMotorRightController.setSetpoint(motorRPM * SHOOTER_MAIN_INVERSION, ControlType.kVelocity);
+    }
+
+    /** Set flywheel velocity in flywheel RPM (recommended). */
+    public void setShooterVelocityRPM(double flywheelRPM) {
+        desiredFlywheelSpeed = flywheelRPM;
+        double motorRPM = flywheelRPM / Constants.SHOOTER_GEAR_RATIO;
+        desiredMotorSpeed = motorRPM;
+        shooterMotorRightController.setSetpoint(motorRPM * SHOOTER_MAIN_INVERSION, ControlType.kVelocity);
     }
 
     public void stopShooter() {
@@ -225,30 +287,31 @@ public class ShooterSubsystem extends SubsystemBase {
         shooterMotorRightController.setSetpoint(shooterMotorRightRelativeEncoder.getPosition(), ControlType.kPosition);
     }
 
-    public Command updateShooterSpeed(double desiredSpeed) {
-        this.desiredSpeed = desiredSpeed;
-        return Commands.runOnce(() -> setShooterVelocity(this.desiredSpeed), this);
+    /** Command the shooter using motor RPM (kept for compatibility). */
+    public Command updateShooterSpeed(double desiredMotorRPM) {
+        return Commands.runOnce(() -> setShooterMotorVelocityRPM(desiredMotorRPM), this);
     }
 
+    /** Command the shooter using flywheel RPM (preferred). */
     public Command updateFlywheelSpeedRPM(double desiredFlywheelSpeed) {
-        double targetSpeed = desiredFlywheelSpeed / Constants.SHOOTER_GEAR_RATIO;
         System.out.println("-----------------UPDATING SHOOTER RPM: " + desiredFlywheelSpeed);
-        return updateShooterSpeed(targetSpeed);
+        return Commands.runOnce(() -> setShooterVelocityRPM(desiredFlywheelSpeed), this);
     }
 
     public boolean isAtTargetSpeed() {
-        return Math.abs(shooterMotorRightRelativeEncoder.getVelocity() - desiredSpeed) < MAX_SHOOTER_SPEED_TOLERANCE;
+        return Math
+                .abs(shooterMotorRightRelativeEncoder.getVelocity() - desiredMotorSpeed) < MAX_SHOOTER_SPEED_TOLERANCE;
     }
 
     public Command startShootingCommand() {
         double distanceToHub = 4.0; // 4m is a placeholder for now; FIXME: Replace placeholder
-        /*
+        /*+
          * FIXME: need to call out to navx for this
          * Ask @Bora A
          * TODO: Do I need to consider increasing distance by ball radius to account
          * for a potential offset between limelight and shooter exit center?
          */
-        return updateShooterSpeed(ShooterLookupTable.findShooterSpeed(distanceToHub));
+        return updateFlywheelSpeedRPM(2000);
     }
 
     public Command shortShotCommand() {

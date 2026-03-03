@@ -9,6 +9,10 @@ import static frc.robot.Constants.*;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
 
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.auto.NamedCommands;
+import edu.wpi.first.wpilibj.DataLogManager;
+
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -22,6 +26,7 @@ import frc.robot.subsystems.IndexerSubsystem;
 import frc.robot.subsystems.ShooterSubsystem;
 import frc.robot.state_machines.SystemStateMachine;
 import frc.robot.state_machines.TeleopStateMachine;
+import frc.robot.commands.auto.CompleteScoreCommand;
 import frc.robot.state_machines.RobotStateMachine;
 import frc.robot.state_machines.RobotStateMachine.RobotState;
 import frc.robot.state_machines.SystemStateMachine.SystemState;
@@ -30,7 +35,7 @@ import frc.robot.state_machines.TeleopStateMachine.TeleopState;
 public class RobotContainer {
 
   // Code override
-  private final boolean START_IN_MANUAL = false;
+  private final boolean START_IN_MANUAL = true;
 
   // Controllers
   private final CommandXboxController driverController = new CommandXboxController(DRIVER_XBOX_PORT);
@@ -48,8 +53,7 @@ public class RobotContainer {
 
   // State machines
   private final SystemStateMachine systemSM = new SystemStateMachine(intake, shooter, indexer, drivetrain);
-  private final TeleopStateMachine teleopSM = new TeleopStateMachine(systemSM, operatorOverrideSupplier,
-      START_IN_MANUAL);
+  private final TeleopStateMachine teleopSM = new TeleopStateMachine(systemSM, operatorOverrideSupplier);
   private final RobotStateMachine robotSM = new RobotStateMachine(teleopSM, systemSM, operatorOverrideSupplier);
 
   // Manual-actions helper from the SystemStateMachine
@@ -59,6 +63,8 @@ public class RobotContainer {
 
   public RobotContainer() {
     configureBindings();
+    
+    registerNamedCommands();
   }
 
   // Configure controller button -> command bindings.
@@ -90,10 +96,13 @@ public class RobotContainer {
    * X Button        | Exit Manual Control
    * Right Trigger   | Manual Intake (Duty Cycle)
    * Left Trigger    | Manual Intake Stow
-   * POV Down        | Manual Eject (Indexer/Intake)
+   * POV Down        | Manual Eject (Stop Indexer/Reverse Intake)
    * A Button        | Manual Shooter (Short)
+   * 
    * Y Button        | Reset Robot
    * POV Up          | Manual Shooter (Pass)
+   * POV Left        | ----
+   * POV Right       | ----
    * Right Bumper    | Manual Shooter Feed Start/Stop (pressed/unpressed)
    * B Button        | Manual Shooter Feed Once
    */
@@ -103,11 +112,12 @@ public class RobotContainer {
     // Driver controls
     Trigger driverX = driverController.x();
     Trigger driverLB = driverController.leftBumper();
-    // Trigger driverRB = driverController.rightBumper(); // Currently unused
+    Trigger driverRB = driverController.rightBumper(); // Currently unused
 
     driverX.onTrue(drivetrain.zeroGyroCommand());
     driverLB.onTrue(drivetrain.disableSpeedModeCommand());
     driverLB.onFalse(drivetrain.enableSpeedModeCommand());
+    driverRB.onTrue(Commands.runOnce(() -> System.out.println("=========  RECONFIGURE PID")).andThen(shooter.reconfigureRobotTuningCommand()));
     // driverRB reserved for align/auto actions if implemented
     // driverRB.onTrue(/* some align command */);
 
@@ -132,14 +142,16 @@ public class RobotContainer {
         .onFalse(Commands.runOnce(() -> operatorOverrideValue = false));
 
     // Enter Manual Mode
-    operatorX.onTrue(
-        Commands.defer(() -> {
-          System.out.println("==== Attempting to toggle MANUAL state. Current state is manual?: "
-              + teleopSM.isInState(TeleopState.MANUAL));
-          TeleopState targetState = teleopSM.isInState(TeleopState.MANUAL) ? TeleopState.SCORE : TeleopState.MANUAL;
-          Command requestCommand = teleopSM.requestState(targetState);
-          return requestCommand;
-        }, Set.of(teleopSM)));
+    // Toggle mode is commented out right now
+    // operatorX.onTrue(
+    //     Commands.defer(() -> {
+    //       System.out.println("==== Attempting to toggle MANUAL state. Current state is manual?: "
+    //           + teleopSM.isInState(TeleopState.MANUAL));
+    //       TeleopState targetState = teleopSM.isInState(TeleopState.MANUAL) ? TeleopState.SCORE : TeleopState.MANUAL;
+    //       Command requestCommand = teleopSM.requestState(targetState);
+    //       return requestCommand;
+    //     }, Set.of(teleopSM)));
+    operatorX.onTrue(teleopSM.requestState(TeleopState.MANUAL));
 
     // Intake
     // Call both the non-manual (state request) and the manual-gated action.
@@ -150,13 +162,8 @@ public class RobotContainer {
     operatorPOVDown.onTrue(Commands.parallel(systemSM.requestState(SystemState.EMPTYING), manual.eject()));
 
     // Teleop quick switches (non-manual): POV left/right pick STEAL/SCORE modes
-    // operatorPOVLeft.onTrue(teleopSM.requestState(TeleopState.STEAL)); // FIXME
-    // UNCOMMENT
-    // operatorPOVRight.onTrue(teleopSM.requestState(TeleopState.SCORE)); // FIXME
-    // UNCOMMENT
-    operatorPOVRight.onTrue(intake.updateIntakeSpeed(0.5));
-    // operatorPOVRight.onTrue(intake.updateIntakeSpeed(0.5));
-    operatorPOVLeft.onTrue(Commands.runOnce(() -> intake.setIntakeDutyCycle(0.3)));
+    operatorPOVLeft.onTrue(teleopSM.requestState(TeleopState.STEAL));
+    operatorPOVRight.onTrue(teleopSM.requestState(TeleopState.SCORE));
 
     // Shooter
     // Map face buttons to both manual shot commands and a guarded request to enter
@@ -164,26 +171,20 @@ public class RobotContainer {
     // Shooter: request SHOOT + teleop SCORE (so the system and teleop modes align)
     operatorA.onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT), manual.shootShort()));
     operatorY.onTrue(Commands.parallel(systemSM.requestState(SystemState.RESET), manual.reset()));
-    // operatorY.onTrue(Commands.runOnce(() -> shooter.setShooterDutyCycle(1))); <-
-    // DANGER BUT AWESOME
-    // operatorPOVUp.onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT),
-    // manual.shootPass()));
-    operatorPOVUp.onTrue(Commands.runOnce(() -> shooter.setShooterDutyCycle(0.5)));
+    // operatorPOVUp.onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT), manual.shootPass()));
+    operatorPOVUp.onTrue(manual.shootLong());
     // Start feeding should normally be part of SHOOT; request SHOOT too.
     operatorRB
         .onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT), manual.startFeeding()))
-        .onFalse(Commands.parallel(manual.stopFeedingUngated()));
+        .onFalse(Commands.parallel(manual.stopFeeding()));
     // // Shoot once
 
-    operatorB.onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT), manual.feedOnce())); // FIXME: BORA
-                                                                                                      // COMMENTED THIS
-                                                                                                      // TEMPORARILY,
-                                                                                                      // uncomment!!!!
+    operatorB.onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT), manual.feedOnce()));
 
     // Default drivetrain command (joystick driving)
     drivetrain.setDefaultCommand(
         drivetrain.joystickDriveCommand(
-            () -> (driverController.getLeftX()), // left Y -> robot +X
+            () -> (-driverController.getLeftX()), // left Y -> robot +X
             () -> (driverController.getLeftY()), // left X -> robot +Y
             () -> (driverController.getRightX() / 1.6) // rotation scaled
         ));
@@ -191,15 +192,22 @@ public class RobotContainer {
 
   public Command getAutonomousCommand() {
     // If you later add an auto chooser, return selected command here.
-    return null;
+    return AutoBuilder.buildAuto("Shoot");
+  }
+
+  private void registerNamedCommands() {
+    NamedCommands.registerCommand("Reset", new CompleteScoreCommand(intake, shooter, indexer));
   }
 
   public void startTeleop() {
     // Request the top-level robot state machine to enter TELEOP and start the
     // teleop timeline (non-blocking; these return Commands and are scheduled).
     CommandScheduler.getInstance().schedule(robotSM.requestState(RobotState.TELEOP));
-    CommandScheduler.getInstance().schedule(
-        teleopMasterCommand = teleopSM.teleopMasterCommand());
+    // No master command; it is not helping
+    // CommandScheduler.getInstance().schedule(teleopMasterCommand = teleopSM.teleopMasterCommand());
+    if (START_IN_MANUAL) {
+      CommandScheduler.getInstance().schedule(teleopSM.requestState(TeleopState.MANUAL));
+    }
   }
 
   public void enterDisabledMode() {

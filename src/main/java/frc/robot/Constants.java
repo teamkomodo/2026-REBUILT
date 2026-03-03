@@ -55,7 +55,7 @@ public final class Constants {
     public static double MAX_ATTAINABLE_VELOCITY = 4.5;
 
     public static final double LINEAR_VELOCITY_CONSTRAINT = MAX_ATTAINABLE_VELOCITY;
-    public static final double LINEAR_ACCEL_CONSTRAINT = 12.0;
+    public static final double LINEAR_ACCEL_CONSTRAINT = 3.0; // 12 ORGINALL
 
     public static final double ANGULAR_VELOCITY_CONSTRAINT = (LINEAR_VELOCITY_CONSTRAINT * Math.PI)
             / (DRIVETRAIN_WIDTH * DRIVETRAIN_WIDTH + DRIVETRAIN_LENGTH * DRIVETRAIN_LENGTH) * 0.8;
@@ -69,7 +69,7 @@ public final class Constants {
     public static final double MAX_MODULE_ACCEL = 21; // physical maximum attainable accel of swerve modules
 
     public static final double MAX_ANGULAR_VELOCITY = 4.0 * Math.PI; // constraint for angular velocity
-    public static final double MAX_ANGULAR_ACCEL = 4.0 * Math.PI; // constraint for angular acceleration
+    public static final double MAX_ANGULAR_ACCEL = 2.0 * Math.PI; // constraint for angular acceleration // 4 ORIGINALS
 
     public static final PIDConstants DRIVE_PID = new PIDConstants(2, 0, 0);
     public static final PIDConstants STEER_PID = new PIDConstants(1, 0, 0.0002);
@@ -78,7 +78,9 @@ public final class Constants {
     // The motors on the right side have a CAN id ending in a 2, left side end in 1
     public static final int SHOOTER_MOTOR_RIGHT_ID = 54;
     public static final int SHOOTER_MOTOR_LEFT_ID = 31;
-    public static final int SHOOTER_SMART_CURRENT_LIMIT = 100; // FIXME
+    public static final double SHOOTER_MAX_DUTYCYCLE = 0.7;
+    public static final int SHOOTER_MAX_RPM = 4000;
+    public static final int SHOOTER_SMART_CURRENT_LIMIT = 80; // FIXME
     public static final double SHOOTER_GEAR_RATIO = 1.5; // 1:1.5 speeding up the flywheel
     public static final double MAX_SHOOTER_SPEED_TOLERANCE = 50.0; // RPM tolerance for considering shooter at target
                                                                    // speed
@@ -103,7 +105,7 @@ public final class Constants {
     public static final double BALL_AREA = Math.PI * Math.pow(BALL_RADIUS, 2); // Cross-sectional area of the ball
     public static final double BALL_MASS = 0.215; // Mass of FUEL ball in kg
     public static final double DELTA_TIME = 0.002; // Increased precision for validation
-    public static final double LAUNCH_ANGLE = 70.0;
+    public static final double LAUNCH_ANGLE = 70.0; // Degrees
     public static final double HUB_OPENING_HEIGHT_FROM_GROUND = 72.0 / INCHES_PER_METER;
     public static final double SHOOTER_HEIGHT_FROM_GROUND = (19.5 - 5.91 / 2) / INCHES_PER_METER;
     // ^ Estimated height of the shooter from the ground (ball exit point)
@@ -118,9 +120,10 @@ public final class Constants {
     public static final double MAX_FLYWHEEL_RPM = 6700;
 
     // Manual shot RPMs
-    public static final double SHORT_BASELINE_RPM = 3000;
-    public static final double LONG_BASELINE_RPM = 4500;
-    public static final double PASS_SHOT_RPM = 20500;
+    public static final double SHORT_BASELINE_RPM = 2500;
+    public static final double LONG_BASELINE_RPM = 3000;
+    public static final double PASS_SHOT_RPM = 3000;
+
 
     // Finished table
     // These values are pre-generated using the ShooterTableGenerator class in

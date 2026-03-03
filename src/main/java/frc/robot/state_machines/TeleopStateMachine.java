@@ -52,6 +52,7 @@ public class TeleopStateMachine extends SubsystemBase {
     public static final boolean DONT_RESTRICT_AUTO_TRANSITIONS = true;
     public final boolean TEST_AUTO_SWITCHING = false;
     public final boolean TEST_OUR_HUB_STARTS_ACTIVE = true;
+    // START_IN_MANUAL setting is in RobotContainer.java
     public boolean wasOurHubInactiveFirst;
 
     public enum TeleopState {

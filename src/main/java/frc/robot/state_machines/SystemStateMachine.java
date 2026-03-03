@@ -38,7 +38,6 @@ public class SystemStateMachine extends SubsystemBase {
     private final StringPublisher systemLogPublisher = systemTable.getStringTopic("log").publish();
 
     public enum SystemState {
-        OFF,
         TRAVEL,
         INTAKE,
         ALIGNING,
@@ -54,14 +53,8 @@ public class SystemStateMachine extends SubsystemBase {
          * Defines the valid "next steps" from the current state.
          */
         public boolean canTransitionTo(SystemState from, SystemState to) {
-            // Global escapes allowed from any state
-            if (to == UNJAM || to == OFF) {
-                return true;
-            }
-
             return switch (from) {
                 /* MANUAL mode is only allowed via automatic transition */
-                case OFF -> Set.of(TRAVEL, RESET).contains(to);
                 case TRAVEL -> Set.of(INTAKE, ALIGNING, STOW, EMPTYING, RESET, SHOOT, SHOOT_ONCE).contains(to);
                 case INTAKE -> Set.of(TRAVEL, ALIGNING, STOW, EMPTYING, RESET, SHOOT, SHOOT_ONCE).contains(to);
                 case ALIGNING -> Set.of(SHOOT, SHOOT_ONCE, TRAVEL, RESET).contains(to);
@@ -213,18 +206,13 @@ public class SystemStateMachine extends SubsystemBase {
                     // method in DrivetrainSubsystem
                     // 3. Only then, run the indexer to fire the ball
                     shooter.startFeedingCommand()
-                // Stop when the indexer is empty
-                // Commands.waitUntil(() -> debouncer.calculate(indexer.isEmpty())),
-                // shooter.stopFeedingCommand()
                 );
             case SHOOT_ONCE -> Commands.sequence(
                     shooter.startShootingCommand(),
                     Commands.waitUntil(shooter::isAtTargetSpeed),
                     shooter.feedOnceCommand());
-            case EMPTYING -> Commands.parallel(intake.ejectIntakeCommand(), indexer.reverseCommand());
+            case EMPTYING -> Commands.parallel(intake.ejectIntakeCommand());
             case UNJAM -> Commands.parallel(indexer.reverseCommand(), intake.ejectIntakeCommand());
-            case OFF ->
-                Commands.parallel(intake.stopIntake(), shooter.stopShooterCommand(), indexer.stopIndexerCommand());
             case RESET -> Commands.parallel(intake.stopIntake(), intake.stopHinge(),
                     shooter.stopShooterCommand(), indexer.stopIndexerCommand());
             default -> Commands.none();
@@ -251,7 +239,7 @@ public class SystemStateMachine extends SubsystemBase {
         }
 
         public Command eject() {
-            return manualGate(Commands.parallel(intake.ejectIntakeCommand(), indexer.reverseCommand()));
+            return manualGate(Commands.parallel(intake.ejectIntakeCommand(), indexer.stopIndexerCommand()));
         }
 
         // Shooter Controls
@@ -268,29 +256,32 @@ public class SystemStateMachine extends SubsystemBase {
         }
 
         public Command feedOnce() {
-            return manualGate(Commands.parallel(shooter.feedOnceCommand(), indexer.startCommand()));
+            return manualGate(Commands.parallel(shooter.feedOnceCommand()
+            // , indexer.startCommand()
+            ));
         }
 
         public Command startFeeding() {
-            return manualGate(Commands.parallel(shooter.startFeedingCommand(), indexer.startCommand()));
+            return manualGate(Commands.parallel(shooter.startFeedingCommand()
+            // , indexer.startCommand()
+            ));
         }
 
         public Command stopFeeding() {
             return manualGate(shooter.stopFeedingCommand());
         }
 
-        public Command stopFeedingUngated() {
-            return shooter.stopFeedingCommand();
-        }
-
         // Indexer Controls
         public Command startIndexer() {
-            return manualGate(indexer.startCommand());
+            return manualGate(
+                Commands.none()
+                // indexer.startCommand()
+            );
         }
 
         // Reset
         public Command reset() {
-            return Commands.parallel(intake.stopIntake(), intake.stowIntakeCommand(), shooter.stopShooterCommand(),
+            return Commands.parallel(intake.stopIntake(), intake.stopHinge(), shooter.stopShooterCommand(),
                     indexer.stopIndexerCommand());
         }
 
