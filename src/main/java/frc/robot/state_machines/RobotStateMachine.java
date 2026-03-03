@@ -39,8 +39,6 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
  * run onEntry for the new state.
  * - onEntry should schedule long-running work (Commands) rather than performing
  * it inline.
- * 
- * TODO: Wire automatic transitions.
  */
 public class RobotStateMachine extends SubsystemBase {
 
@@ -208,7 +206,7 @@ public class RobotStateMachine extends SubsystemBase {
                         .handleInterrupt(() -> robotLog("WARNING: onExit interrupted for " + previous)),
 
                 // 2) Cleanup existing long-running activities
-                new InstantCommand(() -> cancelModeActivities(previous)),
+                cancelModeActivities(previous),
 
                 // 3) Update the state variable & log (The "Hook")
                 new InstantCommand(() -> {
@@ -224,17 +222,11 @@ public class RobotStateMachine extends SubsystemBase {
 
     // Lightweight cancel hook: ensure current mode's long-running activities are
     // stopped immediately.
-    private void cancelModeActivities(RobotState previous) {
-        switch (previous) {
-            case TELEOP:
-            case AUTO:
-            case DISABLED:
-                cancelAll();
-                break;
-            default:
-                // nothing to cancel
-                break;
-        }
+    private Command cancelModeActivities(RobotState previous) {
+        return switch (previous) {
+            case TELEOP, AUTO, DISABLED -> cancelAll();
+            default -> Commands.none();
+        };
     }
 
     /**
@@ -261,11 +253,9 @@ public class RobotStateMachine extends SubsystemBase {
     private Command onEntry(RobotState target, Context ctx) {
         return switch (target) {
             case DISABLED -> Commands.parallel(
-                    systemSM.requestState(SystemState.OFF),
+                    systemSM.requestState(SystemState.TRAVEL),
                     teleopSM.requestState(TeleopState.IDLE),
-                    Commands.runOnce(() -> {
-                        systemSM.cancelAll();
-                    })).withName("Entry_Disabled");
+                    systemSM.cancelAll()).withName("Entry_Disabled");
 
             case AUTO -> Commands.parallel(
                     teleopSM.requestState(TeleopState.IDLE)
@@ -273,17 +263,16 @@ public class RobotStateMachine extends SubsystemBase {
                 ).withName("Entry_Auto");
 
             case TELEOP -> Commands.parallel(
-                    teleopSM.requestState(TeleopState.SCORE)
-                // systemSM.someTeleopCommand()
-                ).withName("Entry_Teleop");
+                    teleopSM.requestState(TeleopState.SCORE),
+                    systemSM.requestState(SystemState.TRAVEL)).withName("Entry_Teleop");
 
             default -> Commands.none();
         };
     }
 
-    public void cancelAll() {
+    public Command cancelAll() {
         // Cancel all activities in both state machines
-        systemSM.cancelAll();
+        return systemSM.cancelAll();
     }
 
     public RobotState getCurrentState() {

@@ -3,20 +3,20 @@ package frc.robot.state_machines;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BooleanSupplier;
 
+import edu.wpi.first.networktables.BooleanPublisher;
+import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringPublisher;
-import edu.wpi.first.networktables.DoublePublisher;
-import java.util.function.BooleanSupplier;
-
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.ParallelDeadlineGroup;
-import frc.robot.state_machines.SystemStateMachine.SystemState;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.state_machines.SystemStateMachine.SystemState;
 
 /**
  * TeleopStateMachine: fine-grained teleop modes and transition policy.
@@ -42,12 +42,18 @@ public class TeleopStateMachine extends SubsystemBase {
     private final StringPublisher teleopStatePublisher = teleopTable.getStringTopic("teleop-state").publish();
     private final StringPublisher teleopLogPublisher = teleopTable.getStringTopic("log").publish();
     private final DoublePublisher teleopMatchStagePublisher = teleopTable.getDoubleTopic("match-stage").publish();
+    private final BooleanPublisher wasOurHubInactiveFirstPublisher = teleopTable
+            .getBooleanTopic("was-our-hub-inactive-first").publish();
+    private final BooleanPublisher operatorOverridePublisher = teleopTable.getBooleanTopic("OperatorOverrideValue")
+            .publish();
 
     // For testing, this being true will always permit those transitions that are
     // normally restricted to automatic triggers.
     public static final boolean DONT_RESTRICT_AUTO_TRANSITIONS = true;
     public final boolean TEST_AUTO_SWITCHING = false;
     public final boolean TEST_OUR_HUB_STARTS_ACTIVE = true;
+    // START_IN_MANUAL setting is in RobotContainer.java
+    public boolean wasOurHubInactiveFirst;
 
     public enum TeleopState {
         IDLE,
@@ -65,6 +71,8 @@ public class TeleopStateMachine extends SubsystemBase {
             if (target == RESET) {
                 return true;
             }
+
+            /* MANUAL mode is only allowed with OperatorOverride */
 
             // Handle transition checks
             boolean canTransition = false;
@@ -206,6 +214,7 @@ public class TeleopStateMachine extends SubsystemBase {
     private Command onExit(TeleopState previous) {
         return switch (previous) {
             case IDLE -> Commands.none();
+            case MANUAL -> systemSM.requestState(SystemState.TRAVEL, true);
             default -> systemSM.cancelAll();
         };
     }
@@ -213,9 +222,9 @@ public class TeleopStateMachine extends SubsystemBase {
     private Command onEntry(TeleopState target, Context ctx) {
         return switch (target) {
             case IDLE -> Commands.none();
-            case STEAL -> systemSM.requestState(SystemState.INTAKE); // TODO: Consider doing INTAKE_AND_SHOOT
-            case SCORE -> Commands.none(); // TODO: schedule scoring behavior
-            case MANUAL -> systemSM.requestState(SystemState.MANUAL); // give direct operator control
+            case STEAL -> systemSM.requestState(SystemState.INTAKE);
+            case SCORE -> Commands.none();
+            case MANUAL -> systemSM.requestState(SystemState.MANUAL, true); // give direct operator control
             case RESET -> systemSM.requestState(SystemState.RESET);
         };
     }
@@ -224,13 +233,13 @@ public class TeleopStateMachine extends SubsystemBase {
     public Command teleopMasterCommand() {
         return Commands.sequence(
                 // First 10 seconds: SCORE
-                setMatchStage(0),
-                requestState(TeleopState.SCORE, true),
+                Commands.deferredProxy(() -> setMatchStage(0)),
+                Commands.deferredProxy(() -> requestState(TeleopState.SCORE, true)),
 
                 // Determine active hub while waiting (10s)
-                new ParallelDeadlineGroup(
+                Commands.deferredProxy(() -> new ParallelDeadlineGroup(
                         Commands.waitSeconds(10.0),
-                        Commands.waitUntil(canDetermineActiveHubSupplier)),
+                        Commands.waitUntil(canDetermineActiveHubSupplier))),
 
                 // Run the timer and switch states accordingly
                 // Require the TeleopStateMachine for the lifetime of this deferred command
@@ -240,12 +249,13 @@ public class TeleopStateMachine extends SubsystemBase {
                     boolean ourHubInactiveFirst = isOurHubInactiveFirst().orElse(false);
                     // If the code failed to determine the active hub, ourHubInactiveFirst defaults
                     // to false, starting the robot in SCORE state
-                    // TODO: Review the above behavior and make sure it is acceptable
 
                     // Simple testing support
                     if (TEST_AUTO_SWITCHING) {
                         ourHubInactiveFirst = !TEST_OUR_HUB_STARTS_ACTIVE;
                     }
+
+                    wasOurHubInactiveFirst = ourHubInactiveFirst; // For main logging
 
                     // Set the states
                     TeleopState initial = ourHubInactiveFirst ? TeleopState.STEAL : TeleopState.SCORE;
@@ -254,23 +264,31 @@ public class TeleopStateMachine extends SubsystemBase {
                     // Run the timer
                     return Commands.sequence(
                             // Shift 1 (25s)
-                            setMatchStage(1),
-                            requestState(initial, true), Commands.waitSeconds(25.0),
+                            Commands.deadline(
+                                    Commands.waitSeconds(25.0),
+                                    Commands.deferredProxy(() -> setMatchStage(1)),
+                                    Commands.deferredProxy(() -> requestState(initial, true))),
                             // Shift 2 (25s)
-                            setMatchStage(2),
-                            requestState(opposite, true), Commands.waitSeconds(25.0),
+                            Commands.deadline(
+                                    Commands.waitSeconds(25.0),
+                                    Commands.deferredProxy(() -> setMatchStage(2)),
+                                    Commands.deferredProxy(() -> requestState(opposite, true))),
                             // Shift 3 (25s)
-                            setMatchStage(3),
-                            requestState(initial, true), Commands.waitSeconds(25.0),
+                            Commands.deadline(
+                                    Commands.waitSeconds(25.0),
+                                    Commands.deferredProxy(() -> setMatchStage(3)),
+                                    Commands.deferredProxy(() -> requestState(initial, true))),
                             // Shift 4 (25s)
-                            setMatchStage(4),
-                            requestState(opposite, true), Commands.waitSeconds(25.0),
+                            Commands.deadline(
+                                    Commands.waitSeconds(25.0),
+                                    Commands.deferredProxy(() -> setMatchStage(4)),
+                                    Commands.deferredProxy(() -> requestState(opposite, true))),
                             // Final: SCORE until match ends
-                            setMatchStage(5),
-                            requestState(TeleopState.SCORE, true));
-                }, Set.of(this))).withName("TeleopMasterTimeline")
-                .ignoringDisable(false);
-        // FIXME: !!!! Make sure other commands will not cancel this !!!!
+                            Commands.parallel(
+                                    Commands.deferredProxy(() -> setMatchStage(5)),
+                                    Commands.deferredProxy(() -> requestState(TeleopState.SCORE, true)))
+                    );
+                }, Set.of(this))).withName("TeleopMasterTimeline");
     }
 
     public BooleanSupplier canDetermineActiveHubSupplier = () -> {
@@ -310,10 +328,26 @@ public class TeleopStateMachine extends SubsystemBase {
         });
     }
 
-    public void enterDisabled() {
+    // Match stage based exit manual command
+    public Command exitManualCommand() {
+        return Commands.defer(() -> {
+            if (currentState != TeleopState.MANUAL)
+                return Commands.none();
+
+            boolean isOddStealStage = Set.of(1, 3).contains(matchStage);
+            boolean isEvenStealStage = Set.of(2, 4).contains(matchStage);
+
+            boolean shouldSteal = wasOurHubInactiveFirst ? isOddStealStage : isEvenStealStage;
+
+            TeleopState newState = shouldSteal ? TeleopState.STEAL : TeleopState.SCORE;
+
+            return requestState(newState, true).withName("ExitManualTo" + newState);
+        }, Set.of(this));
+    }
+
+    public Command enterDisabled() {
         // Put teleop state machine into a safe disabled state.
-        systemSM.cancelAll();
-        currentState = TeleopState.IDLE;
+        return systemSM.cancelAll().andThen(Commands.runOnce(() -> currentState = TeleopState.IDLE));
     }
 
     @Override
@@ -326,6 +360,8 @@ public class TeleopStateMachine extends SubsystemBase {
         try {
             teleopStatePublisher.set(currentState.toString());
             teleopMatchStagePublisher.set(matchStage);
+            wasOurHubInactiveFirstPublisher.set(wasOurHubInactiveFirst);
+            operatorOverridePublisher.set(operatorOverrideSupplier.getAsBoolean());
         } catch (Exception e) {
             // ignore NetworkTables errors
         }
@@ -333,10 +369,14 @@ public class TeleopStateMachine extends SubsystemBase {
 
     private void teleopLog(String value) {
         teleopLogPublisher.set(value);
-        System.out.println("TeleopStateMachine: " + value);
+        System.out.println("==== TeleopStateMachine: " + value);
     }
 
     public TeleopState getState() {
         return currentState;
+    }
+
+    public boolean isInState(TeleopState state) {
+        return currentState == state;
     }
 }

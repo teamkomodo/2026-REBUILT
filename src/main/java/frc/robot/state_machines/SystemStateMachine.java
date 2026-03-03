@@ -1,7 +1,5 @@
 package frc.robot.state_machines;
 
-import static frc.robot.Constants.*;
-
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
@@ -11,10 +9,8 @@ import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringPublisher;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
-import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.IndexerSubsystem;
 import frc.robot.subsystems.ShooterSubsystem;
@@ -24,7 +20,7 @@ import frc.robot.subsystems.DrivetrainSubsystem;
  * SystemStateMachine: low-level system behaviors that coordinate subsystems.
  *
  * States:
- * TRAVEL, INTAKE, ALIGNING, SHOOT, INTAKE_AND_SHOOT, RESET, DEPLOY, EMPTYING,
+ * TRAVEL, INTAKE, ALIGNING, SHOOT, INTAKE_AND_SHOOT, RESET, STOW, EMPTYING,
  * UNJAM
  *
  * Public API:
@@ -42,13 +38,13 @@ public class SystemStateMachine extends SubsystemBase {
     private final StringPublisher systemLogPublisher = systemTable.getStringTopic("log").publish();
 
     public enum SystemState {
-        OFF,
         TRAVEL,
         INTAKE,
         ALIGNING,
         SHOOT,
+        SHOOT_ONCE,
         RESET,
-        DEPLOY,
+        STOW,
         EMPTYING,
         MANUAL,
         UNJAM;
@@ -57,22 +53,18 @@ public class SystemStateMachine extends SubsystemBase {
          * Defines the valid "next steps" from the current state.
          */
         public boolean canTransitionTo(SystemState from, SystemState to) {
-            // Global escapes allowed from any state
-            if (to == RESET || to == UNJAM || to == OFF) {
-                return true;
-            }
-
             return switch (from) {
-                case OFF -> to == TRAVEL;
-                case TRAVEL -> Set.of(INTAKE, ALIGNING, DEPLOY, EMPTYING).contains(to);
-                case INTAKE -> Set.of(TRAVEL, ALIGNING, DEPLOY, EMPTYING).contains(to);
-                case ALIGNING -> Set.of(SHOOT, TRAVEL).contains(to);
-                case SHOOT -> Set.of(TRAVEL, EMPTYING, INTAKE).contains(to);
-                case RESET -> Set.of(TRAVEL, INTAKE, DEPLOY).contains(to);
-                case DEPLOY -> Set.of(INTAKE, TRAVEL).contains(to);
-                case EMPTYING -> Set.of(TRAVEL, INTAKE).contains(to);
-                case MANUAL -> Set.of(TRAVEL, INTAKE, ALIGNING, SHOOT).contains(to);
-                case UNJAM -> to == TRAVEL;
+                /* MANUAL mode is only allowed via automatic transition */
+                case TRAVEL -> Set.of(INTAKE, ALIGNING, STOW, EMPTYING, RESET, SHOOT, SHOOT_ONCE).contains(to);
+                case INTAKE -> Set.of(TRAVEL, ALIGNING, STOW, EMPTYING, RESET, SHOOT, SHOOT_ONCE).contains(to);
+                case ALIGNING -> Set.of(SHOOT, SHOOT_ONCE, TRAVEL, RESET).contains(to);
+                case SHOOT -> Set.of(TRAVEL, EMPTYING, INTAKE, RESET).contains(to);
+                case SHOOT_ONCE -> Set.of(TRAVEL, EMPTYING, INTAKE, RESET).contains(to);
+                case RESET -> Set.of(TRAVEL, INTAKE, STOW).contains(to);
+                case STOW -> Set.of(INTAKE, TRAVEL, RESET).contains(to);
+                case EMPTYING -> Set.of(TRAVEL, INTAKE, RESET).contains(to);
+                case MANUAL -> Set.of().contains(to);
+                case UNJAM -> Set.of(TRAVEL, RESET).contains(to);
             };
         }
     }
@@ -89,7 +81,6 @@ public class SystemStateMachine extends SubsystemBase {
     private final ShooterSubsystem shooter;
     private final IndexerSubsystem indexer;
     private final DrivetrainSubsystem drivetrain;
-    private final Debouncer debouncer;
 
     // ManualActions class instance for this instance
     private final ManualActions manualActions;
@@ -106,22 +97,21 @@ public class SystemStateMachine extends SubsystemBase {
         this.shooter = Objects.requireNonNull(shooter);
         this.indexer = Objects.requireNonNull(indexer);
         this.drivetrain = Objects.requireNonNull(drivetrain);
-        this.debouncer = new Debouncer(BEAMBREAK_DEBOUNCE_DURATION, Debouncer.DebounceType.kRising);
         this.manualActions = new ManualActions();
         configureTriggers();
     }
 
     private void configureTriggers() {
-        // If we are currently INTAKING and the indexer reports FULL, move to TRAVEL
-        // automatically
-        new Trigger(indexer::isIndexerFull)
-                .and(new Trigger(isInState(SystemState.INTAKE)))
-                .onTrue(requestState(SystemState.TRAVEL));
+        // // If we are currently INTAKING and the indexer reports FULL, move to TRAVEL
+        // // automatically
+        // new Trigger(indexer::isIndexerFull)
+        // .and(new Trigger(isInState(SystemState.INTAKE)))
+        // .onTrue(requestState(SystemState.TRAVEL));
 
-        // If we are currently SHOOTING and the indexer reports EMPTY, move to TRAVEL
-        new Trigger(indexer::isEmpty)
-                .and(new Trigger(isInState(SystemState.SHOOT)))
-                .onTrue(requestState(SystemState.TRAVEL));
+        // // If we are currently SHOOTING and the indexer reports EMPTY, move to TRAVEL
+        // new Trigger(indexer::isEmpty)
+        // .and(new Trigger(isInState(SystemState.SHOOT)))
+        // .onTrue(requestState(SystemState.TRAVEL));
 
     }
 
@@ -140,14 +130,16 @@ public class SystemStateMachine extends SubsystemBase {
     }
 
     public Command requestState(SystemState target) {
+        return requestState(target, false);
+    }
+
+    public Command requestState(SystemState target, boolean force) {
         return Commands.defer(() -> {
             synchronized (this) {
                 if (target == currentState)
                     return Commands.none();
-
                 Context ctx = snapshotContext();
-
-                if (!currentState.canTransitionTo(ctx.currentState, target)) {
+                if (!force && !currentState.canTransitionTo(ctx.currentState, target)) {
                     systemLogPublisher
                             .set(String.format("FINE: System transition %s -> %s rejected", currentState, target));
                     return Commands.none();
@@ -155,7 +147,7 @@ public class SystemStateMachine extends SubsystemBase {
 
                 return performTransition(target, ctx);
             }
-        }, Set.of());
+        }, Set.of(this));
     }
 
     public Command requestStateCommand(SystemState target) {
@@ -185,12 +177,12 @@ public class SystemStateMachine extends SubsystemBase {
         return Commands.parallel(
                 intake.stopIntake(),
                 shooter.stopShooterCommand(),
-                indexer.stopCommand()).withName("SystemCancelAll");
+                indexer.stopIndexerCommand()).withName("SystemCancelAll");
     }
 
     private Command onExit(SystemState previous) {
         return switch (previous) {
-            case INTAKE, DEPLOY, EMPTYING, SHOOT, ALIGNING, UNJAM ->
+            case INTAKE, STOW, EMPTYING, SHOOT, ALIGNING, UNJAM, SHOOT_ONCE ->
                 cancelAll();
             default -> Commands.none();
         };
@@ -198,8 +190,8 @@ public class SystemStateMachine extends SubsystemBase {
 
     private Command onEntry(SystemState target, Context ctx) {
         return (switch (target) {
-            case INTAKE -> intake.startIntakeCommand();
-            case DEPLOY -> intake.stowIntakeCommand();
+            case INTAKE -> intake.startIntakeCommand(); // Deploys the intake and starts the rollers
+            case STOW -> intake.stowIntakeCommand();
             case ALIGNING -> Commands.parallel(
                     // drivetrain.startVisionAlign(),
                     // FIXME: implement this method ^^^^ in DrivetrainSubsystem
@@ -210,14 +202,19 @@ public class SystemStateMachine extends SubsystemBase {
                     shooter.startShootingCommand(),
                     // 2. Wait until the sensors confirm we are at the target RPM
                     Commands.waitUntil(shooter::isAtTargetSpeed),
+                    // Commands.waitUntil(drivetrain::isAlignedToTarget), // TODO: implement this
+                    // method in DrivetrainSubsystem
                     // 3. Only then, run the indexer to fire the ball
-                    shooter.startFeedingCommand(),
-                    // Stop when the indexer is empty
-                    Commands.waitUntil(() -> debouncer.calculate(indexer.isEmpty())),
-                    shooter.stopFeedingCommand());
-            case EMPTYING -> Commands.parallel(intake.ejectIntakeCommand(), indexer.reverseCommand());
+                    shooter.startFeedingCommand()
+                );
+            case SHOOT_ONCE -> Commands.sequence(
+                    shooter.startShootingCommand(),
+                    Commands.waitUntil(shooter::isAtTargetSpeed),
+                    shooter.feedOnceCommand());
+            case EMPTYING -> Commands.parallel(intake.ejectIntakeCommand());
             case UNJAM -> Commands.parallel(indexer.reverseCommand(), intake.ejectIntakeCommand());
-            case RESET -> Commands.parallel(intake.stopIntake(), shooter.stopShooterCommand(), indexer.stopCommand());
+            case RESET -> Commands.parallel(intake.stopIntake(), intake.stopHinge(),
+                    shooter.stopShooterCommand(), indexer.stopIndexerCommand());
             default -> Commands.none();
         }).withName("SystemEntry_" + target);
     }
@@ -228,7 +225,9 @@ public class SystemStateMachine extends SubsystemBase {
 
         // Intake Controls
         public Command intake() {
-            return manualGate(intake.startIntakeCommand());
+            return manualGate(Commands.sequence(
+                Commands.runOnce(() -> System.out.println("================Starting intake!!")),
+                intake.startIntakeCommand()));
         }
 
         public Command intakeStop() {
@@ -239,8 +238,8 @@ public class SystemStateMachine extends SubsystemBase {
             return manualGate(intake.stowIntakeCommand());
         }
 
-        public Command intakeEject() {
-            return manualGate(intake.ejectIntakeCommand());
+        public Command eject() {
+            return manualGate(Commands.parallel(intake.ejectIntakeCommand(), indexer.stopIndexerCommand()));
         }
 
         // Shooter Controls
@@ -257,11 +256,15 @@ public class SystemStateMachine extends SubsystemBase {
         }
 
         public Command feedOnce() {
-            return manualGate(shooter.feedOnceCommand());
+            return manualGate(Commands.parallel(shooter.feedOnceCommand()
+            // , indexer.startCommand()
+            ));
         }
 
         public Command startFeeding() {
-            return manualGate(shooter.startFeedingCommand());
+            return manualGate(Commands.parallel(shooter.startFeedingCommand()
+            // , indexer.startCommand()
+            ));
         }
 
         public Command stopFeeding() {
@@ -270,7 +273,16 @@ public class SystemStateMachine extends SubsystemBase {
 
         // Indexer Controls
         public Command startIndexer() {
-            return manualGate(indexer.startCommand());
+            return manualGate(
+                Commands.none()
+                // indexer.startCommand()
+            );
+        }
+
+        // Reset
+        public Command reset() {
+            return Commands.parallel(intake.stopIntake(), intake.stopHinge(), shooter.stopShooterCommand(),
+                    indexer.stopIndexerCommand());
         }
 
         private Command manualGate(Command action) {
@@ -295,7 +307,7 @@ public class SystemStateMachine extends SubsystemBase {
 
     private void systemLog(String value) {
         systemLogPublisher.set(value);
-        System.out.println("SystemStateMachine: " + value);
+        System.out.println("=== SystemStateMachine: " + value);
     }
 
     public SystemState getState() {
