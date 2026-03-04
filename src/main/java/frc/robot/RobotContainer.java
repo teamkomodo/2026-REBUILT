@@ -152,7 +152,7 @@ public class RobotContainer {
     // Call both the non-manual (state request) and the manual-gated action.
     // Non-manual requests come first so the guard/transition is evaluated before
     // the manual command (the manual command is gated to MANUAL state).
-    operatorRT.onTrue(manual.intake());
+    operatorRB.onTrue(manual.intake());
     operatorPOVUp.onTrue(manual.intakeStow());
     operatorPOVDown.onTrue(manual.eject());
 
