@@ -120,9 +120,9 @@ public final class Constants {
     public static final double MAX_FLYWHEEL_RPM = 6700;
 
     // Manual shot RPMs
-    public static final double SHORT_BASELINE_RPM = 2500;
-    public static final double LONG_BASELINE_RPM = 3000;
-    public static final double PASS_SHOT_RPM = 3000;
+    public static final double SHORT_BASELINE_RPM = 1900; // 1800 Shoots from 8ft away from hub center
+    public static final double LONG_BASELINE_RPM = 2000;
+    public static final double PASS_SHOT_RPM = 2750;
 
 
     // Finished table
