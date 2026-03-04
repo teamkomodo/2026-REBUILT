@@ -112,6 +112,9 @@ public class ShooterSubsystem extends SubsystemBase {
     @Override
     public void periodic() {
         updateTelemetry();
+        if (shooterMotorRightRelativeEncoder.getVelocity() > SHOOTER_MAX_RPM * 1.1) {
+            stopShooter();
+        }
     }
 
     public void configureMotors() {
@@ -208,7 +211,14 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     public void setShooterDutyCycle(double dutyCycle) {
-        shooterMotorRightController.setSetpoint(dutyCycle * SHOOTER_MAIN_INVERSION, ControlType.kDutyCycle);
+        double requestedDutyCycle = dutyCycle * SHOOTER_MAIN_INVERSION;
+        double commandedDutyCycle = Math.min(requestedDutyCycle, SHOOTER_MAX_DUTYCYCLE);
+        commandedDutyCycle = Math.max(commandedDutyCycle, -SHOOTER_MAX_DUTYCYCLE);
+        if (commandedDutyCycle != requestedDutyCycle) {
+            System.out.println("Requested duty cycle " + requestedDutyCycle + " exceeds max limits. Commanding "
+                    + commandedDutyCycle + " instead.");
+        }
+        shooterMotorRightController.setSetpoint(commandedDutyCycle, ControlType.kDutyCycle);
     }
 
     /** Set motor velocity in motor RPM (internal helper). */
