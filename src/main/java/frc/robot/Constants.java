@@ -1,8 +1,14 @@
 package frc.robot;
 
+import java.util.Optional;
+import java.util.function.BooleanSupplier;
+
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 import com.revrobotics.spark.SparkMax;
+
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 
 public final class Constants {
 
@@ -181,4 +187,11 @@ public final class Constants {
             DRIVE_PID, // Translation Constants
             STEER_PID // Steering Constants
     );
+    public static final BooleanSupplier ON_RED_ALLIANCE = () -> {
+        Optional<Alliance> alliance = DriverStation.getAlliance();
+        if (alliance.isPresent()) {
+                return alliance.get() == DriverStation.Alliance.Red;
+        }
+        return false;
+     };
 }
