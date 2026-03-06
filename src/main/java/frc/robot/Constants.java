@@ -90,7 +90,6 @@ public final class Constants {
     // Shooter feeder (ball feeding) constants
     // Feeder motors: lead (has encoder/controller) and follower
     public static final int SHOOTER_FEEDER_MOTOR_RIGHT_ID = 52;
-    public static final int SHOOTER_FEEDER_MOTOR_LEFT_ID = 51;
     public static final double SHOOTER_FEEDER_ROTATIONS_PER_BALL = 1.0; // FIXME: tune this
     public static final int SHOOTER_MAIN_INVERSION = -1; // Shooter motor is inverted to achieve correct direction
     public static final double SHOOTER_FEEDER_FEED_SPEED = 0.5; // FIXME: tune this
@@ -167,13 +166,6 @@ public final class Constants {
     public static final int HINGE_SMART_CURRENT_LIMIT = 50; // FIXME
     public static final double HINGE_DEPLOY_DUTY_CYCLE = -0.2;
     public static final double HINGE_STOW_DUTY_CYCLE = 0.2;
-
-    // Indexer
-    public static final int INDEXER_MOTOR_ID = 43;
-    public static final int INDEXER_SMART_CURRENT_LIMIT = 30; // FIXME
-
-    public static final double INDEXER_DUTYCYCLE_FORWARD = 0.5; // FIXME
-    public static final double INDEXER_DUTYCYCLE_REVERSE = 1;
 
     // Basic constants
     public static final SparkMax.MotorType BRUSHLESS = SparkMax.MotorType.kBrushless;
