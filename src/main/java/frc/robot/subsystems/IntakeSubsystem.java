@@ -57,6 +57,8 @@ public class IntakeSubsystem extends SubsystemBase {
     // Intake motor and controller.
     private final SparkFlex intakeMotorLeft;
     private final SparkFlexConfig intakeMotorLeftConfig;
+    private final SparkFlex intakeMotorRight;
+    private final SparkFlexConfig intakeMotorRightConfig;
 
     private final SparkClosedLoopController intakeMotorLeftController;
     private final RelativeEncoder intakeMotorLeftRelativeEncoder;
@@ -94,6 +96,8 @@ public class IntakeSubsystem extends SubsystemBase {
         // Intake motors and controllers
         intakeMotorLeft = new SparkFlex(INTAKE_MOTOR_LEFT_ID, BRUSHLESS);
         intakeMotorLeftConfig = new SparkFlexConfig();
+        intakeMotorRight = new SparkFlex(INTAKE_MOTOR_RIGHT_ID, BRUSHLESS);
+        intakeMotorRightConfig = new SparkFlexConfig();
 
         intakeMotorLeftController = intakeMotorLeft.getClosedLoopController();
         intakeMotorLeftRelativeEncoder = intakeMotorLeft.getEncoder();
@@ -151,6 +155,16 @@ public class IntakeSubsystem extends SubsystemBase {
                 intakeMotorLeftConfig,
                 ResetMode.kResetSafeParameters,
                 PersistMode.kPersistParameters);
+
+        intakeMotorRightConfig
+            .smartCurrentLimit(INTAKE_SMART_CURRENT_LIMIT)
+            .follow(INTAKE_MOTOR_LEFT_ID, true)
+            .idleMode(IdleMode.kCoast);
+
+        intakeMotorRight.configure(
+            intakeMotorRightConfig,
+            ResetMode.kResetSafeParameters,
+            PersistMode.kPersistParameters);
 
         hingeMotorConfig
                 .smartCurrentLimit(HINGE_SMART_CURRENT_LIMIT)
