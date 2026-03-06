@@ -191,7 +191,7 @@ public class RobotContainer {
   }
 
   private void registerNamedCommands() {
-    NamedCommands.registerCommand("Reset", new CompleteScoreCommand(intake, shooter, indexer));
+    NamedCommands.registerCommand("Shoot", new CompleteScoreCommand(intake, shooter, indexer));
   }
 
   public void startTeleop() {
