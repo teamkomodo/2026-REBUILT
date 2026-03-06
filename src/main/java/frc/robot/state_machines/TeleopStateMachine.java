@@ -135,14 +135,6 @@ public class TeleopStateMachine extends SubsystemBase {
         this.operatorOverrideSupplier = Objects.requireNonNull(operatorOverrideSupplier);
     }
 
-    public TeleopStateMachine(SystemStateMachine systemSM, BooleanSupplier operatorOverrideSupplier,
-            boolean START_IN_MANUAL) {
-        this(systemSM, operatorOverrideSupplier);
-        if (START_IN_MANUAL) {
-            this.currentState = TeleopState.MANUAL;
-        }
-    }
-
     // Snapshot used for guard evaluation
     public static class Context {
         public final TeleopState currentState;
@@ -341,7 +333,7 @@ public class TeleopStateMachine extends SubsystemBase {
 
             TeleopState newState = shouldSteal ? TeleopState.STEAL : TeleopState.SCORE;
 
-            return requestState(newState, true).withName("ExitManualTo" + newState);
+            return requestState(newState, false).withName("ExitManualTo" + newState);
         }, Set.of(this));
     }
 
