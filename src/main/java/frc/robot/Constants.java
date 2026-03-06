@@ -58,15 +58,15 @@ public final class Constants {
     // motor rotations -> module rotations
     public static final double STEER_REDUCTION = (14.0 / 50.0) * (10.0 / 60.0);
 
-    public static double MAX_ATTAINABLE_VELOCITY = 4.5;
+    public static double MAX_ATTAINABLE_VELOCITY = 6.5; //6.5
 
     public static final double LINEAR_VELOCITY_CONSTRAINT = MAX_ATTAINABLE_VELOCITY;
     public static final double LINEAR_ACCEL_CONSTRAINT = 3.0; // 12 ORGINALL
 
     public static final double ANGULAR_VELOCITY_CONSTRAINT = (LINEAR_VELOCITY_CONSTRAINT * Math.PI)
-            / (DRIVETRAIN_WIDTH * DRIVETRAIN_WIDTH + DRIVETRAIN_LENGTH * DRIVETRAIN_LENGTH) * 0.8;
+            / (DRIVETRAIN_WIDTH * DRIVETRAIN_WIDTH + DRIVETRAIN_LENGTH * DRIVETRAIN_LENGTH) * 1.1; //0.8
     public static final double ANGULAR_ACCEL_CONSTRAINT = (LINEAR_ACCEL_CONSTRAINT * Math.PI)
-            / (DRIVETRAIN_WIDTH * DRIVETRAIN_WIDTH + DRIVETRAIN_LENGTH * DRIVETRAIN_LENGTH) * 0.5;
+            / (DRIVETRAIN_WIDTH * DRIVETRAIN_WIDTH + DRIVETRAIN_LENGTH * DRIVETRAIN_LENGTH) * 0.9; //0.5
 
     public static final boolean FIELD_RELATIVE_DRIVE = true;
     public static final boolean ALIGNMENT_DRIVE = false;
@@ -96,7 +96,6 @@ public final class Constants {
     // Shooter feeder (ball feeding) constants
     // Feeder motors: lead (has encoder/controller) and follower
     public static final int SHOOTER_FEEDER_MOTOR_RIGHT_ID = 52;
-    public static final int SHOOTER_FEEDER_MOTOR_LEFT_ID = 51;
     public static final double SHOOTER_FEEDER_ROTATIONS_PER_BALL = 1.0; // FIXME: tune this
     public static final int SHOOTER_MAIN_INVERSION = -1; // Shooter motor is inverted to achieve correct direction
     public static final double SHOOTER_FEEDER_FEED_SPEED = 0.5; // FIXME: tune this
@@ -155,9 +154,9 @@ public final class Constants {
     public static final int INTAKE_MOTOR_LEFT_ID = 41;
     public static final int INTAKE_SMART_CURRENT_LIMIT = 70; // FIXME
 
-    public static final double INTAKE_INTAKE_SPEED = -0.4; // FIXME
-    public static final double INTAKE_FEED_SPEED = -0.4; // FIXME
-    public static final double INTAKE_EJECT_SPEED = 0.4; // FIXME
+    public static final double INTAKE_INTAKE_SPEED = -1.0; // FIXME
+    public static final double INTAKE_FEED_SPEED = -1.0; // FIXME
+    public static final double INTAKE_EJECT_SPEED = 0.8; // FIXME
 
     public static final double INTAKE_EJECT_TIME = 0.3; // FIXME
     public static final double INTAKE_STOWING_SPEED = 0.1; // FIXME
@@ -173,13 +172,6 @@ public final class Constants {
     public static final int HINGE_SMART_CURRENT_LIMIT = 50; // FIXME
     public static final double HINGE_DEPLOY_DUTY_CYCLE = -0.2;
     public static final double HINGE_STOW_DUTY_CYCLE = 0.2;
-
-    // Indexer
-    public static final int INDEXER_MOTOR_ID = 43;
-    public static final int INDEXER_SMART_CURRENT_LIMIT = 30; // FIXME
-
-    public static final double INDEXER_DUTYCYCLE_FORWARD = 0.5; // FIXME
-    public static final double INDEXER_DUTYCYCLE_REVERSE = 1;
 
     // Basic constants
     public static final SparkMax.MotorType BRUSHLESS = SparkMax.MotorType.kBrushless;

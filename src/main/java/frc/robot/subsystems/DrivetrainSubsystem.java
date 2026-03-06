@@ -295,7 +295,6 @@ public class DrivetrainSubsystem implements Subsystem {
 
     public void drive(double xSpeed, double ySpeed, double angularVelocity, boolean fieldRelative) {
         ChassisSpeeds chassisSpeeds = new ChassisSpeeds(xSpeed, ySpeed, angularVelocity);
-        desaturateChassisSpeedsAcceleration(chassisSpeeds);
         SwerveModuleState[] moduleStates = kinematics.toSwerveModuleStates(
                 fieldRelative
                         ? ChassisSpeeds.fromFieldRelativeSpeeds(
@@ -311,7 +310,6 @@ public class DrivetrainSubsystem implements Subsystem {
 
         SwerveDriveKinematics.desaturateWheelSpeeds(moduleStates, MAX_MODULE_VELOCITY);
         setModuleStates(moduleStates);
-        lastCommandedChassisSpeeds = chassisSpeeds;
     }
 
     public void drive(ChassisSpeeds speeds, boolean fieldRelative) {
