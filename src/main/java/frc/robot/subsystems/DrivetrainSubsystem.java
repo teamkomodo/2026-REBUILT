@@ -39,6 +39,7 @@ import static frc.robot.Constants.*;
 import java.util.function.DoubleSupplier;
 
 import com.studica.frc.AHRS;
+import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.util.DriveFeedforwards;
 
@@ -229,21 +230,21 @@ public class DrivetrainSubsystem implements Subsystem {
     }
 
     private void setupPathPlanner() {
-        // try {
-        // config = RobotConfig.fromGUISettings();
-        // AutoBuilder.configure(
-        // this::getPose,
-        // this::resetPose,
-        // this::getChassisSpeeds,
-        // this::robotRelativeDrive,
-        // HOLONOMIC_PATH_FOLLOWER_CONFIG,
-        // config,
-
-        // this
-        // );
-        // } catch (Exception e){
-        // e.printStackTrace();
-        // }
+        try {
+            config = RobotConfig.fromGUISettings();
+            AutoBuilder.configure(
+                    this::getPose,
+                    this::resetPose,
+                    this::getChassisSpeeds,
+                    this::robotRelativeDrive,
+                    HOLONOMIC_PATH_FOLLOWER_CONFIG,
+                    config,
+                    ON_RED_ALLIANCE,
+                    this
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private void updateTelemetry() {
