@@ -100,7 +100,6 @@ public class RobotContainer {
 
   // @formatter:on
   private void configureBindings() {
-    SmartDashboard.putNumber("LEFT_STEER_OFFSET", FRONT_LEFT_STEER_OFFSET);
     // Driver controls
     Trigger driverX = driverController.x();
     Trigger driverLB = driverController.leftBumper();
