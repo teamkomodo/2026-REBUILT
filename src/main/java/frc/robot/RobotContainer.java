@@ -27,6 +27,9 @@ import frc.robot.subsystems.ShooterSubsystem;
 import frc.robot.state_machines.SystemStateMachine;
 import frc.robot.state_machines.TeleopStateMachine;
 import frc.robot.commands.auto.CompleteScoreCommand;
+import frc.robot.commands.auto.DeployIntakeCommand;
+import frc.robot.commands.auto.RampShooterLongCommand;
+import frc.robot.commands.auto.StartFeedingCommand;
 import frc.robot.state_machines.RobotStateMachine;
 import frc.robot.state_machines.RobotStateMachine.RobotState;
 import frc.robot.state_machines.SystemStateMachine.SystemState;
@@ -191,7 +194,10 @@ public class RobotContainer {
   }
 
   private void registerNamedCommands() {
-    NamedCommands.registerCommand("Shoot", new CompleteScoreCommand(intake, shooter, indexer));
+    NamedCommands.registerCommand("Shoot", new CompleteScoreCommand(shooter, indexer));
+    NamedCommands.registerCommand("Ramp Shooter Long", new RampShooterLongCommand(shooter));
+    NamedCommands.registerCommand("Deploy Intake", new DeployIntakeCommand(intake));
+    NamedCommands.registerCommand("Feed All", new StartFeedingCommand(shooter, indexer));
   }
 
   public void startTeleop() {
