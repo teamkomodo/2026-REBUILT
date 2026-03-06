@@ -186,12 +186,13 @@ public class RobotContainer {
 
   public Command getAutonomousCommand() {
     // If you later add an auto chooser, return selected command here.
+    //return null;
     return null;
     //return AutoBuilder.buildAuto("Shoot");
   }
 
   private void registerNamedCommands() {
-    NamedCommands.registerCommand("Reset", new CompleteScoreCommand(intake, shooter, indexer));
+    NamedCommands.registerCommand("Shoot", new CompleteScoreCommand(intake, shooter, indexer));
   }
 
   public void startTeleop() {
