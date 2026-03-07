@@ -308,10 +308,9 @@ public class IntakeSubsystem extends SubsystemBase {
     public Command ejectIntakeCommand() {
         return new SequentialCommandGroup(
                 setState(IntakeState.EJECT),
-                holdIntake(),
                 updateIntakeSpeed(INTAKE_EJECT_SPEED),
                 new WaitCommand(INTAKE_EJECT_TIME),
-                stowIntakeCommand());
+                stopIntake());
     }
 
     public Command stowIntakeCommand() {
