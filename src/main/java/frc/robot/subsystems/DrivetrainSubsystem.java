@@ -232,6 +232,7 @@ public class DrivetrainSubsystem implements Subsystem {
     private void setupPathPlanner() {
         try {
             config = RobotConfig.fromGUISettings();
+            System.out.println("================== Config auto: ");
             AutoBuilder.configure(
                     this::getPose,
                     this::resetPose,
@@ -243,6 +244,7 @@ public class DrivetrainSubsystem implements Subsystem {
                     this
             );
         } catch (Exception e) {
+            System.out.println("================== ERROR :");
             e.printStackTrace();
         }
     }
@@ -294,6 +296,7 @@ public class DrivetrainSubsystem implements Subsystem {
     }
 
     public void drive(double xSpeed, double ySpeed, double angularVelocity, boolean fieldRelative) {
+        desaturateChassisSpeedsAcceleration(currentChassisSpeeds);
         ChassisSpeeds chassisSpeeds = new ChassisSpeeds(xSpeed, ySpeed, angularVelocity);
         SwerveModuleState[] moduleStates = kinematics.toSwerveModuleStates(
                 fieldRelative
@@ -310,6 +313,7 @@ public class DrivetrainSubsystem implements Subsystem {
 
         SwerveDriveKinematics.desaturateWheelSpeeds(moduleStates, MAX_MODULE_VELOCITY);
         setModuleStates(moduleStates);
+        currentChassisSpeeds = chassisSpeeds;
     }
 
     public void drive(ChassisSpeeds speeds, boolean fieldRelative) {
