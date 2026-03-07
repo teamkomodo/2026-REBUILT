@@ -5,6 +5,18 @@
     "data": {
       "commands": [
         {
+          "type": "named",
+          "data": {
+            "name": "Deploy Intake"
+          }
+        },
+        {
+          "type": "wait",
+          "data": {
+            "waitTime": 2.0
+          }
+        },
+        {
           "type": "parallel",
           "data": {
             "commands": [
@@ -18,12 +30,6 @@
                 "type": "named",
                 "data": {
                   "name": "Ramp Shooter Long"
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "Deploy Intake"
                 }
               }
             ]

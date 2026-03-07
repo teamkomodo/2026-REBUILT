@@ -19,7 +19,7 @@ public class DeployIntakeCommand extends DynamicCommand {
     @Override
     protected Command getCommand() {
         return new SequentialCommandGroup(
-            intakeSubsystem.deployIntake()
+            intakeSubsystem.deployIntakeAuto()
         );
             
     }

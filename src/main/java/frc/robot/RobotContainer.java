@@ -189,7 +189,7 @@ public class RobotContainer {
   public Command getAutonomousCommand() {
     // If you later add an auto chooser, return selected command here.
     // return null;
-    return AutoBuilder.buildAuto("Shoot");
+    return AutoBuilder.buildAuto("Outpost");
   }
 
   private void registerNamedCommands() {

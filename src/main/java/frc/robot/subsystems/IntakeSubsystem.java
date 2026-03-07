@@ -280,7 +280,11 @@ public class IntakeSubsystem extends SubsystemBase {
     }
 
     public Command deployIntake() {
-        return runHingeAtDutyCycleForSeconds(HINGE_DEPLOY_DUTY_CYCLE, 1);
+        return runHingeAtDutyCycleForSeconds(HINGE_DEPLOY_DUTY_CYCLE, 0.5);
+    }
+
+    public Command deployIntakeAuto() {
+        return runHingeAtDutyCycleForSeconds(EVIL_HINGE_DUTY_CYCLE, 1);
     }
 
     public Command stowIntake() {
