@@ -72,7 +72,7 @@ public final class Constants {
     public static final boolean ALIGNMENT_DRIVE = false;
 
     public static final double MAX_MODULE_VELOCITY = 4.058; // physical maximum attainable speed of swerve modules
-    public static final double MAX_MODULE_ACCEL = 21; // physical maximum attainable accel of swerve modules
+    public static final double MAX_MODULE_ACCEL = 10; // physical maximum attainable accel of swerve modules
 
     public static final double MAX_ANGULAR_VELOCITY = 4.0 * Math.PI; // constraint for angular velocity
     public static final double MAX_ANGULAR_ACCEL = 2.0 * Math.PI; // constraint for angular acceleration // 4 ORIGINALS
@@ -98,7 +98,7 @@ public final class Constants {
     public static final int SHOOTER_FEEDER_MOTOR_RIGHT_ID = 52;
     public static final double SHOOTER_FEEDER_ROTATIONS_PER_BALL = 1.0; // FIXME: tune this
     public static final int SHOOTER_MAIN_INVERSION = -1; // Shooter motor is inverted to achieve correct direction
-    public static final double SHOOTER_FEEDER_FEED_SPEED = 0.5; // FIXME: tune this
+    public static final double SHOOTER_FEEDER_FEED_SPEED = 1; // FIXME: tune this
     public static final int SHOOTER_FEEDER_SMART_CURRENT_LIMIT = 50; // FIXME: Make sure this is a good value
     public static final double BEAMBREAK_DEBOUNCE_DURATION = 2.5; // A delay for bouncy balls
 
@@ -157,7 +157,7 @@ public final class Constants {
 
     public static final double INTAKE_INTAKE_SPEED = -0.7; // FIXME
     public static final double INTAKE_FEED_SPEED = -0.7; // FIXME
-    public static final double INTAKE_EJECT_SPEED = 0.8; // FIXME
+    public static final double INTAKE_EJECT_SPEED = 0.8; //                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             ` FIXME
 
     public static final double INTAKE_EJECT_TIME = 0.3; // FIXME
     public static final double INTAKE_STOWING_SPEED = 0.1; // FIXME
@@ -166,13 +166,9 @@ public final class Constants {
     // Intake hinge uses a single motor (right-side convention kept historically)
     public static final int HINGE_MOTOR_ID = 44;
 
-    public static final double HINGE_STOW_POSITION = 0.1; // FIXME
-    public static final double HINGE_FEED_POSITION = -6.3; // FIXME
-    public static final double HINGE_INTAKE_POSITION = -6.3; // FIXME
-    public static final double HINGE_EJECT_POSITION = 0; // FIXME
     public static final int HINGE_SMART_CURRENT_LIMIT = 50; // FIXME
-    public static final double HINGE_DEPLOY_DUTY_CYCLE = -0.2;
-    public static final double HINGE_STOW_DUTY_CYCLE = 0.2;
+    public static final double HINGE_DEPLOY_DUTY_CYCLE = -0.4;
+    public static final double HINGE_STOW_DUTY_CYCLE = 0.4;
 
     // Basic constants
     public static final SparkMax.MotorType BRUSHLESS = SparkMax.MotorType.kBrushless;
