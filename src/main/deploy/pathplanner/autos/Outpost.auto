@@ -11,12 +11,6 @@
           }
         },
         {
-          "type": "wait",
-          "data": {
-            "waitTime": 2.0
-          }
-        },
-        {
           "type": "parallel",
           "data": {
             "commands": [
@@ -38,7 +32,7 @@
         {
           "type": "wait",
           "data": {
-            "waitTime": 4.0
+            "waitTime": 3.0
           }
         },
         {

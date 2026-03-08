@@ -284,7 +284,7 @@ public class IntakeSubsystem extends SubsystemBase {
     }
 
     public Command deployIntakeAuto() {
-        return runHingeAtDutyCycleForSeconds(EVIL_HINGE_DUTY_CYCLE, 1);
+        return runHingeAtDutyCycleForSeconds(EVIL_HINGE_DUTY_CYCLE, 2);
     }
 
     public Command stowIntake() {

@@ -188,15 +188,15 @@ public class RobotContainer {
 
   public Command getAutonomousCommand() {
     // If you later add an auto chooser, return selected command here.
-    // return null;
-    return AutoBuilder.buildAuto("Outpost");
+    //return AutoBuilder.buildAuto("Backup Auto");
+    return null;
   }
 
   private void registerNamedCommands() {
     NamedCommands.registerCommand("Shoot", new CompleteScoreCommand(shooter, indexer));
     NamedCommands.registerCommand("Ramp Shooter Long", new RampShooterLongCommand(shooter));
     NamedCommands.registerCommand("Deploy Intake", new DeployIntakeCommand(intake));
-    NamedCommands.registerCommand("Feed All", new StartFeedingCommand(shooter, indexer));
+    NamedCommands.registerCommand("Feed All", new StartFeedingCommand(shooter, indexer, intake));
   }
 
   public void startTeleop() {
