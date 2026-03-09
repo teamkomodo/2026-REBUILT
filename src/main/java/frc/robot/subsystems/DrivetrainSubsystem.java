@@ -39,6 +39,8 @@ import static frc.robot.Constants.*;
 import java.util.function.DoubleSupplier;
 
 import com.studica.frc.AHRS;
+import com.ctre.phoenix6.controls.LarsonAnimation;
+import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.util.DriveFeedforwards;
 
@@ -229,21 +231,23 @@ public class DrivetrainSubsystem implements Subsystem {
     }
 
     private void setupPathPlanner() {
-        // try {
-        // config = RobotConfig.fromGUISettings();
-        // AutoBuilder.configure(
-        // this::getPose,
-        // this::resetPose,
-        // this::getChassisSpeeds,
-        // this::robotRelativeDrive,
-        // HOLONOMIC_PATH_FOLLOWER_CONFIG,
-        // config,
-
-        // this
-        // );
-        // } catch (Exception e){
-        // e.printStackTrace();
-        // }
+        try {
+            config = RobotConfig.fromGUISettings();
+            System.out.println("================== Config auto: ");
+            AutoBuilder.configure(
+                    this::getPose,
+                    this::resetPose,
+                    this::getChassisSpeeds,
+                    this::robotRelativeDrive,
+                    HOLONOMIC_PATH_FOLLOWER_CONFIG,
+                    config,
+                    ON_RED_ALLIANCE,
+                    this
+            );
+        } catch (Exception e) {
+            System.out.println("================== ERROR :");
+            e.printStackTrace();
+        }
     }
 
     private void updateTelemetry() {
@@ -294,6 +298,7 @@ public class DrivetrainSubsystem implements Subsystem {
 
     public void drive(double xSpeed, double ySpeed, double angularVelocity, boolean fieldRelative) {
         ChassisSpeeds chassisSpeeds = new ChassisSpeeds(xSpeed, ySpeed, angularVelocity);
+        desaturateChassisSpeedsAcceleration(chassisSpeeds);
         SwerveModuleState[] moduleStates = kinematics.toSwerveModuleStates(
                 fieldRelative
                         ? ChassisSpeeds.fromFieldRelativeSpeeds(
@@ -309,6 +314,7 @@ public class DrivetrainSubsystem implements Subsystem {
 
         SwerveDriveKinematics.desaturateWheelSpeeds(moduleStates, MAX_MODULE_VELOCITY);
         setModuleStates(moduleStates);
+        lastCommandedChassisSpeeds = chassisSpeeds;
     }
 
     public void drive(ChassisSpeeds speeds, boolean fieldRelative) {

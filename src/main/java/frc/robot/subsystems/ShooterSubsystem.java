@@ -45,15 +45,11 @@ public class ShooterSubsystem extends SubsystemBase {
             .publish();
 
     private final SparkFlex shooterMotorRight;
-    private final SparkFlex shooterMotorLeft;
     private final SparkFlexConfig shooterMotorRightConfig;
-    private final SparkFlexConfig shooterMotorLeftConfig;
 
     // Feeder motors that move balls into the flywheel (lead + follower)
     private final SparkFlex feederRightMotor;
-    private final SparkFlex feederLeftMotor;
     private final SparkFlexConfig feederRightMotorConfig;
-    private final SparkFlexConfig feederLeftMotorConfig;
 
     private final SparkClosedLoopController shooterMotorRightController;
     private final RelativeEncoder shooterMotorRightRelativeEncoder;
@@ -76,15 +72,10 @@ public class ShooterSubsystem extends SubsystemBase {
     public ShooterSubsystem() {
 
         shooterMotorRight = new SparkFlex(SHOOTER_MOTOR_RIGHT_ID, BRUSHLESS);
-        shooterMotorLeft = new SparkFlex(SHOOTER_MOTOR_LEFT_ID, BRUSHLESS);
         shooterMotorRightConfig = new SparkFlexConfig();
-        shooterMotorLeftConfig = new SparkFlexConfig();
-
         // Lead feeder (contains encoder & controller), follower mirrors the lead
         feederRightMotor = new SparkFlex(Constants.SHOOTER_FEEDER_MOTOR_RIGHT_ID, BRUSHLESS);
-        feederLeftMotor = new SparkFlex(Constants.SHOOTER_FEEDER_MOTOR_LEFT_ID, BRUSHLESS);
         feederRightMotorConfig = new SparkFlexConfig();
-        feederLeftMotorConfig = new SparkFlexConfig();
 
         shooterMotorRightController = shooterMotorRight.getClosedLoopController();
         shooterMotorRightRelativeEncoder = shooterMotorRight.getEncoder();
@@ -141,19 +132,6 @@ public class ShooterSubsystem extends SubsystemBase {
                 ResetMode.kResetSafeParameters,
                 PersistMode.kPersistParameters);
 
-        shooterMotorLeftConfig
-                .smartCurrentLimit(
-                        SHOOTER_SMART_CURRENT_LIMIT,
-                        SHOOTER_SMART_CURRENT_LIMIT,
-                        SHOOTER_MAX_RPM)
-                .follow(SHOOTER_MOTOR_RIGHT_ID, true)
-                .idleMode(IdleMode.kCoast);
-
-        shooterMotorLeft.configure(
-                shooterMotorLeftConfig,
-                ResetMode.kResetSafeParameters,
-                PersistMode.kPersistParameters);
-
         // Configure feeder motor
         // Lead feeder closed-loop configuration (encoder/controller on lead)
         feederRightMotorConfig.closedLoop
@@ -167,17 +145,6 @@ public class ShooterSubsystem extends SubsystemBase {
 
         feederRightMotor.configure(
                 feederRightMotorConfig,
-                ResetMode.kResetSafeParameters,
-                PersistMode.kPersistParameters);
-
-        // Configure follower to mirror the lead (no inversion)
-        feederLeftMotorConfig
-                .follow(Constants.SHOOTER_FEEDER_MOTOR_RIGHT_ID, true)
-                .smartCurrentLimit(SHOOTER_FEEDER_SMART_CURRENT_LIMIT)
-                .idleMode(IdleMode.kBrake);
-
-        feederLeftMotor.configure(
-                feederLeftMotorConfig,
                 ResetMode.kResetSafeParameters,
                 PersistMode.kPersistParameters);
     }
@@ -323,6 +290,10 @@ public class ShooterSubsystem extends SubsystemBase {
 
     public Command longShotCommand() {
         return updateFlywheelSpeedRPM(LONG_BASELINE_RPM);
+    }
+
+    public Command longShotCommandAuto() {
+        return updateFlywheelSpeedRPM(2050);
     }
 
     public Command passShotCommand() {
