@@ -30,6 +30,7 @@ import frc.robot.commands.auto.CompleteScoreCommand;
 import frc.robot.commands.auto.DeployIntakeCommand;
 import frc.robot.commands.auto.RampShooterLongCommand;
 import frc.robot.commands.auto.StartFeedingCommand;
+import frc.robot.commands.auto.StopFeedCommand;
 import frc.robot.state_machines.RobotStateMachine;
 import frc.robot.state_machines.RobotStateMachine.RobotState;
 import frc.robot.state_machines.SystemStateMachine.SystemState;
@@ -188,8 +189,8 @@ public class RobotContainer {
 
   public Command getAutonomousCommand() {
     // If you later add an auto chooser, return selected command here.
-    //return AutoBuilder.buildAuto("Backup Auto");
-    return null;
+    return AutoBuilder.buildAuto("Outpost");
+    //return null;
   }
 
   private void registerNamedCommands() {
@@ -197,6 +198,7 @@ public class RobotContainer {
     NamedCommands.registerCommand("Ramp Shooter Long", new RampShooterLongCommand(shooter));
     NamedCommands.registerCommand("Deploy Intake", new DeployIntakeCommand(intake));
     NamedCommands.registerCommand("Feed All", new StartFeedingCommand(shooter, indexer, intake));
+    NamedCommands.registerCommand("Stop", new StopFeedCommand(shooter, intake));
   }
 
   public void startTeleop() {

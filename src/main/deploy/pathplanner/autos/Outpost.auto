@@ -32,7 +32,7 @@
         {
           "type": "wait",
           "data": {
-            "waitTime": 3.0
+            "waitTime": 2.0
           }
         },
         {
@@ -45,6 +45,24 @@
           "type": "named",
           "data": {
             "name": "Feed All"
+          }
+        },
+        {
+          "type": "wait",
+          "data": {
+            "waitTime": 3.0
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "Stop"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "New New Path"
           }
         }
       ]

@@ -58,8 +58,8 @@ public class IntakeSubsystem extends SubsystemBase {
     // Intake motor and controller.
     private final SparkFlex intakeMotorLeft;
     private final SparkFlexConfig intakeMotorLeftConfig;
-    private final SparkFlex intakeMotorRight;
-    private final SparkFlexConfig intakeMotorRightConfig;
+    // private final SparkFlex intakeMotorRight;
+    // private final SparkFlexConfig intakeMotorRightConfig;
 
     private final SparkClosedLoopController intakeMotorLeftController;
     private final RelativeEncoder intakeMotorLeftRelativeEncoder;
@@ -95,10 +95,10 @@ public class IntakeSubsystem extends SubsystemBase {
 
     public IntakeSubsystem() {
         // Intake motors and controllers
-        intakeMotorLeft = new SparkFlex(INTAKE_MOTOR_LEFT_ID, BRUSHLESS);
+        intakeMotorLeft = new SparkFlex(INTAKE_MOTOR_RIGHT_ID, BRUSHLESS);
         intakeMotorLeftConfig = new SparkFlexConfig();
-        intakeMotorRight = new SparkFlex(INTAKE_MOTOR_RIGHT_ID, BRUSHLESS);
-        intakeMotorRightConfig = new SparkFlexConfig();
+        // intakeMotorRight = new SparkFlex(INTAKE_MOTOR_RIGHT_ID, BRUSHLESS);
+        // intakeMotorRightConfig = new SparkFlexConfig();
 
         intakeMotorLeftController = intakeMotorLeft.getClosedLoopController();
         intakeMotorLeftRelativeEncoder = intakeMotorLeft.getEncoder();
@@ -145,7 +145,7 @@ public class IntakeSubsystem extends SubsystemBase {
         intakeMotorLeftConfig
                 .smartCurrentLimit(INTAKE_SMART_CURRENT_LIMIT)
                 .idleMode(IdleMode.kCoast)
-                .inverted(false);
+                .inverted(true);
 
         intakeMotorLeftConfig.closedLoop
                 .p(intakePidGains.p)
@@ -157,15 +157,15 @@ public class IntakeSubsystem extends SubsystemBase {
                 ResetMode.kResetSafeParameters,
                 PersistMode.kPersistParameters);
 
-        intakeMotorRightConfig
-            .smartCurrentLimit(INTAKE_SMART_CURRENT_LIMIT)
-            .follow(INTAKE_MOTOR_LEFT_ID, true)
-            .idleMode(IdleMode.kCoast);
+        // intakeMotorRightConfig
+        //     .smartCurrentLimit(INTAKE_SMART_CURRENT_LIMIT)
+        //     .follow(INTAKE_MOTOR_LEFT_ID, true)
+        //     .idleMode(IdleMode.kCoast);
 
-        intakeMotorRight.configure(
-            intakeMotorRightConfig,
-            ResetMode.kResetSafeParameters,
-            PersistMode.kPersistParameters);
+        // intakeMotorRight.configure(
+        //     intakeMotorRightConfig,
+        //     ResetMode.kResetSafeParameters,
+        //     PersistMode.kPersistParameters);
 
         hingeMotorConfig
                 .smartCurrentLimit(HINGE_SMART_CURRENT_LIMIT)

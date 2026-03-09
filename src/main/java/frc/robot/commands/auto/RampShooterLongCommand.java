@@ -19,7 +19,7 @@ public class RampShooterLongCommand extends DynamicCommand {
     @Override
     protected Command getCommand() {
         return new SequentialCommandGroup(
-            shooterSubsystem.longShotCommand()
+            shooterSubsystem.longShotCommandAuto()
         );
             
     }

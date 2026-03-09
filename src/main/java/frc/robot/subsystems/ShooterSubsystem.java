@@ -293,7 +293,7 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     public Command longShotCommandAuto() {
-        return updateFlywheelSpeedRPM(LONG_BASELINE_RPM);
+        return updateFlywheelSpeedRPM(2050);
     }
 
     public Command passShotCommand() {
