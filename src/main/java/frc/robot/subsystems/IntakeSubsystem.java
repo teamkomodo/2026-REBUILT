@@ -18,6 +18,7 @@ import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringPublisher;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
@@ -57,6 +58,8 @@ public class IntakeSubsystem extends SubsystemBase {
     // Intake motor and controller.
     private final SparkFlex intakeMotorLeft;
     private final SparkFlexConfig intakeMotorLeftConfig;
+    // private final SparkFlex intakeMotorRight;
+    // private final SparkFlexConfig intakeMotorRightConfig;
 
     private final SparkClosedLoopController intakeMotorLeftController;
     private final RelativeEncoder intakeMotorLeftRelativeEncoder;
@@ -92,8 +95,10 @@ public class IntakeSubsystem extends SubsystemBase {
 
     public IntakeSubsystem() {
         // Intake motors and controllers
-        intakeMotorLeft = new SparkFlex(INTAKE_MOTOR_LEFT_ID, BRUSHLESS);
+        intakeMotorLeft = new SparkFlex(INTAKE_MOTOR_RIGHT_ID, BRUSHLESS);
         intakeMotorLeftConfig = new SparkFlexConfig();
+        // intakeMotorRight = new SparkFlex(INTAKE_MOTOR_RIGHT_ID, BRUSHLESS);
+        // intakeMotorRightConfig = new SparkFlexConfig();
 
         intakeMotorLeftController = intakeMotorLeft.getClosedLoopController();
         intakeMotorLeftRelativeEncoder = intakeMotorLeft.getEncoder();
@@ -140,7 +145,7 @@ public class IntakeSubsystem extends SubsystemBase {
         intakeMotorLeftConfig
                 .smartCurrentLimit(INTAKE_SMART_CURRENT_LIMIT)
                 .idleMode(IdleMode.kCoast)
-                .inverted(false);
+                .inverted(true);
 
         intakeMotorLeftConfig.closedLoop
                 .p(intakePidGains.p)
@@ -151,6 +156,16 @@ public class IntakeSubsystem extends SubsystemBase {
                 intakeMotorLeftConfig,
                 ResetMode.kResetSafeParameters,
                 PersistMode.kPersistParameters);
+
+        // intakeMotorRightConfig
+        //     .smartCurrentLimit(INTAKE_SMART_CURRENT_LIMIT)
+        //     .follow(INTAKE_MOTOR_LEFT_ID, true)
+        //     .idleMode(IdleMode.kCoast);
+
+        // intakeMotorRight.configure(
+        //     intakeMotorRightConfig,
+        //     ResetMode.kResetSafeParameters,
+        //     PersistMode.kPersistParameters);
 
         hingeMotorConfig
                 .smartCurrentLimit(HINGE_SMART_CURRENT_LIMIT)
@@ -265,7 +280,11 @@ public class IntakeSubsystem extends SubsystemBase {
     }
 
     public Command deployIntake() {
-        return runHingeAtDutyCycleForSeconds(HINGE_DEPLOY_DUTY_CYCLE, 1);
+        return runHingeAtDutyCycleForSeconds(HINGE_DEPLOY_DUTY_CYCLE, 0.5);
+    }
+
+    public Command deployIntakeAuto() {
+        return runHingeAtDutyCycleForSeconds(EVIL_HINGE_DUTY_CYCLE, 2);
     }
 
     public Command stowIntake() {
@@ -293,10 +312,9 @@ public class IntakeSubsystem extends SubsystemBase {
     public Command ejectIntakeCommand() {
         return new SequentialCommandGroup(
                 setState(IntakeState.EJECT),
-                holdIntake(),
                 updateIntakeSpeed(INTAKE_EJECT_SPEED),
                 new WaitCommand(INTAKE_EJECT_TIME),
-                stowIntakeCommand());
+                stopIntake());
     }
 
     public Command stowIntakeCommand() {

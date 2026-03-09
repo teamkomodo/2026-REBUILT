@@ -27,6 +27,10 @@ import frc.robot.subsystems.ShooterSubsystem;
 import frc.robot.state_machines.SystemStateMachine;
 import frc.robot.state_machines.TeleopStateMachine;
 import frc.robot.commands.auto.CompleteScoreCommand;
+import frc.robot.commands.auto.DeployIntakeCommand;
+import frc.robot.commands.auto.RampShooterLongCommand;
+import frc.robot.commands.auto.StartFeedingCommand;
+import frc.robot.commands.auto.StopFeedCommand;
 import frc.robot.state_machines.RobotStateMachine;
 import frc.robot.state_machines.RobotStateMachine.RobotState;
 import frc.robot.state_machines.SystemStateMachine.SystemState;
@@ -63,7 +67,7 @@ public class RobotContainer {
 
   public RobotContainer() {
     configureBindings();
-    
+
     registerNamedCommands();
   }
 
@@ -71,44 +75,35 @@ public class RobotContainer {
   // @formatter:off
   /*
    *   Driver       | Control
+   * --------------------------------------------
    * Joysticks      | Drive
    * X Button       | Zero Gyro
    * Left Bumper    | Toggle Speed Mode
-   * 
-   *   Operator     | Control
-   * Left Bumper    | Operator Override Toggle
-   * X Button       | Enter Manual Control (needs Operator Override)
-   * Right Trigger  | Intake (System INTAKE)
-   * Left Trigger   | Stow (System STOW)
-   * POV Down       | Eject (System EMPTYING)
-   * A Button       | SHOOT (System SHOOT)
-   * Y Button       | Reset Robot
-   * POV Up         | Long SHOOT
-   * POV Left       | Teleop STEAL (needs Operator Override)
-   * POV Right      | Teleop SCORE (needs Operator Override)
-   * Right Bumper   | Start/Stop Feeding (pressed/unpressed) (System SHOOT)
-   * B Button       | Feed Once (Shoot once)
    */
-  /*
+
+
+   /*
    * Manual Control  | System Action
-   *   Operator      | Control
-   * Left Bumper     | Operator Override Toggle (needs Operator Override)
-   * X Button        | Exit Manual Control
-   * Right Trigger   | Manual Intake (Duty Cycle)
-   * Left Trigger    | Manual Intake Stow
-   * POV Down        | Manual Eject (Stop Indexer/Reverse Intake)
-   * A Button        | Manual Shooter (Short)
-   * 
-   * Y Button        | Reset Robot
-   * POV Up          | Manual Shooter (Pass)
-   * POV Left        | ----
-   * POV Right       | ----
-   * Right Bumper    | Manual Shooter Feed Start/Stop (pressed/unpressed)
-   * B Button        | Manual Shooter Feed Once
+   * Operator        | Control
+   * ---------------------------------------------
+   * Right Bumper    | Manual Intake (Deploy & Start)
+   * Left Bumper     | Manual Shooter Feed (Start/Stop)
+   * Right Trigger   | Manual Shoot Short (Ramp Up)
+   * Left Trigger    | Manual Short Long (Ramp Up)
+   * A Button        | Manual Stop All
+   * X Button        | Manual Shooter Feed (Once)
+   * B Button        | 
+   * Y Button        | 
+   * POV Up          | Manual Intake Stow
+   * POV Down        | Manual Eject
+   * POV Right       | 
+   * POV Left        | 
    */
+
+
+
   // @formatter:on
   private void configureBindings() {
-    SmartDashboard.putNumber("LEFT_STEER_OFFSET", FRONT_LEFT_STEER_OFFSET);
     // Driver controls
     Trigger driverX = driverController.x();
     Trigger driverLB = driverController.leftBumper();
@@ -117,7 +112,8 @@ public class RobotContainer {
     driverX.onTrue(drivetrain.zeroGyroCommand());
     driverLB.onTrue(drivetrain.disableSpeedModeCommand());
     driverLB.onFalse(drivetrain.enableSpeedModeCommand());
-    driverRB.onTrue(Commands.runOnce(() -> System.out.println("=========  RECONFIGURE PID")).andThen(shooter.reconfigureRobotTuningCommand()));
+    driverRB.onTrue(Commands.runOnce(() -> System.out.println("=========  RECONFIGURE PID"))
+        .andThen(shooter.reconfigureRobotTuningCommand()));
     // driverRB reserved for align/auto actions if implemented
     // driverRB.onTrue(/* some align command */);
 
@@ -137,49 +133,50 @@ public class RobotContainer {
     Trigger operatorPOVRight = operatorController.povRight();
 
     // OPERATOR OVERRIDE
-    operatorLB
-        .onTrue(Commands.runOnce(() -> operatorOverrideValue = true))
-        .onFalse(Commands.runOnce(() -> operatorOverrideValue = false));
+    // operatorLB
+    //     .onTrue(Commands.runOnce(() -> operatorOverrideValue = true))
+    //     .onFalse(Commands.runOnce(() -> operatorOverrideValue = false));
 
     // Enter Manual Mode
     // Toggle mode is commented out right now
     // operatorX.onTrue(
-    //     Commands.defer(() -> {
-    //       System.out.println("==== Attempting to toggle MANUAL state. Current state is manual?: "
-    //           + teleopSM.isInState(TeleopState.MANUAL));
-    //       TeleopState targetState = teleopSM.isInState(TeleopState.MANUAL) ? TeleopState.SCORE : TeleopState.MANUAL;
-    //       Command requestCommand = teleopSM.requestState(targetState);
-    //       return requestCommand;
-    //     }, Set.of(teleopSM)));
-    operatorX.onTrue(teleopSM.requestState(TeleopState.MANUAL));
+    // Commands.defer(() -> {
+    // System.out.println("==== Attempting to toggle MANUAL state. Current state is
+    // manual?: "
+    // + teleopSM.isInState(TeleopState.MANUAL));
+    // TeleopState targetState = teleopSM.isInState(TeleopState.MANUAL) ?
+    // TeleopState.SCORE : TeleopState.MANUAL;
+    // Command requestCommand = teleopSM.requestState(targetState);
+    // return requestCommand;
+    // }, Set.of(teleopSM)));
+    //operatorX.onTrue(teleopSM.requestState(TeleopState.MANUAL));
 
     // Intake
     // Call both the non-manual (state request) and the manual-gated action.
     // Non-manual requests come first so the guard/transition is evaluated before
     // the manual command (the manual command is gated to MANUAL state).
-    operatorRT.onTrue(Commands.parallel(systemSM.requestState(SystemState.INTAKE), manual.intake()));
-    operatorLT.onTrue(Commands.parallel(systemSM.requestState(SystemState.STOW), manual.intakeStow()));
-    operatorPOVDown.onTrue(Commands.parallel(systemSM.requestState(SystemState.EMPTYING), manual.eject()));
+    operatorRB.onTrue(manual.intake());
+    operatorPOVUp.onTrue(manual.intakeStow());
+    operatorPOVDown.onTrue(manual.eject());
 
     // Teleop quick switches (non-manual): POV left/right pick STEAL/SCORE modes
-    operatorPOVLeft.onTrue(teleopSM.requestState(TeleopState.STEAL));
-    operatorPOVRight.onTrue(teleopSM.requestState(TeleopState.SCORE));
 
     // Shooter
     // Map face buttons to both manual shot commands and a guarded request to enter
     // SHOOT.
     // Shooter: request SHOOT + teleop SCORE (so the system and teleop modes align)
-    operatorA.onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT), manual.shootShort()));
-    operatorY.onTrue(Commands.parallel(systemSM.requestState(SystemState.RESET), manual.reset()));
-    // operatorPOVUp.onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT), manual.shootPass()));
-    operatorPOVUp.onTrue(manual.shootLong());
+    operatorRT.onTrue(manual.shootShort());
+    operatorLT.onTrue(manual.shootLong());
+    operatorA.onTrue(manual.reset());
+    // operatorPOVUp.onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT),
+    // manual.shootPass()));
     // Start feeding should normally be part of SHOOT; request SHOOT too.
-    operatorRB
-        .onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT), manual.startFeeding()))
-        .onFalse(Commands.parallel(manual.stopFeeding()));
+    operatorLB
+        .onTrue(manual.startFeeding())
+        .onFalse(manual.stopFeeding());
     // // Shoot once
 
-    operatorB.onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT), manual.feedOnce()));
+    operatorX.onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT), manual.feedOnce()));
 
     // Default drivetrain command (joystick driving)
     drivetrain.setDefaultCommand(
@@ -192,11 +189,16 @@ public class RobotContainer {
 
   public Command getAutonomousCommand() {
     // If you later add an auto chooser, return selected command here.
-    return AutoBuilder.buildAuto("Shoot");
+    return AutoBuilder.buildAuto("Outpost");
+    //return null;
   }
 
   private void registerNamedCommands() {
-    NamedCommands.registerCommand("Reset", new CompleteScoreCommand(intake, shooter, indexer));
+    NamedCommands.registerCommand("Shoot", new CompleteScoreCommand(shooter, indexer));
+    NamedCommands.registerCommand("Ramp Shooter Long", new RampShooterLongCommand(shooter));
+    NamedCommands.registerCommand("Deploy Intake", new DeployIntakeCommand(intake));
+    NamedCommands.registerCommand("Feed All", new StartFeedingCommand(shooter, indexer, intake));
+    NamedCommands.registerCommand("Stop", new StopFeedCommand(shooter, intake));
   }
 
   public void startTeleop() {
@@ -204,9 +206,16 @@ public class RobotContainer {
     // teleop timeline (non-blocking; these return Commands and are scheduled).
     CommandScheduler.getInstance().schedule(robotSM.requestState(RobotState.TELEOP));
     // No master command; it is not helping
-    // CommandScheduler.getInstance().schedule(teleopMasterCommand = teleopSM.teleopMasterCommand());
+    // CommandScheduler.getInstance().schedule(teleopMasterCommand =
+    // teleopSM.teleopMasterCommand());
     if (START_IN_MANUAL) {
-      CommandScheduler.getInstance().schedule(teleopSM.requestState(TeleopState.MANUAL));
+      CommandScheduler.getInstance().schedule(
+        Commands.sequence(
+          Commands.runOnce(() -> { operatorOverrideValue = true; }),
+          teleopSM.requestState(TeleopState.MANUAL),
+          Commands.runOnce(() -> { operatorOverrideValue = false; })
+        )
+      );
     }
   }
 
@@ -223,3 +232,23 @@ public class RobotContainer {
             teleopSM.enterDisabled()));
   }
 }
+// COMMANDS FOR AUTO (NOT USED FOR NOW!)
+
+/**
+   *   Operator     | Control
+   * ---------------------------------------------
+   *   Left Bumper    | Operator Override Toggle
+   * X Button       | Enter Manual Control (needs Operator Override)
+   * Right Trigger  | Intake (System INTAKE)
+   * Left Trigger   | Stow (System STOW)
+   * POV Down       | Eject (System EMPTYING)
+   * A Button       | SHOOT (System SHOOT)
+   * Y Button       | Reset Robot
+   * POV Up         | Long SHOOT
+   * POV Left       | Teleop STEAL (needs Operator Override)
+   * POV Right      | Teleop SCORE (needs Operator Override)
+   * Right Bumper   | Start/Stop Feeding (pressed/unpressed) (System SHOOT)
+   * B Button       | Feed Once (Shoot once)
+   * ---------------------------------------------
+   * 
+   */
