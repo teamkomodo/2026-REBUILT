@@ -81,6 +81,7 @@ public class RobotContainer {
    * Joysticks      | Drive
    * X Button       | Zero Gyro
    * Left Bumper    | Toggle Speed Mode
+   * B Button       | Toggle auto align to our alliance hub
    */
 
 
@@ -90,8 +91,8 @@ public class RobotContainer {
    * ---------------------------------------------
    * Right Bumper    | Manual Intake (Deploy & Start)
    * Left Bumper     | Manual Shooter Feed (Start/Stop)
-   * Right Trigger   | Manual Shoot Short (Ramp Up)
-   * Left Trigger    | Manual Short Long (Ramp Up)
+   * Right Trigger   | Manual Shooter Autodistance Toggle On/Off // XXX: Replaces shooter short
+   * Right Trigger   | Manual Shoot Short (Ramp Up) // XXX: Replaces shooter long
    * A Button        | Manual Stop All
    * X Button        | Manual Shooter Feed (Once)
    * B Button        | 
@@ -109,13 +110,12 @@ public class RobotContainer {
     // Driver controls
     Trigger driverX = driverController.x();
     Trigger driverLB = driverController.leftBumper();
-    Trigger driverRB = driverController.rightBumper(); // Currently unused
+    Trigger driverB = driverController.b();
 
     driverX.onTrue(drivetrain.zeroGyroCommand());
     driverLB.onTrue(drivetrain.disableSpeedModeCommand());
     driverLB.onFalse(drivetrain.enableSpeedModeCommand());
-    driverRB.onTrue(Commands.runOnce(() -> System.out.println("=========  RECONFIGURE PID"))
-        .andThen(shooter.reconfigureRobotTuningCommand()));
+    driverB.onTrue(drivetrain.toggleAutoAlignCommand());
     // driverRB reserved for align/auto actions if implemented
     // driverRB.onTrue(/* some align command */);
 
@@ -141,17 +141,18 @@ public class RobotContainer {
 
     // Enter Manual Mode
     // Toggle mode is commented out right now
+
+    // @formatter:off
     // operatorX.onTrue(
-    // Commands.defer(() -> {
-    // System.out.println("==== Attempting to toggle MANUAL state. Current state is
-    // manual?: "
-    // + teleopSM.isInState(TeleopState.MANUAL));
-    // TeleopState targetState = teleopSM.isInState(TeleopState.MANUAL) ?
-    // TeleopState.SCORE : TeleopState.MANUAL;
-    // Command requestCommand = teleopSM.requestState(targetState);
-    // return requestCommand;
-    // }, Set.of(teleopSM)));
+    //     Commands.defer(() -> {
+    //       System.out.println("==== Attempting to toggle MANUAL state. Current state is manual?: "
+    //           + teleopSM.isInState(TeleopState.MANUAL));
+    //       TeleopState targetState = teleopSM.isInState(TeleopState.MANUAL) ? TeleopState.SCORE : TeleopState.MANUAL;
+    //       Command requestCommand = teleopSM.requestState(targetState);
+    //       return requestCommand;
+    //     }, Set.of(teleopSM)));
     // operatorX.onTrue(teleopSM.requestState(TeleopState.MANUAL));
+    // @formatter:on
 
     // Intake
     // Call both the non-manual (state request) and the manual-gated action.

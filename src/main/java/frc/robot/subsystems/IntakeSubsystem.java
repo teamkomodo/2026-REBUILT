@@ -214,29 +214,15 @@ public class IntakeSubsystem extends SubsystemBase {
     }
 
     public Command startIntakeStowSpeed() {
-        return updateIntakeSpeed(INTAKE_STOWING_SPEED);
+        return updateIntakeDutyCycle(INTAKE_STOWING_SPEED);
     }
 
-    public Command updateIntakeSpeed(double desiredSpeed) {
+    public Command updateIntakeDutyCycle(double desiredSpeed) {
         return Commands.runOnce(() -> {
             System.out.println("======RUNNING INTAKE");
             this.desiredSpeed = desiredSpeed;
             setIntakeDutyCycle(desiredSpeed);
         });
-    }
-
-    public void setHingePosition(double position) {
-        System.out.println("========== SETTING HINGE TO POSITION: " + position);
-        System.out.println("========== HINGE POS: " + getHingeEncoderAbsolutePositionRotations());
-        hingeMotorController.setSetpoint(position, ControlType.kPosition);
-    }
-
-    public Command moveHingeToPositionAndWait(double position) {
-        return Commands.sequence(
-                Commands.runOnce(() -> setHingePosition(position)),
-                Commands.race(
-                        Commands.waitSeconds(3),
-                        Commands.waitUntil(this::isAtDesiredPosition)));
     }
 
     public Command runHingeAtDutyCycleForSeconds(double dutyCycle, double seconds) {
@@ -246,17 +232,6 @@ public class IntakeSubsystem extends SubsystemBase {
                 }),
                 Commands.waitSeconds(seconds),
                 Commands.runOnce(() -> updateHingeDutyCycle(0)));
-    }
-
-    public Command moveHingeToPositionAndStop(double position) {
-        System.out.println("==============MOVING TO POSITION: " + position);
-        return Commands.sequence(
-                Commands.runOnce(() -> setHingePosition(position)),
-
-                Commands.race(
-                        Commands.waitSeconds(3),
-                        Commands.waitUntil(this::isAtDesiredPosition)),
-                stopHinge());
     }
 
     public void updateHingeDutyCycle(double dutycycle) {
@@ -291,28 +266,23 @@ public class IntakeSubsystem extends SubsystemBase {
         return runHingeAtDutyCycleForSeconds(HINGE_STOW_DUTY_CYCLE, 1);
     }
 
-    public Command updateHingePosition(double desiredPosition) {
-        this.desiredPositionRotations = desiredPosition;
-        return Commands.runOnce(() -> setHingePosition(this.desiredPositionRotations));
-    }
-
     public Command startIntakeCommand() {
         return new SequentialCommandGroup(
                 setState(IntakeState.INTAKE),
-                updateIntakeSpeed(INTAKE_INTAKE_SPEED),
+                updateIntakeDutyCycle(INTAKE_DUTYCYCLE),
                 deployIntake());
     }
 
     public Command feedIntakeCommand() {
         return new ParallelCommandGroup(
                 setState(IntakeState.FEED),
-                updateIntakeSpeed(INTAKE_FEED_SPEED));
+                updateIntakeDutyCycle(INTAKE_DUTYCYCLE));
     }
 
     public Command ejectIntakeCommand() {
         return new SequentialCommandGroup(
                 setState(IntakeState.EJECT),
-                updateIntakeSpeed(INTAKE_EJECT_SPEED),
+                updateIntakeDutyCycle(INTAKE_EJECT_SPEED),
                 new WaitCommand(INTAKE_EJECT_TIME),
                 stopIntake());
     }

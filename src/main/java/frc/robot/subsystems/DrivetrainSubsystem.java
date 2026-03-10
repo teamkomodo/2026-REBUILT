@@ -53,7 +53,11 @@ public class DrivetrainSubsystem implements Subsystem {
 
     public boolean speedMode = !false;
     private double brakeModeScale = 0;
-    public boolean atReef = false;
+    public boolean useAutoAlign = false;
+
+    private double xVelocity = 0;
+    private double yVelocity = 0;
+    private double angularVelocity = 0;
 
     // Telemetry
     public static final NetworkTable drivetrainNT = NetworkTableInstance.getDefault().getTable("drivetrain");
@@ -211,6 +215,14 @@ public class DrivetrainSubsystem implements Subsystem {
         frontRight.periodic();
         backLeft.periodic();
         backRight.periodic();
+        if (useAutoAlign) {
+            Rotation2d targetAngle = poseEstimationSubsystem.getRotationToHub();
+            double targetOmega = rotationController.calculate(getRotation().getRadians(), targetAngle.getRadians());
+            drive(xVelocity, yVelocity, targetOmega, FIELD_RELATIVE_DRIVE);
+        } else {
+            drive(xVelocity, yVelocity, angularVelocity, FIELD_RELATIVE_DRIVE);
+
+        }
     }
 
     public void addVisionMeasurement(Pose2d pose, double timestamp) {
@@ -271,6 +283,12 @@ public class DrivetrainSubsystem implements Subsystem {
 
     public Pose2d getPoseEstimation() {
         return (poseEstimator.getEstimatedPosition());
+    }
+
+    public Command toggleAutoAlignCommand() {
+        return Commands.run(() -> {
+
+        }, this);
     }
 
     public void drive(double xSpeed, double ySpeed, double angularVelocity, boolean fieldRelative) {
@@ -401,8 +419,8 @@ public class DrivetrainSubsystem implements Subsystem {
      *         degrees being the direction the robot was facing at startup
      */
     public Rotation2d getRotation() {
-        return navX.getRotation2d().plus(Rotation2d.fromRadians(Math.PI));
-
+        //return navX.getRotation2d().plus(Rotation2d.fromRadians(Math.PI));
+        return poseEstimator.getEstimatedPosition().getRotation(); // maybe .plus(Math.PI)
     }
 
     public ChassisSpeeds getChassisSpeeds() {
@@ -508,7 +526,9 @@ public class DrivetrainSubsystem implements Subsystem {
             double r = oR * brakeModeScale + oR * 0.50 * (1 - brakeModeScale);
 
             ChassisSpeeds speeds = joystickAxesToChassisSpeeds(x, y, r);
-            drive(speeds, true);
+            xVelocity = speeds.vxMetersPerSecond;
+            yVelocity = speeds.vyMetersPerSecond;
+            angularVelocity = speeds.omegaRadiansPerSecond;
         }, this);
     }
 

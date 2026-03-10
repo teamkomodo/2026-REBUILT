@@ -271,6 +271,10 @@ public class SystemStateMachine extends SubsystemBase {
             return manualGate(shooter.stopFeedingCommand());
         }
 
+        public Command autoShooterDistanceToggleCommand() {
+            return manualGate(shooter.toggleAutoDistanceCommand());
+        }
+
         // Indexer Controls
         public Command startIndexer() {
             return manualGate(

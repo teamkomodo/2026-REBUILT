@@ -28,10 +28,11 @@ public class PoseEstimationSubsystem extends SubsystemBase {
     public static final Transform3d kRobotToCam = new Transform3d(new Translation3d(0.5, 0.0, 0.5),
             new Rotation3d(0, 0, 0)); // Tune me
     private final PhotonCamera camera = new PhotonCamera("photonvision"); // Todo: configure as front cam, allow for
-                                                                          // addtl cameras
-    // later
+                                                                          // addtl cameras later
     private final PhotonPoseEstimator photonEstimator = new PhotonPoseEstimator(kTagLayout, kRobotToCam);
     private final DrivetrainSubsystem drivetrainSubsystem;
+
+    private Optional<EstimatedRobotPose> lastVisionPose;
 
     public PoseEstimationSubsystem(DrivetrainSubsystem drivetrain) {
         this.drivetrainSubsystem = drivetrain;
@@ -48,6 +49,7 @@ public class PoseEstimationSubsystem extends SubsystemBase {
             }
 
             if (est.isPresent()) {
+                lastVisionPose = est;
                 return est;
             }
         }
@@ -76,16 +78,20 @@ public class PoseEstimationSubsystem extends SubsystemBase {
     public void periodic() {
         var pose = getVisionPose();
         pose.ifPresent(est -> {
-            drivetrainSubsystem.addVisionMeasurement(
-                    est.estimatedPose.toPose2d(),
-                    est.timestampSeconds);
+            if (true) { // Check whether current vision position - lastVisionPosition is less than max
+                        // velocity * delta time to avoid teleportation
+                drivetrainSubsystem.addVisionMeasurement(
+                        est.estimatedPose.toPose2d(),
+                        est.timestampSeconds);
+            }
         });
     }
 
     /**
      * Returns a Rotation2d to the team hub
      * 
-     * @return
+     * @return Rotation2d representing angle between robot and hub (use
+     *         .getRadians() / .getDegrees() for a value)
      */
     public Rotation2d getRotationToHub() {
         Translation2d hubPosMeters;
@@ -101,17 +107,34 @@ public class PoseEstimationSubsystem extends SubsystemBase {
 
     public Command printVisionPoseEstimation() {
         return Commands.runOnce(() -> {
-            /*
-             * Pose3d pose = getVisionPose();
-             * System.out.print("Pose: ");
-             * System.out.print(pose.getX());
-             * System.out.print(", ");
-             * System.out.print(pose.getY());
-             * System.out.print(", ");
-             * System.out.println(pose.getZ());
-             */
+            lastVisionPose.ifPresent(est -> {
+                System.out.print("========Timestamp: ");
+                System.out.println(est.timestampSeconds);
+                System.out.print("========Pose: X: ");
+                System.out.print(est.estimatedPose.getX());
+                System.out.print(", Y: ");
+                System.out.println(est.estimatedPose.getY());
+                System.out.print("========Rotation: Angle: ");
+                System.out.print(est.estimatedPose.getRotation().getZ()); // Verify if z is right
+                System.out.print(" degrees.");
+            });
+
         });
     }
+
+    public Command printDrivetrainPoseEstimation() {
+        Pose2d drivetrainPoseEstimation = drivetrainSubsystem.getPoseEstimation();
+        return Commands.runOnce(() -> {
+            System.out.print("========Pose: X: ");
+            System.out.print(drivetrainPoseEstimation.getX());
+            System.out.print(", Y: ");
+            System.out.print(drivetrainPoseEstimation.getY());
+            System.out.print("========Rotation: Angle: ");
+            System.out.print(drivetrainPoseEstimation.getRotation().getDegrees()); // Verify if z is right
+            System.out.print(" degrees.");
+        });
+
+    };
 
     public double getDistanceToHubCenterMeters() {
         Translation2d hubPosMeters;
