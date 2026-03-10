@@ -47,6 +47,8 @@ public class ShooterSubsystem extends SubsystemBase {
     private final SparkFlex shooterMotorRight;
     private final SparkFlexConfig shooterMotorRightConfig;
 
+    private final PoseEstimationSubsystem poseEstimationSubsystem;
+
     // Feeder motors that move balls into the flywheel (lead + follower)
     private final SparkFlex feederRightMotor;
     private final SparkFlexConfig feederRightMotorConfig;
@@ -69,7 +71,8 @@ public class ShooterSubsystem extends SubsystemBase {
     private double shooterFF = 0.00045;
     private double shooterRPM = 0;
 
-    public ShooterSubsystem() {
+    public ShooterSubsystem(PoseEstimationSubsystem poseEstimationSubsystem) {
+        this.poseEstimationSubsystem = poseEstimationSubsystem;
 
         shooterMotorRight = new SparkFlex(SHOOTER_MOTOR_RIGHT_ID, BRUSHLESS);
         shooterMotorRightConfig = new SparkFlexConfig();
@@ -273,7 +276,8 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     public Command startShootingCommand() {
-        double distanceToHub = 4.0; // 4m is a placeholder for now; FIXME: Replace placeholder
+        double distanceToHub = poseEstimationSubsystem.getDistanceToHubCenterMeters(); // 4m is a placeholder for now; FIXME: Replace
+                                                                  // placeholder
         /*
          * +
          * FIXME: need to call out to navx for this
@@ -281,7 +285,7 @@ public class ShooterSubsystem extends SubsystemBase {
          * TODO: Do I need to consider increasing distance by ball radius to account
          * for a potential offset between limelight and shooter exit center?
          */
-        return updateFlywheelSpeedRPM(2000);
+        return updateFlywheelSpeedRPM(findShooterFlywheelSpeedFromDistance(distanceToHub));
     }
 
     public Command shortShotCommand() {

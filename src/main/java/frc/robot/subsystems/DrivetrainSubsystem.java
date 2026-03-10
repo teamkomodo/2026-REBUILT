@@ -48,13 +48,8 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 
 public class DrivetrainSubsystem implements Subsystem {
 
-    // Limelight
-    private static boolean useVision = false;
-
-    private final NetworkTable limelightNT = NetworkTableInstance.getDefault().getTable("limelight-komodo");
-    private final DoubleSubscriber validTargetSubscriber = limelightNT.getDoubleTopic("tv").subscribe(0);
-    private final DoubleArraySubscriber botPoseBlueSubscriber = limelightNT.getDoubleArrayTopic("botpose_wpiblue")
-            .subscribe(new double[0]);
+    // Vision and NavX
+    private static boolean usePoseEstimation = false;
 
     public boolean speedMode = !false;
     private double brakeModeScale = 0;
@@ -105,9 +100,9 @@ public class DrivetrainSubsystem implements Subsystem {
 
     // Swerve
     // WPILib: x = forward/back (length), y = left/right (width)
-    private final Translation2d frontLeftPosition = new Translation2d(DRIVETRAIN_LENGTH / 2D,  DRIVETRAIN_WIDTH / 2D);
+    private final Translation2d frontLeftPosition = new Translation2d(DRIVETRAIN_LENGTH / 2D, DRIVETRAIN_WIDTH / 2D);
     private final Translation2d frontRightPosition = new Translation2d(DRIVETRAIN_LENGTH / 2D, -DRIVETRAIN_WIDTH / 2D);
-    private final Translation2d backLeftPosition  = new Translation2d(-DRIVETRAIN_LENGTH / 2D,  DRIVETRAIN_WIDTH / 2D);
+    private final Translation2d backLeftPosition = new Translation2d(-DRIVETRAIN_LENGTH / 2D, DRIVETRAIN_WIDTH / 2D);
     private final Translation2d backRightPosition = new Translation2d(-DRIVETRAIN_LENGTH / 2D, -DRIVETRAIN_WIDTH / 2D);
 
     private final SwerveModule frontLeft;
@@ -135,11 +130,6 @@ public class DrivetrainSubsystem implements Subsystem {
     private ChassisSpeeds lastCommandedChassisSpeeds = new ChassisSpeeds();
 
     public DrivetrainSubsystem() {
-
-        // only tracks specific apriltags depending on alliance
-        // LimelightHelpers.SetFiducialIDFiltersOverride("limelight-komodo", new
-        // int[]{11,10,9,8,7,6, 22,21,20,19,18,17});
-        // Drive FFGain updated AM 03/07
         frontLeft = new NeoSwerveModule(
                 FRONT_LEFT_DRIVE_MOTOR_ID,
                 FRONT_LEFT_STEER_MOTOR_ID,
@@ -213,7 +203,6 @@ public class DrivetrainSubsystem implements Subsystem {
         // does not need to use adjusted rotation, odometry handles it.
         // updates pose with rotation and swerve positions
         poseEstimator.update(getRotation(), getSwervePositions());
-
         updateTelemetry();
 
         transferBrakeMode();
@@ -222,6 +211,10 @@ public class DrivetrainSubsystem implements Subsystem {
         frontRight.periodic();
         backLeft.periodic();
         backRight.periodic();
+    }
+
+    public void addVisionMeasurement(Pose2d pose, double timestamp) {
+        poseEstimator.addVisionMeasurement(pose, timestamp);
     }
 
     public void robotRelativeDrive(ChassisSpeeds chassisSpeeds, DriveFeedforwards driveFeedforwards) {
@@ -242,8 +235,7 @@ public class DrivetrainSubsystem implements Subsystem {
                     HOLONOMIC_PATH_FOLLOWER_CONFIG,
                     config,
                     ON_RED_ALLIANCE,
-                    this
-            );
+                    this);
         } catch (Exception e) {
             System.out.println("================== ERROR :");
             e.printStackTrace();
@@ -277,23 +269,8 @@ public class DrivetrainSubsystem implements Subsystem {
         robotPosePublisher.set(getPose());
     }
 
-    // tracks position with vision
-    private void visionPosePeriodic() {
-
-        // Return if the limelight doesn't see a target
-        if (validTargetSubscriber.get() != 1)
-            return;
-
-        double[] botPose = botPoseBlueSubscriber.get();
-        if (botPose.length < 7)
-            return;
-
-        // Convert double[] from NT to Pose2D
-        Pose2d visionPose = new Pose2d(botPose[0], botPose[1], Rotation2d.fromDegrees(botPose[5]));
-        double measurementTime = Timer.getFPGATimestamp() - botPose[6] / 1000; // calculate the actual time the picture
-                                                                               // was taken
-
-        poseEstimator.addVisionMeasurement(visionPose, measurementTime);
+    public Pose2d getPoseEstimation() {
+        return (poseEstimator.getEstimatedPosition());
     }
 
     public void drive(double xSpeed, double ySpeed, double angularVelocity, boolean fieldRelative) {
