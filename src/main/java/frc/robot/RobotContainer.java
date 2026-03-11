@@ -81,7 +81,7 @@ public class RobotContainer {
    * Joysticks      | Drive
    * X Button       | Zero Gyro
    * Left Bumper    | Toggle Speed Mode
-   * B Button       | Toggle auto align to our alliance hub
+   * B Button       | Toggle auto lock rotation to (face) our alliance hub
    */
 
 

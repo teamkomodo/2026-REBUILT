@@ -166,6 +166,9 @@ public final class Constants {
         public static final double INTAKE_EJECT_TIME = 0.3; // FIXME
         public static final double INTAKE_STOWING_SPEED = 0.1; // FIXME
 
+        public static final double BACKBOARD_OFFSET_METERS = 0.2; // Used for shooting balls away from true center to
+                                                                  // kill fuel momentum, avoiding a rebound, FIXME: Tune
+
         // Hinge
         // Intake hinge uses a single motor (right-side convention kept historically)
         public static final int HINGE_MOTOR_ID = 44;

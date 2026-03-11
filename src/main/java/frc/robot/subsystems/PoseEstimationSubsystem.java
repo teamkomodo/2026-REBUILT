@@ -18,13 +18,14 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 
 import org.photonvision.*;
 
 public class PoseEstimationSubsystem extends SubsystemBase {
-    public static final AprilTagFieldLayout kTagLayout = AprilTagFieldLayout.loadField(AprilTagFields.kDefaultField);
+    public static final AprilTagFieldLayout kTagLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
     public static final Transform3d kRobotToCam = new Transform3d(new Translation3d(0.5, 0.0, 0.5),
             new Rotation3d(0, 0, 0)); // Tune me
     private final PhotonCamera camera = new PhotonCamera("photonvision"); // Todo: configure as front cam, allow for
@@ -32,22 +33,21 @@ public class PoseEstimationSubsystem extends SubsystemBase {
     private final PhotonPoseEstimator photonEstimator = new PhotonPoseEstimator(kTagLayout, kRobotToCam);
     private final DrivetrainSubsystem drivetrainSubsystem;
 
-    private Optional<EstimatedRobotPose> lastVisionPose;
+    private Optional<EstimatedRobotPose> lastVisionPose = Optional.empty();
 
     public PoseEstimationSubsystem(DrivetrainSubsystem drivetrain) {
         this.drivetrainSubsystem = drivetrain;
     }
 
     public Optional<EstimatedRobotPose> getVisionPose() {
-
         for (var result : camera.getAllUnreadResults()) {
-
+            if (!result.hasTargets()) {
+                continue;
+            }
             var est = photonEstimator.estimateCoprocMultiTagPose(result);
-
             if (est.isEmpty()) {
                 est = photonEstimator.estimateLowestAmbiguityPose(result);
             }
-
             if (est.isPresent()) {
                 lastVisionPose = est;
                 return est;
@@ -78,31 +78,25 @@ public class PoseEstimationSubsystem extends SubsystemBase {
     public void periodic() {
         var pose = getVisionPose();
         pose.ifPresent(est -> {
-            if (true) { // Check whether current vision position - lastVisionPosition is less than max
-                        // velocity * delta time to avoid teleportation
+            Pose2d incomingVisionPose = est.estimatedPose.toPose2d();
+            Pose2d currentPose = drivetrainSubsystem.getPoseEstimation();
+
+            double error = incomingVisionPose.getTranslation().getDistance(currentPose.getTranslation());
+
+            if (error < 2 || est.targetsUsed.size() >= 1) { // I completely pulled this out of my butt, we need to some
+                                                            // velocity adjustment FIXME: Change 1 to 2 on real
+                                                            // field!!!!
+                // for this
                 drivetrainSubsystem.addVisionMeasurement(
-                        est.estimatedPose.toPose2d(),
-                        est.timestampSeconds);
+                        incomingVisionPose,
+                        est.timestampSeconds, VecBuilder.fill(0.3, 0.3, 10 * Math.PI / 180)); // TODO: Add
+                                                                                              // VisionStdDevs
+                                                                                              // to improve pose
+                                                                                              // estimation by a
+                                                                                              // lot, fix placeholder
             }
         });
-    }
 
-    /**
-     * Returns a Rotation2d to the team hub
-     * 
-     * @return Rotation2d representing angle between robot and hub (use
-     *         .getRadians() / .getDegrees() for a value)
-     */
-    public Rotation2d getRotationToHub() {
-        Translation2d hubPosMeters;
-        if (ON_RED_ALLIANCE.getAsBoolean()) { // FIXME: Replace placeholders with actual hub positions
-            hubPosMeters = new Translation2d(0, 0); // Red hub position
-        } else { // Blue alliance
-            hubPosMeters = new Translation2d(1, 1); // Blue hub position
-        }
-        return hubPosMeters
-                .minus(drivetrainSubsystem.getPoseEstimation().getTranslation())
-                .getAngle();
     }
 
     public Command printVisionPoseEstimation() {
@@ -115,7 +109,7 @@ public class PoseEstimationSubsystem extends SubsystemBase {
                 System.out.print(", Y: ");
                 System.out.println(est.estimatedPose.getY());
                 System.out.print("========Rotation: Angle: ");
-                System.out.print(est.estimatedPose.getRotation().getZ()); // Verify if z is right
+                System.out.print(est.estimatedPose.getRotation().getZ() * 180 / Math.PI); // Verify if z is right
                 System.out.print(" degrees.");
             });
 
@@ -145,4 +139,5 @@ public class PoseEstimationSubsystem extends SubsystemBase {
         }
         return drivetrainSubsystem.getPoseEstimation().getTranslation().getDistance(hubPosMeters);
     }
+
 }
