@@ -25,8 +25,9 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import org.photonvision.*;
 
 public class PoseEstimationSubsystem extends SubsystemBase {
-    public static final AprilTagFieldLayout kTagLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
-    public static final Transform3d kRobotToCam = new Transform3d(new Translation3d(0.5, 0.0, 0.5),
+    public static final AprilTagFieldLayout kTagLayout = AprilTagFieldLayout
+            .loadField(AprilTagFields.k2026RebuiltWelded);
+    public static final Transform3d kRobotToCam = new Transform3d(new Translation3d(0.254, 0.0, 0.5),
             new Rotation3d(0, 0, 0)); // Tune me
     private final PhotonCamera camera = new PhotonCamera("photonvision"); // Todo: configure as front cam, allow for
                                                                           // addtl cameras later
@@ -83,7 +84,8 @@ public class PoseEstimationSubsystem extends SubsystemBase {
 
             double error = incomingVisionPose.getTranslation().getDistance(currentPose.getTranslation());
 
-            if (error < 2 || est.targetsUsed.size() >= 1) { // I completely pulled this out of my butt, we need to some
+            if (error < 2 || est.targetsUsed.size() >= 1) { // I completely pulled this error rate out of my butt, we
+                                                            // need to some
                                                             // velocity adjustment FIXME: Change 1 to 2 on real
                                                             // field!!!!
                 // for this
@@ -117,15 +119,15 @@ public class PoseEstimationSubsystem extends SubsystemBase {
     }
 
     public Command printDrivetrainPoseEstimation() {
-        Pose2d drivetrainPoseEstimation = drivetrainSubsystem.getPoseEstimation();
         return Commands.runOnce(() -> {
+            Pose2d drivetrainPoseEstimation = drivetrainSubsystem.getPoseEstimation();
             System.out.print("========Pose: X: ");
             System.out.print(drivetrainPoseEstimation.getX());
             System.out.print(", Y: ");
             System.out.print(drivetrainPoseEstimation.getY());
             System.out.print("========Rotation: Angle: ");
             System.out.print(drivetrainPoseEstimation.getRotation().getDegrees()); // Verify if z is right
-            System.out.print(" degrees.");
+            System.out.println(" degrees.");
         });
 
     };
@@ -133,7 +135,7 @@ public class PoseEstimationSubsystem extends SubsystemBase {
     public double getDistanceToHubCenterMeters() {
         Translation2d hubPosMeters;
         if (ON_RED_ALLIANCE.getAsBoolean()) { // FIXME: Replace placeholders with actual hub positions
-            hubPosMeters = new Translation2d(0, 0); // Red hub position
+            hubPosMeters = new Translation2d(181 / 2.54 / 100, 158 / 2.54 / 100); // Red hub position
         } else {
             hubPosMeters = new Translation2d(1, 1); // Blue hub position
         }

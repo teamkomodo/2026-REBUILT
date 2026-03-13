@@ -111,11 +111,14 @@ public class RobotContainer {
     Trigger driverX = driverController.x();
     Trigger driverLB = driverController.leftBumper();
     Trigger driverB = driverController.b();
+    Trigger driverA = driverController.a();
 
     driverX.onTrue(drivetrain.zeroGyroCommand());
     driverLB.onTrue(drivetrain.disableSpeedModeCommand());
     driverLB.onFalse(drivetrain.enableSpeedModeCommand());
     driverB.onTrue(drivetrain.toggleAutoAlignCommand());
+    driverA.onTrue(poseEstimationSubsystem.printDrivetrainPoseEstimation());
+
     // driverRB reserved for align/auto actions if implemented
     // driverRB.onTrue(/* some align command */);
 

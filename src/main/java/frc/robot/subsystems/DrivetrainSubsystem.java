@@ -297,7 +297,7 @@ public class DrivetrainSubsystem implements Subsystem {
     }
 
     public Command toggleAutoAlignCommand() {
-        return Commands.run(() -> {
+        return Commands.runOnce(() -> {
             useAutoAlign = !useAutoAlign;
             System.out.println("Auto align: " + (useAutoAlign ? "ON" : "OFF"));
         }, this);
