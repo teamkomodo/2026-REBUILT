@@ -33,7 +33,7 @@ public final class Constants {
     // public static final double BACK_RIGHT_STEER_OFFSET = 5.277 - 0.419 + 0.622;
     public static final double BACK_RIGHT_STEER_OFFSET = 0.55 + Math.PI + Math.PI/2;
 
-    public static final int BACK_LEFT_DRIVE_MOTOR_ID = 11;
+    public static final int BACK_LEFT_DRIVE_MOTOR_ID = 16;
     public static final int BACK_LEFT_STEER_MOTOR_ID = 14;
     public static final int BACK_LEFT_STEER_ENCODER_ID = 21;
     public static final double BACK_LEFT_STEER_OFFSET = -0.407 + Math.PI/2;
@@ -61,7 +61,7 @@ public final class Constants {
     public static double MAX_ATTAINABLE_VELOCITY = 6.5; //6.5
 
     public static final double LINEAR_VELOCITY_CONSTRAINT = MAX_ATTAINABLE_VELOCITY;
-    public static final double LINEAR_ACCEL_CONSTRAINT = 3.0; // 12 ORGINALL
+    public static final double LINEAR_ACCEL_CONSTRAINT = 12; // 12 ORGINALL
 
     public static final double ANGULAR_VELOCITY_CONSTRAINT = (LINEAR_VELOCITY_CONSTRAINT * Math.PI)
             / (DRIVETRAIN_WIDTH * DRIVETRAIN_WIDTH + DRIVETRAIN_LENGTH * DRIVETRAIN_LENGTH) * 1.1; //0.8
@@ -151,11 +151,11 @@ public final class Constants {
             4545.577, 4607.759, 4669.065, 4730.113, 4793.585, 4857.450, 4919.507, 4981.861, 5046.699 };
 
     // Intake
-    public static final int INTAKE_MOTOR_LEFT_ID = 41;
+    public static final int INTAKE_MOTOR_LEFT_ID = 51;
     public static final int INTAKE_MOTOR_RIGHT_ID = 4;
     public static final int INTAKE_SMART_CURRENT_LIMIT = 70; // FIXME
 
-    public static final double INTAKE_INTAKE_SPEED = -0.8; // FIXME
+    public static final double INTAKE_INTAKE_SPEED = -1.0; // FIXME
     public static final double INTAKE_FEED_SPEED = -0.8; // FIXME
 
     public static final double EVIL_INTAKE_FEED_SPEED = -0.7; // -0.75 for outpost

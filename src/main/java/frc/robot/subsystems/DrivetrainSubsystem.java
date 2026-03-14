@@ -10,8 +10,10 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
+import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.networktables.DoubleArraySubscriber;
 import edu.wpi.first.networktables.DoubleSubscriber;
@@ -21,6 +23,7 @@ import edu.wpi.first.networktables.StructArrayPublisher;
 import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.units.Units;
 import edu.wpi.first.wpilibj.RobotController;
+import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -105,15 +108,15 @@ public class DrivetrainSubsystem implements Subsystem {
 
     // Swerve
     // WPILib: x = forward/back (length), y = left/right (width)
-    private final Translation2d frontLeftPosition = new Translation2d(DRIVETRAIN_LENGTH / 2D,  DRIVETRAIN_WIDTH / 2D);
+    private final Translation2d frontLeftPosition = new Translation2d(DRIVETRAIN_LENGTH / 2D, DRIVETRAIN_WIDTH / 2D);
     private final Translation2d frontRightPosition = new Translation2d(DRIVETRAIN_LENGTH / 2D, -DRIVETRAIN_WIDTH / 2D);
-    private final Translation2d backLeftPosition  = new Translation2d(-DRIVETRAIN_LENGTH / 2D,  DRIVETRAIN_WIDTH / 2D);
+    private final Translation2d backLeftPosition = new Translation2d(-DRIVETRAIN_LENGTH / 2D, DRIVETRAIN_WIDTH / 2D);
     private final Translation2d backRightPosition = new Translation2d(-DRIVETRAIN_LENGTH / 2D, -DRIVETRAIN_WIDTH / 2D);
 
-    private final SwerveModule frontLeft;
-    private final SwerveModule frontRight;
-    private final SwerveModule backLeft;
-    private final SwerveModule backRight;
+    public final SwerveModule frontLeft;
+    public final SwerveModule frontRight;
+    public final SwerveModule backLeft;
+    public final SwerveModule backRight;
 
     private final SwerveDriveKinematics kinematics = new SwerveDriveKinematics(frontLeftPosition, frontRightPosition,
             backLeftPosition, backRightPosition);
@@ -130,7 +133,8 @@ public class DrivetrainSubsystem implements Subsystem {
     private ChassisSpeeds currentChassisSpeeds = new ChassisSpeeds();
     RobotConfig config;
     private boolean slowMode = false;
-    private double rotationOffsetRadians = 0;
+    private double gyroRotationOffsetRadians = -Math.PI;
+    private double swerveRotationOffsetRadians = -Math.PI;
 
     private ChassisSpeeds lastCommandedChassisSpeeds = new ChassisSpeeds();
 
@@ -210,6 +214,19 @@ public class DrivetrainSubsystem implements Subsystem {
 
     @Override
     public void periodic() {
+        SmartDashboard.putNumber("NavX Adjusted Position", this.getAdjustedRotation().getDegrees());
+        SmartDashboard.putNumber("NavX True Position", this.getRotation().getDegrees());
+        SmartDashboard.putNumber("Front Left Swerve Angle",
+                this.frontLeft.getAbsoluteModuleRotation().getDegrees());
+        SmartDashboard.putNumber("Front Right Swerve Angle",
+                this.frontRight.getAbsoluteModuleRotation().getDegrees());
+        SmartDashboard.putNumber("Back Left Swerve Angle",
+                this.backLeft.getAbsoluteModuleRotation().getDegrees());
+        SmartDashboard.putNumber("Back Right Swerve Angle",
+                this.backRight.getAbsoluteModuleRotation().getDegrees());
+
+        SmartDashboard.updateValues();
+
         // does not need to use adjusted rotation, odometry handles it.
         // updates pose with rotation and swerve positions
         poseEstimator.update(getRotation(), getSwervePositions());
@@ -242,8 +259,7 @@ public class DrivetrainSubsystem implements Subsystem {
                     HOLONOMIC_PATH_FOLLOWER_CONFIG,
                     config,
                     ON_RED_ALLIANCE,
-                    this
-            );
+                    this);
         } catch (Exception e) {
             System.out.println("================== ERROR :");
             e.printStackTrace();
@@ -298,7 +314,7 @@ public class DrivetrainSubsystem implements Subsystem {
 
     public void drive(double xSpeed, double ySpeed, double angularVelocity, boolean fieldRelative) {
         ChassisSpeeds chassisSpeeds = new ChassisSpeeds(xSpeed, ySpeed, angularVelocity);
-        desaturateChassisSpeedsAcceleration(chassisSpeeds);
+        chassisSpeeds = ChassisSpeeds.discretize(chassisSpeeds, TimedRobot.kDefaultPeriod);
         SwerveModuleState[] moduleStates = kinematics.toSwerveModuleStates(
                 fieldRelative
                         ? ChassisSpeeds.fromFieldRelativeSpeeds(
@@ -361,7 +377,7 @@ public class DrivetrainSubsystem implements Subsystem {
     }
 
     public void zeroGyro() {
-        rotationOffsetRadians = -getRotation().getRadians() - Math.PI / 2;
+        gyroRotationOffsetRadians = -getRotation().getRadians() - Math.PI / 2;
         // resetPose(new Pose2d(getPose().getTranslation(), Rotation2d.fromDegrees(0)));
     }
 
@@ -416,7 +432,7 @@ public class DrivetrainSubsystem implements Subsystem {
      *         degrees being the direction the robot will drive forward in
      */
     public Rotation2d getAdjustedRotation() {
-        return getRotation().plus(Rotation2d.fromRadians(rotationOffsetRadians + Math.PI));
+        return getRotation().plus(Rotation2d.fromRadians(gyroRotationOffsetRadians));
     }
 
     /**
@@ -424,7 +440,7 @@ public class DrivetrainSubsystem implements Subsystem {
      *         degrees being the direction the robot was facing at startup
      */
     public Rotation2d getRotation() {
-        return navX.getRotation2d().plus(Rotation2d.fromRadians(Math.PI));
+        return navX.getRotation2d().plus(Rotation2d.fromRadians(0));
 
     }
 
@@ -457,7 +473,7 @@ public class DrivetrainSubsystem implements Subsystem {
     }
 
     public void setGyro(Rotation2d rotation) {
-        rotationOffsetRadians = -getRotation().getRadians() + rotation.getRadians();
+        gyroRotationOffsetRadians = -getRotation().getRadians() + rotation.getRadians();
     }
 
     /**
