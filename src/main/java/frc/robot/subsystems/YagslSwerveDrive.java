@@ -5,12 +5,13 @@ import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.util.Units;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.networktables.NetworkTable;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.StructArrayPublisher;
+import edu.wpi.first.networktables.StructPublisher;
+import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
-import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
-
-import com.ctre.phoenix6.swerve.SwerveModule;
 import com.studica.frc.AHRS;
 
 import edu.wpi.first.math.geometry.Pose2d;
@@ -19,7 +20,6 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.util.FFGains;
-import frc.robot.util.NeoSwerveModule;
 import frc.robot.util.PIDGains;
 import frc.robot.util.Util;
 import frc.robot.util.YagslModule;
@@ -52,7 +52,24 @@ public class YagslSwerveDrive extends SubsystemBase {
         backRightPosition);
     
     private boolean slowMode = false;
-    private double brakeModeScale = 0;
+    private double brakeModeScale = 1.9;
+
+    public static final NetworkTable drivetrainNT = NetworkTableInstance.getDefault().getTable("drivetrain");
+
+    private final StructArrayPublisher<SwerveModuleState> measuredSwerveStatesPublisher = drivetrainNT
+        .getStructArrayTopic("measuredSwerveStates", SwerveModuleState.struct).publish();
+
+    private final StructArrayPublisher<SwerveModuleState> desiredSwerveStatesPublisher = drivetrainNT
+        .getStructArrayTopic("desiredSwerveStates", SwerveModuleState.struct).publish();
+
+    private final StructPublisher<Pose2d> robotPosePublisher = drivetrainNT
+        .getStructTopic("robotPose", Pose2d.struct).publish();
+
+    private final StructPublisher<Rotation2d> adjustedRotationPublisher = drivetrainNT
+        .getStructTopic("adjustedRotation", Rotation2d.struct).publish();
+
+    private final StructPublisher<Rotation2d> rotationPublisher = drivetrainNT
+        .getStructTopic("rotation", Rotation2d.struct).publish();
     
     // Constructor
     public YagslSwerveDrive() {
@@ -64,7 +81,8 @@ public class YagslSwerveDrive extends SubsystemBase {
                 FRONT_LEFT_STEER_OFFSET,
                 new PIDGains(1.0, 0, 0),
                 new PIDGains(1, 1.0e-6, 0),
-                new FFGains(0.19861, 3.2379, 0.562)
+                new FFGains(0.19861, 3.2379, 0.562),
+                drivetrainNT.getSubTable("frontLeft")
                 // new FFGains(1, 0, 0),
                 );
 
@@ -75,7 +93,8 @@ public class YagslSwerveDrive extends SubsystemBase {
                 FRONT_RIGHT_STEER_OFFSET,
                 new PIDGains(1.0, 0, 0),
                 new PIDGains(1, 1.0e-6, 0),
-                new FFGains(0.18406, 3.2722, 0.40914)
+                new FFGains(0.18406, 3.2722, 0.40914),
+                drivetrainNT.getSubTable("frontRight")
                 // new FFGains(1, 0, 0),
                 );
 
@@ -86,7 +105,8 @@ public class YagslSwerveDrive extends SubsystemBase {
                 BACK_LEFT_STEER_OFFSET,
                 new PIDGains(1.0, 0, 0),
                 new PIDGains(1, 1.0e-6, 0),
-                new FFGains(0.17395, 3.286, 0.51328)
+                new FFGains(0.17395, 3.286, 0.51328),
+                drivetrainNT.getSubTable("backLeft")
                 // new FFGains(1, 0, 0),
                 );
 
@@ -97,7 +117,8 @@ public class YagslSwerveDrive extends SubsystemBase {
                 BACK_RIGHT_STEER_OFFSET,
                 new PIDGains(1.0, 0, 0),
                 new PIDGains(1, 1.0e-6, 0),
-                new FFGains(0.17731, 3.2446, 0.41604)
+                new FFGains(0.17731, 3.2446, 0.41604),
+                drivetrainNT.getSubTable("backRight")
                 // new FFGains(1, 0, 0),
                 );
         
@@ -123,6 +144,7 @@ public class YagslSwerveDrive extends SubsystemBase {
         ChassisSpeeds chassisSpeeds = new ChassisSpeeds(xSpeed, ySpeed, angularVelocity);
         // Get the SwerveModuleStates for each module given the desired speeds.
         SwerveModuleState[] swerveModuleStates = kinematics.toSwerveModuleStates(chassisSpeeds);
+        SwerveDriveKinematics.desaturateWheelSpeeds(swerveModuleStates, MAX_MODULE_VELOCITY);
         // Output order is Front-Left, Front-Right, Back-Left, Back-Right
         setModuleStates(swerveModuleStates);
     }
@@ -173,13 +195,12 @@ public class YagslSwerveDrive extends SubsystemBase {
             double oY = yAxis.getAsDouble();
             double oR = rotAxis.getAsDouble();
 
-            brakeModeScale = Math.min(1, brakeModeScale); // Leave this here!
-            double x = oX * brakeModeScale + oX * 0.35 * (1 - brakeModeScale);
-            double y = oY * brakeModeScale + oY * 0.35 * (1 - brakeModeScale);
-            // Blend full-rate rotation with a reduced rate when braking/slow mode is active
-            double r = oR * brakeModeScale + oR * 0.50 * (1 - brakeModeScale);
+            // Leave this here!
+            double x = oX * brakeModeScale;
+            double y = oY * brakeModeScale;
+            double r = oR * Math.pow(brakeModeScale, 0.7);
 
-            ChassisSpeeds speeds = joystickAxesToChassisSpeeds(x, y, r);
+            ChassisSpeeds speeds = joystickAxesToChassisSpeeds(oX, oY, oR);
             drive(speeds, true);
         }, this);
     }
@@ -188,10 +209,42 @@ public class YagslSwerveDrive extends SubsystemBase {
     public void periodic() {
         // Update the odometry every run.
         odometry.update(getRotation(), getCurrentSwerveModulePositions());
+        updateTelemetry();
     }
 
     public Rotation2d getRotation() {
         return gyro.getRotation2d().plus(Rotation2d.fromRadians(Math.PI));
+    }
+
+    public Rotation2d getAdjustedRotation() {
+        return getRotation().plus(Rotation2d.fromRadians(0 + Math.PI));
+    }
+
+    private void updateTelemetry() {
+        // Swerve
+        desiredSwerveStatesPublisher.set(new SwerveModuleState[] {
+                frontLeft.getDesiredState(),
+                frontRight.getDesiredState(),
+                backLeft.getDesiredState(),
+                backRight.getDesiredState()
+        });
+
+        measuredSwerveStatesPublisher.set(new SwerveModuleState[] {
+                frontLeft.getState(),
+                frontRight.getState(),
+                backLeft.getState(),
+                backRight.getState()
+        }, RobotController.getFPGATime() - 200000);
+
+        adjustedRotationPublisher.set(getAdjustedRotation());
+        rotationPublisher.set(getRotation());
+
+        frontLeft.periodic();
+        frontRight.periodic();
+        backLeft.periodic();
+        backRight.periodic();
+
+        //robotPosePublisher.set(getPose()); FIXME
     }
     
 }

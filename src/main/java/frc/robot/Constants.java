@@ -46,6 +46,7 @@ public final class Constants {
     // motor rotations -> wheel rotations
     public static final double DRIVE_REDUCTION = 1 / 6.75;
     public static final double DRIVE_POSITION_CONVERSION_FACTOR = Math.PI * WHEEL_DIAMETER * DRIVE_REDUCTION;
+    public static final double DRIVE_VELOCITY_CONVERSION_FACTOR = Math.PI * WHEEL_DIAMETER * DRIVE_REDUCTION / 60;
 
     // motor rotations -> module rotations
     public static final double STEER_REDUCTION = (14.0 / 50.0) * (10.0 / 60.0);
