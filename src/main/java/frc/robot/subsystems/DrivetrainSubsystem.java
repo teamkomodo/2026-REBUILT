@@ -421,7 +421,6 @@ public class DrivetrainSubsystem implements Subsystem {
      */
     public Rotation2d getRotation() {
         return navX.getRotation2d().plus(Rotation2d.fromRadians(Math.PI));
-
     }
 
     public ChassisSpeeds getChassisSpeeds() {

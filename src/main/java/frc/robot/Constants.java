@@ -15,16 +15,12 @@ public final class Constants {
 
     public static final double LINEAR_SLOW_MODE_MODIFIER = 0.5;
     public static final double ANGULAR_SLOW_MODE_MODIFIER = 0.3;
-    public static final double DRIVETRAIN_WIDTH = 0.57785; // Distance between center of left and right swerve wheels in
-                                                           // meters
-    public static final double DRIVETRAIN_LENGTH = 0.57785; // Distance between center of front and back swerve wheels
-                                                            // in
-                                                            // meters
+    public static final double DRIVETRAIN_WIDTH = 0.57785; // Distance between center of left and right swerve wheels in meters
+    public static final double DRIVETRAIN_LENGTH = 0.57785; // Distance between center of front and back swerve wheels in meters
 
     public static final int BACK_RIGHT_DRIVE_MOTOR_ID = 20;
     public static final int BACK_RIGHT_STEER_MOTOR_ID = 38;
     public static final int BACK_RIGHT_STEER_ENCODER_ID = 22;
-    // public static final double BACK_RIGHT_STEER_OFFSET = 5.277 - 0.419 + 0.622;
     public static final double BACK_RIGHT_STEER_OFFSET = 0.55 + Math.PI + Math.PI/2;
 
     public static final int BACK_LEFT_DRIVE_MOTOR_ID = 11;
@@ -48,9 +44,13 @@ public final class Constants {
     public static final double INCHES_PER_METER = 39.37;
 
     // motor rotations -> wheel rotations
-    public static final double DRIVE_REDUCTION = 1 / 6.75; // (14.0 / 50.0) * (27.0 / 17.0) * (15.0 / 45.0)
+    public static final double DRIVE_REDUCTION = 1 / 6.75;
+    public static final double DRIVE_POSITION_CONVERSION_FACTOR = Math.PI * WHEEL_DIAMETER * DRIVE_REDUCTION;
+
     // motor rotations -> module rotations
     public static final double STEER_REDUCTION = (14.0 / 50.0) * (10.0 / 60.0);
+    public static final double STEER_POSITION_CONVERSION_FACTOR = 2 * Math.PI * STEER_REDUCTION;
+    public static final double STEER_VELOCITY_CONVERSION_FACTOR = 2 * Math.PI * STEER_REDUCTION / 60;
 
     public static double MAX_ATTAINABLE_VELOCITY = 4.5;
 
