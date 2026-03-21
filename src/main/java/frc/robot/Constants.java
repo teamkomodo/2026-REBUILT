@@ -98,7 +98,7 @@ public final class Constants {
     public static final int SHOOTER_FEEDER_MOTOR_RIGHT_ID = 52;
     public static final double SHOOTER_FEEDER_ROTATIONS_PER_BALL = 1.0; // FIXME: tune this
     public static final int SHOOTER_MAIN_INVERSION = -1; // Shooter motor is inverted to achieve correct direction
-    public static final double SHOOTER_FEEDER_FEED_SPEED = 0.4; // FIXME: tune this
+    public static final double SHOOTER_FEEDER_FEED_SPEED = 1.0; // FIXME: tune this 0.4
     public static final int SHOOTER_FEEDER_SMART_CURRENT_LIMIT = 50; // FIXME: Make sure this is a good value
     public static final double BEAMBREAK_DEBOUNCE_DURATION = 2.5; // A delay for bouncy balls
 

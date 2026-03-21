@@ -262,16 +262,16 @@ public class SystemStateMachine extends SubsystemBase {
         }
 
         public Command startFeeding() {
-            return manualGate(Commands.parallel(shooter.startFeedingCommand()
-            , intake.jiggle()
+            return manualGate(Commands.sequence(shooter.startFeedingCommand()
             , intake.updateIntakeSpeed(0.4)
+            //, intake.jiggle()
             // , indexer.startCommand()
             ));
         }
 
         public Command stopFeeding() {
             return manualGate(Commands.parallel(shooter.stopFeedingCommand()
-            , intake.stopJiggle()
+            //, intake.stopJiggle()
             ));
         }
 

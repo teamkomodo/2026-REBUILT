@@ -303,7 +303,7 @@ public class IntakeSubsystem extends SubsystemBase {
 
     public Command jiggle() {
         return new RepeatCommand(new SequentialCommandGroup(
-            runHingeAtDutyCycleForSeconds(0.3, 0.7),
+            runHingeAtDutyCycleForSeconds(0.2, 1.2),
             runHingeAtDutyCycleForSeconds(-HINGE_DEPLOY_DUTY_CYCLE, 0.3)
         ));
     }
