@@ -55,6 +55,9 @@ public class ShooterSubsystem extends SubsystemBase {
     private final RelativeEncoder shooterMotorRightRelativeEncoder;
     private final PIDGains shooterPidGains;
 
+    private final SparkFlex shooterMotorLeft;
+    private final SparkFlexConfig shooterMotorLeftConfig;
+
     private final SparkClosedLoopController feederController;
     private final RelativeEncoder feederEncoder;
     private final PIDGains feederPidGains;
@@ -73,6 +76,9 @@ public class ShooterSubsystem extends SubsystemBase {
 
         shooterMotorRight = new SparkFlex(SHOOTER_MOTOR_RIGHT_ID, BRUSHLESS);
         shooterMotorRightConfig = new SparkFlexConfig();
+
+        shooterMotorLeft = new SparkFlex(SHOOTER_MOTOR_LEFT_ID, BRUSHLESS);
+        shooterMotorLeftConfig = new SparkFlexConfig();
         // Lead feeder (contains encoder & controller), follower mirrors the lead
         feederRightMotor = new SparkFlex(Constants.SHOOTER_FEEDER_MOTOR_RIGHT_ID, BRUSHLESS);
         feederRightMotorConfig = new SparkFlexConfig();
@@ -131,6 +137,15 @@ public class ShooterSubsystem extends SubsystemBase {
                 shooterMotorRightConfig,
                 ResetMode.kResetSafeParameters,
                 PersistMode.kPersistParameters);
+        
+        shooterMotorLeftConfig
+          .follow(SHOOTER_MOTOR_LEFT_ID, true);
+
+        shooterMotorLeft.configure(
+            shooterMotorLeftConfig,
+            ResetMode.kResetSafeParameters,
+            PersistMode.kPersistParameters
+        );
 
         // Configure feeder motor
         // Lead feeder closed-loop configuration (encoder/controller on lead)
@@ -174,7 +189,7 @@ public class ShooterSubsystem extends SubsystemBase {
                             ResetMode.kResetSafeParameters,
                             PersistMode.kNoPersistParameters);
                 }),
-                updateFlywheelSpeedRPM(SmartDashboard.getNumber("Shooter RPM", shooterRPM)));
+                tunedShotCommand(SmartDashboard.getNumber("Shooter RPM", 0)));
     }
 
     public void setShooterDutyCycle(double dutyCycle) {
@@ -248,7 +263,6 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     public void setFeederDutyCycle(double dutyCycle) {
-        System.out.println("========================= Starting feeder: " + dutyCycle);
         feederController.setSetpoint(dutyCycle, ControlType.kDutyCycle);
     }
 
@@ -296,6 +310,10 @@ public class ShooterSubsystem extends SubsystemBase {
         return updateFlywheelSpeedRPM(2050);
     }
 
+    public Command tunedShotCommand(double speed) {
+        return updateFlywheelSpeedRPM(speed);
+    }
+
     public Command passShotCommand() {
         return updateFlywheelSpeedRPM(PASS_SHOT_RPM);
     }
@@ -328,6 +346,14 @@ public class ShooterSubsystem extends SubsystemBase {
         double calculatedRPM = y0 + (distance - x0) * ((y1 - y0) / (x1 - x0));
         // Limit flywheel speed
         return Math.min(calculatedRPM, MAX_FLYWHEEL_RPM);
+    }
+
+    public double getShooterMotorRPM() {
+        return shooterMotorRightRelativeEncoder.getVelocity();
+    }
+
+    public double getShooterDesiredRPM() {
+        return shooterMotorRightRelativeEncoder.getVelocity();
     }
 
 }

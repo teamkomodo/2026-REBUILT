@@ -82,7 +82,7 @@ public final class Constants {
 
     // Shooter
     // The motors on the right side have a CAN id ending in a 2, left side end in 1
-    public static final int SHOOTER_MOTOR_RIGHT_ID = 54;
+    public static final int SHOOTER_MOTOR_RIGHT_ID = 61;
     public static final int SHOOTER_MOTOR_LEFT_ID = 31;
     public static final double SHOOTER_MAX_DUTYCYCLE = 0.7;
     public static final int SHOOTER_MAX_RPM = 4000;
@@ -125,8 +125,8 @@ public final class Constants {
     public static final double MAX_FLYWHEEL_RPM = 6700;
 
     // Manual shot RPMs
-    public static final double SHORT_BASELINE_RPM = 1900; // 1800 Shoots from 8ft away from hub center
-    public static final double LONG_BASELINE_RPM = 2000;
+    public static final double SHORT_BASELINE_RPM = 2100; // 1800 Shoots from 8ft away from hub center
+    public static final double LONG_BASELINE_RPM = 2050;
     public static final double PASS_SHOT_RPM = 2750;
 
 
@@ -155,7 +155,7 @@ public final class Constants {
     public static final int INTAKE_MOTOR_RIGHT_ID = 4;
     public static final int INTAKE_SMART_CURRENT_LIMIT = 70; // FIXME
 
-    public static final double INTAKE_INTAKE_SPEED = 0.4; // FIXME
+    public static final double INTAKE_INTAKE_SPEED = 0.5; // FIXME
     public static final double INTAKE_FEED_SPEED = 0.4; // FIXME
 
     public static final double EVIL_INTAKE_FEED_SPEED = -0.7; // -0.75 for outpost

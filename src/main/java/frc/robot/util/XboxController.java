@@ -1,6 +1,8 @@
 package frc.robot.util;
 
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
+import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 
@@ -58,16 +60,24 @@ public class XboxController {
     }
 
     public void rumbleSmooth(double intensity) {
-        xboxController.setRumble(RumbleType.kLeftRumble, getIntensity(intensity));
+        xboxController.setRumble(RumbleType.kRightRumble, getIntensity(intensity));
     }
 
     public void rumbleRough(double intensity) {
-        xboxController.setRumble(RumbleType.kRightRumble, getIntensity(intensity));
+        xboxController.setRumble(RumbleType.kLeftRumble, getIntensity(intensity));
     }
 
     public void rumbleBoth(double intensity) {
-        xboxController.setRumble(RumbleType.kRightRumble, getIntensity(intensity));
         xboxController.setRumble(RumbleType.kLeftRumble, getIntensity(intensity));
+        xboxController.setRumble(RumbleType.kRightRumble, getIntensity(intensity));
+    }
+
+    public void stopRoughRumble() {
+        xboxController.setRumble(RumbleType.kLeftRumble, 0);
+    }
+
+    public void stopSmoothRumble() {
+        xboxController.setRumble(RumbleType.kRightRumble, 0);
     }
 
     public double getIntensity(double intensity) {

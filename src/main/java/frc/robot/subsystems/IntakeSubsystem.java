@@ -360,4 +360,8 @@ public class IntakeSubsystem extends SubsystemBase {
     public IntakeState getState() {
         return intakeState;
     }
+
+    public double getIntakeDesiredSpeed() {
+        return desiredSpeed;
+    }
 }
