@@ -257,18 +257,22 @@ public class SystemStateMachine extends SubsystemBase {
 
         public Command feedOnce() {
             return manualGate(Commands.parallel(shooter.feedOnceCommand()
-            // , indexer.startCommand()
+            //, indexer.startCommand()
             ));
         }
 
         public Command startFeeding() {
             return manualGate(Commands.parallel(shooter.startFeedingCommand()
+            , intake.jiggle()
+            , intake.updateIntakeSpeed(0.4)
             // , indexer.startCommand()
             ));
         }
 
         public Command stopFeeding() {
-            return manualGate(shooter.stopFeedingCommand());
+            return manualGate(Commands.parallel(shooter.stopFeedingCommand()
+            , intake.stopJiggle()
+            ));
         }
 
         // Indexer Controls

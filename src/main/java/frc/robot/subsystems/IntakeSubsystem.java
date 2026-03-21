@@ -22,6 +22,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
+import edu.wpi.first.wpilibj2.command.RepeatCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
@@ -298,6 +299,17 @@ public class IntakeSubsystem extends SubsystemBase {
 
     public Command stowIntake() {
         return runHingeAtDutyCycleForSeconds(HINGE_STOW_DUTY_CYCLE, 1);
+    }
+
+    public Command jiggle() {
+        return new RepeatCommand(new SequentialCommandGroup(
+            runHingeAtDutyCycleForSeconds(0.3, 0.7),
+            runHingeAtDutyCycleForSeconds(-HINGE_DEPLOY_DUTY_CYCLE, 0.3)
+        ));
+    }
+
+    public Command stopJiggle() {
+        return runHingeAtDutyCycleForSeconds(HINGE_DEPLOY_DUTY_CYCLE, 0.3);
     }
 
     public Command updateHingePosition(double desiredPosition) {

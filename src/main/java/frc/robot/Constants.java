@@ -34,7 +34,7 @@ public final class Constants {
     public static final double BACK_RIGHT_STEER_OFFSET = 0.55 + Math.PI + Math.PI/2;
 
     public static final int BACK_LEFT_DRIVE_MOTOR_ID = 16;
-    public static final int BACK_LEFT_STEER_MOTOR_ID = 14;
+    public static final int BACK_LEFT_STEER_MOTOR_ID = 33;
     public static final int BACK_LEFT_STEER_ENCODER_ID = 21;
     public static final double BACK_LEFT_STEER_OFFSET = -0.407 + Math.PI/2;
 
