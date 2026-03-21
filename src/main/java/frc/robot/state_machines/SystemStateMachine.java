@@ -1,5 +1,7 @@
 package frc.robot.state_machines;
 
+import static frc.robot.Constants.INTAKE_INTAKE_SPEED;
+
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
@@ -224,8 +226,12 @@ public class SystemStateMachine extends SubsystemBase {
     public class ManualActions {
 
         // Intake Controls
-        public Command intake() {
+        public Command intakeDeploy() {
             return manualGate(intake.startIntakeCommand());
+        }
+
+        public Command intake() {
+            return manualGate(intake.updateIntakeSpeed(INTAKE_INTAKE_SPEED));
         }
 
         public Command intakeStop() {

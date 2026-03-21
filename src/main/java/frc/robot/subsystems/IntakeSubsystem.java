@@ -324,6 +324,13 @@ public class IntakeSubsystem extends SubsystemBase {
                 deployIntake());
     }
 
+    public Command startIntakeAutoCommand() {
+        return new SequentialCommandGroup(
+                setState(IntakeState.INTAKE),
+                updateIntakeSpeed(INTAKE_INTAKE_SPEED),
+                deployIntakeAuto());
+    }
+
     public Command feedIntakeCommand() {
         return new ParallelCommandGroup(
                 setState(IntakeState.FEED),

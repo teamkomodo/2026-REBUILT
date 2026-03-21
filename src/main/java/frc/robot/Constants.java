@@ -20,7 +20,7 @@ public final class Constants {
     public static final int OPERATOR_XBOX_PORT = 1;
 
     public static final double LINEAR_SLOW_MODE_MODIFIER = 0.5;
-    public static final double ANGULAR_SLOW_MODE_MODIFIER = 0.3;
+    public static final double ANGULAR_SLOW_MODE_MODIFIER = 0.7;
     public static final double DRIVETRAIN_WIDTH = 0.57785; // Distance between center of left and right swerve wheels in
                                                            // meters
     public static final double DRIVETRAIN_LENGTH = 0.57785; // Distance between center of front and back swerve wheels
@@ -155,7 +155,7 @@ public final class Constants {
     public static final int INTAKE_MOTOR_RIGHT_ID = 4;
     public static final int INTAKE_SMART_CURRENT_LIMIT = 70; // FIXME
 
-    public static final double INTAKE_INTAKE_SPEED = 0.5; // FIXME
+    public static final double INTAKE_INTAKE_SPEED = 0.55; // FIXME
     public static final double INTAKE_FEED_SPEED = 0.4; // FIXME
 
     public static final double EVIL_INTAKE_FEED_SPEED = -0.7; // -0.75 for outpost
@@ -170,7 +170,7 @@ public final class Constants {
 
     public static final int HINGE_SMART_CURRENT_LIMIT = 50; // FIXME
     public static final double HINGE_DEPLOY_DUTY_CYCLE = -0.3;
-    public static final double EVIL_HINGE_DUTY_CYCLE = -0.3;
+    public static final double EVIL_HINGE_DUTY_CYCLE = -0.35;
     public static final double HINGE_STOW_DUTY_CYCLE = 0.6;
 
     // Basic constants

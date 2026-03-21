@@ -126,8 +126,9 @@ public class RobotContainer {
         ));
 
     operator.rb.onTrue(Commands.parallel(manual.intake(),
-      Commands.runOnce(() -> operator.rumbleSmooth(0.05))));
-    operator.povUp.onTrue(manual.intakeStow());
+      Commands.runOnce(() -> operator.rumbleSmooth(0.2))));
+    operator.povUp.onTrue(Commands.parallel(manual.intakeDeploy(),
+      Commands.runOnce(() -> operator.rumbleSmooth(0.2))));
     operator.povDown.onTrue(manual.eject());
 
     // Teleop quick switches (non-manual): POV left/right pick STEAL/SCORE modes
@@ -155,7 +156,7 @@ public class RobotContainer {
 
   public Command getAutonomousCommand() {
     // If you later add an auto chooser, return selected command here.
-    return AutoBuilder.buildAuto("Stay");
+    return AutoBuilder.buildAuto("New Auto");
     //return null;
   }
 
@@ -163,6 +164,7 @@ public class RobotContainer {
     NamedCommands.registerCommand("Shoot", new CompleteScoreCommand(shooter, indexer));
     NamedCommands.registerCommand("Ramp Shooter Long", new RampShooterLongCommand(shooter));
     NamedCommands.registerCommand("Deploy Intake", new DeployIntakeCommand(intake));
+    NamedCommands.registerCommand("Intake", intake.startIntakeAutoCommand());
     NamedCommands.registerCommand("Feed All", new StartFeedingCommand(shooter, indexer, intake));
     NamedCommands.registerCommand("Stop", new StopFeedCommand(shooter, intake));
     NamedCommands.registerCommand("Reset Odom", new WaitCommand(0.1));
