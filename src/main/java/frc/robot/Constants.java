@@ -164,6 +164,11 @@ public final class Constants {
     public static final double INTAKE_EJECT_TIME = 0.3; // FIXME
     public static final double INTAKE_STOWING_SPEED = 0.1; // FIXME
 
+    public static final double INTAKE_JIGGLE_FORWARD_DUTYCYCLE = 0.55; // FIXME
+    public static final double INTAKE_JIGGLE_REVERSE_ROTATIONS = 0.9;
+    public static final double INTAKE_JIGGLE_HINGE_LIFT_ROTATIONS = 0.1;
+    public static final double INTAKE_GEAR_RATIO = 1.5; // 1:1.5 :: motor:roller 
+
     // Hinge
     // Intake hinge uses a single motor (right-side convention kept historically)
     public static final int HINGE_MOTOR_ID = 44;

@@ -213,7 +213,7 @@ public class ShooterSubsystem extends SubsystemBase {
     /** Set flywheel velocity in flywheel RPM (recommended). */
     public void setShooterVelocityRPM(double flywheelRPM) {
         desiredFlywheelSpeed = flywheelRPM;
-        double motorRPM = flywheelRPM / Constants.SHOOTER_GEAR_RATIO;
+        double motorRPM = flywheelRPM / SHOOTER_GEAR_RATIO;
         desiredMotorSpeed = motorRPM;
         shooterMotorRightController.setSetpoint(motorRPM * SHOOTER_MAIN_INVERSION, ControlType.kVelocity);
     }

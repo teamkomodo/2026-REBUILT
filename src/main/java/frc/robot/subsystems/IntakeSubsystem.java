@@ -90,7 +90,8 @@ public class IntakeSubsystem extends SubsystemBase {
         INTAKE,
         FEED,
         EJECT,
-        STOW
+        STOW,
+        JIGGLE
         // Add JAM_CLEAR?
     };
 
@@ -159,23 +160,23 @@ public class IntakeSubsystem extends SubsystemBase {
                 PersistMode.kPersistParameters);
 
         intakeMotorRightConfig
-            .smartCurrentLimit(INTAKE_SMART_CURRENT_LIMIT)
-            .follow(INTAKE_MOTOR_LEFT_ID, true)
-            .idleMode(IdleMode.kCoast);
+                .smartCurrentLimit(INTAKE_SMART_CURRENT_LIMIT)
+                .follow(INTAKE_MOTOR_LEFT_ID, true)
+                .idleMode(IdleMode.kCoast);
 
         intakeMotorRight.configure(
-            intakeMotorRightConfig,
-            ResetMode.kResetSafeParameters,
-            PersistMode.kPersistParameters);
-			intakeMotorRightConfig
-            .smartCurrentLimit(INTAKE_SMART_CURRENT_LIMIT)
-            .follow(INTAKE_MOTOR_LEFT_ID, true)
-            .idleMode(IdleMode.kCoast);
+                intakeMotorRightConfig,
+                ResetMode.kResetSafeParameters,
+                PersistMode.kPersistParameters);
+        intakeMotorRightConfig
+                .smartCurrentLimit(INTAKE_SMART_CURRENT_LIMIT)
+                .follow(INTAKE_MOTOR_LEFT_ID, true)
+                .idleMode(IdleMode.kCoast);
 
         intakeMotorRight.configure(
-            intakeMotorRightConfig,
-            ResetMode.kResetSafeParameters,
-            PersistMode.kPersistParameters);
+                intakeMotorRightConfig,
+                ResetMode.kResetSafeParameters,
+                PersistMode.kPersistParameters);
 
         hingeMotorConfig
                 .smartCurrentLimit(HINGE_SMART_CURRENT_LIMIT)
@@ -212,6 +213,10 @@ public class IntakeSubsystem extends SubsystemBase {
         intakeMotorLeftController.setSetpoint(dutyCycle, ControlType.kDutyCycle);
     }
 
+    public void setIntakeVelocity(double velocity) {
+        intakeMotorLeftController.setSetpoint(velocity, ControlType.kVelocity);
+    }
+
     public Command stopIntake() {
         desiredSpeed = 0;
         return Commands.runOnce(() -> setIntakeDutyCycle(0.0));
@@ -235,10 +240,31 @@ public class IntakeSubsystem extends SubsystemBase {
         });
     }
 
+    public Command updateIntakeRollerRPM(double desiredRPM) {
+        return Commands.runOnce(() -> {
+            System.out.println("======RUNNING INTAKE RPM");
+            setIntakeVelocity(desiredRPM * INTAKE_GEAR_RATIO);
+        });
+    }
+
+    public void setIntakeRelativePosition(double relativePosition) {
+        System.out.println("========== SETTING HINGE TO RELATIVE POSITION: " + relativePosition);
+        System.out.println("========== HINGE POS: " + intakeMotorLeftRelativeEncoder.getPosition());
+        hingeMotorController.setSetpoint(
+                intakeMotorLeftRelativeEncoder.getPosition() + relativePosition, ControlType.kPosition);
+    }
+
     public void setHingePosition(double position) {
         System.out.println("========== SETTING HINGE TO POSITION: " + position);
         System.out.println("========== HINGE POS: " + getHingeEncoderAbsolutePositionRotations());
         hingeMotorController.setSetpoint(position, ControlType.kPosition);
+    }
+
+    public void setHingeRelativePosition(double relativePosition) {
+        System.out.println("========== SETTING HINGE TO RELATIVE POSITION: " + relativePosition);
+        System.out.println("========== HINGE POS: " + getHingeEncoderAbsolutePositionRotations());
+        hingeMotorController.setSetpoint(
+                getHingeEncoderAbsolutePositionRotations() + relativePosition, ControlType.kPosition);
     }
 
     public Command moveHingeToPositionAndWait(double position) {
@@ -303,13 +329,25 @@ public class IntakeSubsystem extends SubsystemBase {
 
     public Command jiggle() {
         return new RepeatCommand(new SequentialCommandGroup(
-            runHingeAtDutyCycleForSeconds(0.2, 1.2),
-            runHingeAtDutyCycleForSeconds(-HINGE_DEPLOY_DUTY_CYCLE, 0.3)
-        ));
+                setState(IntakeState.JIGGLE),
+                runHingeAtDutyCycleForSeconds(0.2, 1.2),
+                runHingeAtDutyCycleForSeconds(-HINGE_DEPLOY_DUTY_CYCLE, 0.3)));
+    }
+
+    public Command jiggle_with_reverse() {
+        return new RepeatCommand(new SequentialCommandGroup(
+                setState(IntakeState.JIGGLE),
+                Commands.runOnce(() -> setHingeRelativePosition(INTAKE_JIGGLE_HINGE_LIFT_ROTATIONS)),
+                Commands.waitSeconds(0.5),
+                Commands.runOnce(() -> setIntakeRelativePosition(-INTAKE_JIGGLE_REVERSE_ROTATIONS)),
+                Commands.waitSeconds(0.5),
+                Commands.runOnce(() -> setIntakeDutyCycle(INTAKE_JIGGLE_FORWARD_DUTYCYCLE))));
     }
 
     public Command stopJiggle() {
-        return runHingeAtDutyCycleForSeconds(HINGE_DEPLOY_DUTY_CYCLE, 0.3);
+        return Commands.sequence(
+            runHingeAtDutyCycleForSeconds(HINGE_DEPLOY_DUTY_CYCLE, 0.3),
+            stopIntake());
     }
 
     public Command updateHingePosition(double desiredPosition) {
