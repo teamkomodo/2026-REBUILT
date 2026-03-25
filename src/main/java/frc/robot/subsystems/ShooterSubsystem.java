@@ -47,6 +47,8 @@ public class ShooterSubsystem extends SubsystemBase {
     private final SparkFlex shooterMotorRight;
     private final SparkFlexConfig shooterMotorRightConfig;
 
+    private final PoseEstimationSubsystem poseEstimationSubsystem;
+
     // Feeder motors that move balls into the flywheel (lead + follower)
     private final SparkFlex feederRightMotor;
     private final SparkFlexConfig feederRightMotorConfig;
@@ -69,7 +71,10 @@ public class ShooterSubsystem extends SubsystemBase {
     private double shooterFF = 0.00045;
     private double shooterRPM = 0;
 
-    public ShooterSubsystem() {
+    private boolean autoDistanceEnabled = false;
+
+    public ShooterSubsystem(PoseEstimationSubsystem poseEstimationSubsystem) {
+        this.poseEstimationSubsystem = poseEstimationSubsystem;
 
         shooterMotorRight = new SparkFlex(SHOOTER_MOTOR_RIGHT_ID, BRUSHLESS);
         shooterMotorRightConfig = new SparkFlexConfig();
@@ -103,6 +108,10 @@ public class ShooterSubsystem extends SubsystemBase {
     @Override
     public void periodic() {
         updateTelemetry();
+        if (autoDistanceEnabled) {
+            double distanceToHub = poseEstimationSubsystem.getDistanceToHubCenterMeters();
+            setShooterVelocityRPM(findShooterFlywheelSpeedFromDistance(distanceToHub));
+        }
         if (shooterMotorRightRelativeEncoder.getVelocity() > SHOOTER_MAX_RPM * 1.1) {
             stopShooter();
         }
@@ -272,16 +281,17 @@ public class ShooterSubsystem extends SubsystemBase {
                 .abs(shooterMotorRightRelativeEncoder.getVelocity() - desiredMotorSpeed) < MAX_SHOOTER_SPEED_TOLERANCE;
     }
 
+    public Command toggleAutoDistanceCommand() {
+        return Commands.runOnce(() -> {
+            autoDistanceEnabled = !autoDistanceEnabled;
+            System.out.println("Auto-distance RPM: " + (autoDistanceEnabled ? "ON" : "OFF"));
+        }, this);
+    }
+
     public Command startShootingCommand() {
-        double distanceToHub = 4.0; // 4m is a placeholder for now; FIXME: Replace placeholder
-        /*
-         * +
-         * FIXME: need to call out to navx for this
-         * Ask @Bora A
-         * TODO: Do I need to consider increasing distance by ball radius to account
-         * for a potential offset between limelight and shooter exit center?
-         */
-        return updateFlywheelSpeedRPM(2000);
+        double distanceToHub = poseEstimationSubsystem.getDistanceToHubCenterMeters();
+
+        return updateFlywheelSpeedRPM(findShooterFlywheelSpeedFromDistance(distanceToHub));
     }
 
     public Command shortShotCommand() {
@@ -307,21 +317,21 @@ public class ShooterSubsystem extends SubsystemBase {
 
     public static double findShooterFlywheelSpeedFromDistance(double distance) {
         // 1. Handle Out-of-Bounds
-        if (distance <= SHOOTER_DISTANCES[0])
+        if (distance <= SHOOTER_DISTANCES_METERS[0])
             return SHOOTER_RPMS[0];
-        if (distance >= SHOOTER_DISTANCES[SHOOTER_DISTANCES.length - 1])
+        if (distance >= SHOOTER_DISTANCES_METERS[SHOOTER_DISTANCES_METERS.length - 1])
             return SHOOTER_RPMS[SHOOTER_RPMS.length - 1];
 
         // 2. Find the bounding indices (Linear Search)
         int i = 0;
-        while (SHOOTER_DISTANCES[i + 1] < distance) {
+        while (SHOOTER_DISTANCES_METERS[i + 1] < distance) {
             i++;
         }
 
         // 3. Linear Interpolation
         // Formula: y = y0 + (x - x0) * ((y1 - y0) / (x1 - x0))
-        double x0 = SHOOTER_DISTANCES[i];
-        double x1 = SHOOTER_DISTANCES[i + 1];
+        double x0 = SHOOTER_DISTANCES_METERS[i];
+        double x1 = SHOOTER_DISTANCES_METERS[i + 1];
         double y0 = SHOOTER_RPMS[i];
         double y1 = SHOOTER_RPMS[i + 1];
 

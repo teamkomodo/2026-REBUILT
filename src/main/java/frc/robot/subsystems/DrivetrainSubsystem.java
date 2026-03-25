@@ -12,6 +12,9 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
+import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.numbers.N1;
+import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
@@ -51,17 +54,16 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 
 public class DrivetrainSubsystem implements Subsystem {
 
-    // Limelight
-    private static boolean useVision = false;
-
-    private final NetworkTable limelightNT = NetworkTableInstance.getDefault().getTable("limelight-komodo");
-    private final DoubleSubscriber validTargetSubscriber = limelightNT.getDoubleTopic("tv").subscribe(0);
-    private final DoubleArraySubscriber botPoseBlueSubscriber = limelightNT.getDoubleArrayTopic("botpose_wpiblue")
-            .subscribe(new double[0]);
+    // Vision and NavX
+    private static boolean usePoseEstimation = false;
 
     public boolean speedMode = !false;
     private double brakeModeScale = 0;
-    public boolean atReef = false;
+    public boolean useAutoAlign = false;
+
+    private double xVelocity = 0;
+    private double yVelocity = 0;
+    private double angularVelocity = 0;
 
     // Telemetry
     public static final NetworkTable drivetrainNT = NetworkTableInstance.getDefault().getTable("drivetrain");
@@ -139,11 +141,6 @@ public class DrivetrainSubsystem implements Subsystem {
     private ChassisSpeeds lastCommandedChassisSpeeds = new ChassisSpeeds();
 
     public DrivetrainSubsystem() {
-
-        // only tracks specific apriltags depending on alliance
-        // LimelightHelpers.SetFiducialIDFiltersOverride("limelight-komodo", new
-        // int[]{11,10,9,8,7,6, 22,21,20,19,18,17});
-        // Drive FFGain updated AM 03/07
         frontLeft = new NeoSwerveModule(
                 FRONT_LEFT_DRIVE_MOTOR_ID,
                 FRONT_LEFT_STEER_MOTOR_ID,
@@ -190,7 +187,7 @@ public class DrivetrainSubsystem implements Subsystem {
 
         poseEstimator = new SwerveDrivePoseEstimator(
                 kinematics,
-                getRotation(),
+                getGyroRotation(),
                 new SwerveModulePosition[] {
                         frontLeft.getPosition(),
                         frontRight.getPosition(),
@@ -204,7 +201,7 @@ public class DrivetrainSubsystem implements Subsystem {
     }
 
     void resetAutoPose(Pose2d pose) {
-        poseEstimator.resetPosition(getRotation(),
+        poseEstimator.resetPosition(getGyroRotation(),
                 getSwervePositions(),
                 new Pose2d(new Translation2d(10, 0),
                         Rotation2d.fromDegrees(179.79)));
@@ -229,8 +226,7 @@ public class DrivetrainSubsystem implements Subsystem {
 
         // does not need to use adjusted rotation, odometry handles it.
         // updates pose with rotation and swerve positions
-        poseEstimator.update(getRotation(), getSwervePositions());
-
+        poseEstimator.update(getGyroRotation(), getSwervePositions());
         updateTelemetry();
 
         transferBrakeMode();
@@ -239,6 +235,22 @@ public class DrivetrainSubsystem implements Subsystem {
         frontRight.periodic();
         backLeft.periodic();
         backRight.periodic();
+        if (useAutoAlign) {
+            Rotation2d targetAngle = getRotationToHub();
+            double targetOmega = rotationController.calculate(getGyroRotation().getRadians(), targetAngle.getRadians());
+            drive(xVelocity, yVelocity, targetOmega, FIELD_RELATIVE_DRIVE);
+        } else {
+            drive(xVelocity, yVelocity, angularVelocity, FIELD_RELATIVE_DRIVE);
+
+        }
+    }
+
+    public void addVisionMeasurement(Pose2d pose, double timestamp) {
+        poseEstimator.addVisionMeasurement(pose, timestamp);
+    }
+
+    public void addVisionMeasurement(Pose2d pose, double timestamp, Matrix<N3, N1> stdDevs) {
+        poseEstimator.addVisionMeasurement(pose, timestamp, stdDevs);
     }
 
     public void robotRelativeDrive(ChassisSpeeds chassisSpeeds, DriveFeedforwards driveFeedforwards) {
@@ -283,7 +295,7 @@ public class DrivetrainSubsystem implements Subsystem {
         }, RobotController.getFPGATime() - 200000);
 
         adjustedRotationPublisher.set(getAdjustedRotation());
-        rotationPublisher.set(getRotation());
+        rotationPublisher.set(getGyroRotation());
 
         frontLeft.updateTelemetry();
         frontRight.updateTelemetry();
@@ -293,23 +305,19 @@ public class DrivetrainSubsystem implements Subsystem {
         robotPosePublisher.set(getPose());
     }
 
-    // tracks position with vision
-    private void visionPosePeriodic() {
+    public Pose2d getPoseEstimation() {
+        return (poseEstimator.getEstimatedPosition());
+    }
 
-        // Return if the limelight doesn't see a target
-        if (validTargetSubscriber.get() != 1)
-            return;
+    public Pose2d getPoseEstimationTimestamp() {
+        return (poseEstimator.getEstimatedPosition());
+    }
 
-        double[] botPose = botPoseBlueSubscriber.get();
-        if (botPose.length < 7)
-            return;
-
-        // Convert double[] from NT to Pose2D
-        Pose2d visionPose = new Pose2d(botPose[0], botPose[1], Rotation2d.fromDegrees(botPose[5]));
-        double measurementTime = Timer.getFPGATimestamp() - botPose[6] / 1000; // calculate the actual time the picture
-                                                                               // was taken
-
-        poseEstimator.addVisionMeasurement(visionPose, measurementTime);
+    public Command toggleAutoAlignCommand() {
+        return Commands.runOnce(() -> {
+            useAutoAlign = !useAutoAlign;
+            System.out.println("Auto align: " + (useAutoAlign ? "ON" : "OFF"));
+        }, this);
     }
 
     public void drive(double xSpeed, double ySpeed, double angularVelocity, boolean fieldRelative) {
@@ -419,9 +427,9 @@ public class DrivetrainSubsystem implements Subsystem {
         return kinematics;
     }
 
-    // public AHRS getNavx() {
-    // return navX;
-    // }
+    public AHRS getNavx() {
+        return navX;
+    }
 
     public HolonomicDriveController getDriveController() {
         return driveController;
@@ -462,11 +470,11 @@ public class DrivetrainSubsystem implements Subsystem {
     }
 
     public void resetPose(Pose2d pose) {
-        poseEstimator.resetPosition(getRotation(), getSwervePositions(), pose);
+        poseEstimator.resetPosition(getGyroRotation(), getSwervePositions(), pose);
     }
 
     public void newAutoResetPose(Pose2d pose) {
-        poseEstimator.resetPosition(getRotation(),
+        poseEstimator.resetPosition(getGyroRotation(),
                 getSwervePositions(),
                 new Pose2d(new Translation2d(pose.getX(), pose.getY()),
                         Rotation2d.fromDegrees(179.79)));
@@ -547,7 +555,9 @@ public class DrivetrainSubsystem implements Subsystem {
             double r = oR * brakeModeScale + oR * 0.50 * (1 - brakeModeScale);
 
             ChassisSpeeds speeds = joystickAxesToChassisSpeeds(x, y, r);
-            drive(speeds, true);
+            xVelocity = speeds.vxMetersPerSecond;
+            yVelocity = speeds.vyMetersPerSecond;
+            angularVelocity = speeds.omegaRadiansPerSecond;
         }, this);
     }
 
@@ -595,5 +605,23 @@ public class DrivetrainSubsystem implements Subsystem {
         new SequentialCommandGroup(
                 Commands.run(() -> drive(xSpeed, ySpeed, angularVelocity, fieldRelative), this).withTimeout(driveTime),
                 Commands.runOnce(() -> stopMotion())).schedule();
+    }
+
+    /**
+     * Returns a Rotation2d to the team hub
+     * 
+     * @return Rotation2d representing angle between robot and hub (use
+     *         .getRadians() / .getDegrees() for a value)
+     */
+    public Rotation2d getRotationToHub() {
+        Translation2d hubPosMeters;
+        if (ON_RED_ALLIANCE.getAsBoolean()) { // FIXME: Replace placeholders with actual hub positions
+            hubPosMeters = new Translation2d(0, 0); // Red hub position
+        } else { // Blue alliance
+            hubPosMeters = new Translation2d(1, 1); // Blue hub position
+        }
+        return hubPosMeters
+                .minus(getPoseEstimation().getTranslation())
+                .getAngle();
     }
 }
