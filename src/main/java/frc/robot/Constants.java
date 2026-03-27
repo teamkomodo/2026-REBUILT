@@ -85,9 +85,9 @@ public final class Constants {
     public static final int SHOOTER_MOTOR_RIGHT_ID = 61;
     public static final int SHOOTER_MOTOR_LEFT_ID = 31;
     public static final double SHOOTER_MAX_DUTYCYCLE = 0.7;
-    public static final int SHOOTER_MAX_RPM = 9000;
+    public static final int SHOOTER_MAX_RPM = 4000;
     public static final int SHOOTER_SMART_CURRENT_LIMIT = 80; // FIXME
-    public static final double SHOOTER_GEAR_RATIO = 2/3; // 1:1.5 speeding up the flywheel
+    public static final double SHOOTER_GEAR_RATIO = 0.3333333; // 1:1.5 speeding up the flywheel
     public static final double MAX_SHOOTER_SPEED_TOLERANCE = 50.0; // RPM tolerance for considering shooter at target
                                                                    // speed
 
@@ -125,8 +125,8 @@ public final class Constants {
     public static final double MAX_FLYWHEEL_RPM = 6700;
 
     // Manual shot RPMs
-    public static final double SHORT_BASELINE_RPM = 4725; 
-    public static final double LONG_BASELINE_RPM = 4600;
+    public static final double SHORT_BASELINE_RPM = 2050;///4725; 
+    public static final double LONG_BASELINE_RPM = 2100;
     public static final double PASS_SHOT_RPM = 2750;
 
 

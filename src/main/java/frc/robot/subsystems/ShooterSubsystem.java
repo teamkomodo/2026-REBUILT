@@ -277,8 +277,11 @@ public class ShooterSubsystem extends SubsystemBase {
 
     /** Command the shooter using flywheel RPM (preferred). */
     public Command updateFlywheelSpeedRPM(double desiredFlywheelSpeed) {
-        System.out.println("-----------------UPDATING SHOOTER RPM: " + desiredFlywheelSpeed);
-        return Commands.runOnce(() -> setShooterVelocityRPM(desiredFlywheelSpeed), this);
+        return Commands.sequence(
+            Commands.runOnce(() -> 
+                System.out.println("-----------------UPDATING SHOOTER RPM: " + desiredFlywheelSpeed)),  
+            Commands.runOnce(() -> setShooterVelocityRPM(desiredFlywheelSpeed), this)
+        );
     }
 
     public boolean isAtTargetSpeed() {

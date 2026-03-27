@@ -232,7 +232,7 @@ public class RobotContainer {
     }
 
     double rpm = Math.abs(shooter.getShooterMotorRPM());
-    if(rpm > (1900)) {
+    if(rpm > (4275)) {
       operator.rumbleRough(1.0);
     } else {
       operator.stopRoughRumble();

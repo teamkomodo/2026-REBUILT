@@ -248,7 +248,12 @@ public class SystemStateMachine extends SubsystemBase {
 
         // Shooter Controls
         public Command shootShort() {
-            return manualGate(shooter.shortShotCommand());
+            return manualGate(
+                Commands.sequence(
+                    Commands.runOnce(() -> System.out.println("========----------======= ATTEMPTING TO START SHOOTER!!! ====")), 
+                    shooter.shortShotCommand()
+                )
+            );
         }
 
         public Command shootLong() {

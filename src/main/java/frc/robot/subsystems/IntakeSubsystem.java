@@ -335,13 +335,18 @@ public class IntakeSubsystem extends SubsystemBase {
     }
 
     public Command jiggle_with_reverse() {
-        return new RepeatCommand(new SequentialCommandGroup(
-                setState(IntakeState.JIGGLE),
-                Commands.runOnce(() -> setHingeRelativePosition(INTAKE_JIGGLE_HINGE_LIFT_ROTATIONS)),
-                Commands.waitSeconds(0.5),
-                Commands.runOnce(() -> setIntakeRelativePosition(-INTAKE_JIGGLE_REVERSE_ROTATIONS)),
-                Commands.waitSeconds(0.5),
-                Commands.runOnce(() -> setIntakeDutyCycle(INTAKE_JIGGLE_FORWARD_DUTYCYCLE))));
+        return new SequentialCommandGroup(
+            Commands.runOnce(() -> setHingeRelativePosition(INTAKE_JIGGLE_HINGE_LIFT_ROTATIONS)),
+            new RepeatCommand(
+                new SequentialCommandGroup(
+                    setState(IntakeState.JIGGLE),
+                    Commands.waitSeconds(0.5),
+                    Commands.runOnce(() -> setIntakeRelativePosition(-INTAKE_JIGGLE_REVERSE_ROTATIONS)),
+                    Commands.waitSeconds(0.5),
+                    Commands.runOnce(() -> setIntakeDutyCycle(INTAKE_JIGGLE_FORWARD_DUTYCYCLE))
+                )
+            )
+        );
     }
 
     public Command stopJiggle() {
