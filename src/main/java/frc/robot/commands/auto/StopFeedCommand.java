@@ -1,7 +1,8 @@
 package frc.robot.commands.auto;
 
-import static frc.robot.Constants.INTAKE_AUTO_DUTYCYCLE;
-import static frc.robot.Constants.INTAKE_DUTYCYCLE;
+import static frc.robot.Constants.*;
+import static frc.robot.Constants.*;
+import static frc.robot.Constants.INTAKE_FEED_SPEED;
 
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
@@ -31,6 +32,6 @@ public class StopFeedCommand extends DynamicCommand {
         return new SequentialCommandGroup(
                 shooterSubsystem.stopFeedingCommand(),
                 shooterSubsystem.stopShooterCommand(),
-                intakeSubsystem.updateIntakeDutyCycle(INTAKE_DUTYCYCLE));
+                intakeSubsystem.updateIntakeDutyCycle(INTAKE_FEED_SPEED));
     }
 }

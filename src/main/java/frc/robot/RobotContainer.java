@@ -171,8 +171,13 @@ public class RobotContainer {
     // Map face buttons to both manual shot commands and a guarded request to enter
     // SHOOT.
     // Shooter: request SHOOT + teleop SCORE (so the system and teleop modes align)
-    operatorRT.onTrue(manual.shootShort());
-    operatorLT.onTrue(manual.shootLong());
+
+    // BORA: I REPLACED THIS WITH THE NEXT LINE, UNDO AFTER TESTING! operatorRT.onTrue(manual.shootShort());
+    operatorRT.onTrue(shooter.runToShuffleboardRPM());
+     
+    // operatorLT.onTrue(manual.shootLong());
+    operatorLT.onTrue(shooter.longShotCommand());
+
     operatorA.onTrue(manual.reset());
     // operatorPOVUp.onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT),
     // manual.shootPass()));

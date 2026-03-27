@@ -287,22 +287,17 @@ public class IntakeSubsystem extends SubsystemBase {
         return runHingeAtDutyCycleForSeconds(HINGE_DEPLOY_DUTY_CYCLE, 0.3);
     }
 
-    public Command updateHingePosition(double desiredPosition) {
-        this.desiredPositionRotations = desiredPosition;
-        return Commands.runOnce(() -> setHingePosition(this.desiredPositionRotations));
-    }
-
     public Command startIntakeCommand() {
         return new SequentialCommandGroup(
                 setState(IntakeState.INTAKE),
-                updateIntakeDutyCycle(INTAKE_DUTYCYCLE),
+                updateIntakeDutyCycle(INTAKE_INTAKE_SPEED),
                 deployIntake());
     }
 
     public Command feedIntakeCommand() {
         return new ParallelCommandGroup(
                 setState(IntakeState.FEED),
-                updateIntakeDutyCycle(INTAKE_DUTYCYCLE));
+                updateIntakeDutyCycle(INTAKE_INTAKE_SPEED));
     }
 
     public Command ejectIntakeCommand() {

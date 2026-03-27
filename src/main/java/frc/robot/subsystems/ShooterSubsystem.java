@@ -17,6 +17,7 @@ import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -95,14 +96,16 @@ public class ShooterSubsystem extends SubsystemBase {
         desiredFeederSpeed = 0.0;
         configureMotors();
 
-        SmartDashboard.putNumber("Shooter P", shooterP);
-        SmartDashboard.putNumber("Shooter I", shooterI);
-        SmartDashboard.putNumber("Shooter D", shooterD);
-        SmartDashboard.putNumber("Shooter FF", shooterFF);
-        SmartDashboard.putNumber("Shooter RPM", shooterRPM);
+        SmartDashboard.putNumber("AUTOALIGN SHOOTER RPM", shooterRPM);
+        // SmartDashboard.putNumber("Shooter P", shooterP);
+        // SmartDashboard.putNumber("Shooter I", shooterI);
+        // SmartDashboard.putNumber("Shooter D", shooterD);
+        // SmartDashboard.putNumber("Shooter FF", shooterFF);
+        // SmartDashboard.putNumber("Shooter RPM", shooterRPM);
     }
 
     public void teleopInit() {
+
     }
 
     @Override
@@ -132,7 +135,6 @@ public class ShooterSubsystem extends SubsystemBase {
                 .p(shooterPidGains.p)
                 .i(shooterPidGains.i)
                 .d(shooterPidGains.d)
-                .velocityFF(shooterPidGains.FF)
                 // Limit max speed to prevent exploding robot (which happened)
                 .outputRange(-SHOOTER_MAX_DUTYCYCLE, SHOOTER_MAX_DUTYCYCLE);
 
@@ -175,9 +177,7 @@ public class ShooterSubsystem extends SubsystemBase {
                     shooterMotorRightConfig.closedLoop
                             .p(SmartDashboard.getNumber("Shooter P", shooterPidGains.p))
                             .i(SmartDashboard.getNumber("Shooter I", shooterPidGains.i))
-                            .d(SmartDashboard.getNumber("Shooter D", shooterPidGains.d))
-                            .velocityFF(SmartDashboard.getNumber("Shooter FF", shooterPidGains.FF));
-
+                            .d(SmartDashboard.getNumber("Shooter D", shooterPidGains.d));
                     shooterMotorRight.configure(
                             shooterMotorRightConfig,
                             ResetMode.kResetSafeParameters,
@@ -316,28 +316,40 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     public static double findShooterFlywheelSpeedFromDistance(double distance) {
-        // 1. Handle Out-of-Bounds
-        if (distance <= SHOOTER_DISTANCES_METERS[0])
-            return SHOOTER_RPMS[0];
-        if (distance >= SHOOTER_DISTANCES_METERS[SHOOTER_DISTANCES_METERS.length - 1])
-            return SHOOTER_RPMS[SHOOTER_RPMS.length - 1];
+        /*
+         * // 1. Handle Out-of-Bounds
+         * if (distance <= SHOOTER_DISTANCES_METERS[0])
+         * return SHOOTER_RPMS[0];
+         * if (distance >= SHOOTER_DISTANCES_METERS[SHOOTER_DISTANCES_METERS.length -
+         * 1])
+         * return SHOOTER_RPMS[SHOOTER_RPMS.length - 1];
+         * 
+         * // 2. Find the bounding indices (Linear Search)
+         * int i = 0;
+         * while (SHOOTER_DISTANCES_METERS[i + 1] < distance) {
+         * i++;
+         * }
+         * 
+         * // 3. Linear Interpolation
+         * // Formula: y = y0 + (x - x0) * ((y1 - y0) / (x1 - x0))
+         * double x0 = SHOOTER_DISTANCES_METERS[i];
+         * double x1 = SHOOTER_DISTANCES_METERS[i + 1];
+         * double y0 = SHOOTER_RPMS[i];
+         * double y1 = SHOOTER_RPMS[i + 1];
+         * 
+         * double calculatedRPM = y0 + (distance - x0) * ((y1 - y0) / (x1 - x0));
+         * // Limit flywheel speed
+         */
+        // return Math.min(calculatedRPM, MAX_FLYWHEEL_RPM);
+        return 0;
+    }
 
-        // 2. Find the bounding indices (Linear Search)
-        int i = 0;
-        while (SHOOTER_DISTANCES_METERS[i + 1] < distance) {
-            i++;
-        }
-
-        // 3. Linear Interpolation
-        // Formula: y = y0 + (x - x0) * ((y1 - y0) / (x1 - x0))
-        double x0 = SHOOTER_DISTANCES_METERS[i];
-        double x1 = SHOOTER_DISTANCES_METERS[i + 1];
-        double y0 = SHOOTER_RPMS[i];
-        double y1 = SHOOTER_RPMS[i + 1];
-
-        double calculatedRPM = y0 + (distance - x0) * ((y1 - y0) / (x1 - x0));
-        // Limit flywheel speed
-        return Math.min(calculatedRPM, MAX_FLYWHEEL_RPM);
+    public Command runToShuffleboardRPM() {
+        return Commands.runOnce(() -> {
+            double inpRPM = SmartDashboard.getNumber("AUTOALIGN SHOOTER RPM", shooterRPM);
+            System.out.println("SETTING SHOOTER TO RPM: " + inpRPM);
+            updateFlywheelSpeedRPM(inpRPM);
+        });
     }
 
 }

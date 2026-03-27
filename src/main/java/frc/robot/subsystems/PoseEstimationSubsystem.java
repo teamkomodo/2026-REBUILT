@@ -27,8 +27,9 @@ import org.photonvision.*;
 public class PoseEstimationSubsystem extends SubsystemBase {
     public static final AprilTagFieldLayout kTagLayout = AprilTagFieldLayout
             .loadField(AprilTagFields.k2026RebuiltWelded);
-    public static final Transform3d kRobotToCam = new Transform3d(new Translation3d(0.254, 0.0, 0.5),
-            new Rotation3d(0, 0, 0)); // Tune me
+    public static final Transform3d kRobotToCam = new Transform3d(
+            new Translation3d(-11 * 2.54 / 100, -7 * 2.54 / 100, -7 * 2.54 / 100),
+            new Rotation3d(0, 20.0 * Math.PI / 180, 0)); // Tune me
     private final PhotonCamera camera = new PhotonCamera("photonvision"); // Todo: configure as front cam, allow for
                                                                           // addtl cameras later
     private final PhotonPoseEstimator photonEstimator = new PhotonPoseEstimator(kTagLayout, kRobotToCam);
@@ -132,14 +133,8 @@ public class PoseEstimationSubsystem extends SubsystemBase {
 
     };
 
+    // PoseEstimation wrapper func for drivetrain function so shooter can access it
     public double getDistanceToHubCenterMeters() {
-        Translation2d hubPosMeters;
-        if (ON_RED_ALLIANCE.getAsBoolean()) { // FIXME: Replace placeholders with actual hub positions
-            hubPosMeters = new Translation2d(181 / 2.54 / 100, 158 / 2.54 / 100); // Red hub position
-        } else {
-            hubPosMeters = new Translation2d(1, 1); // Blue hub position
-        }
-        return drivetrainSubsystem.getPoseEstimation().getTranslation().getDistance(hubPosMeters);
+        return drivetrainSubsystem.getDistanceToHubCenterMeters();
     }
-
 }
