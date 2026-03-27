@@ -273,14 +273,14 @@ public class SystemStateMachine extends SubsystemBase {
         public Command startFeeding() {
             return manualGate(Commands.sequence(shooter.startFeedingCommand()
             , intake.updateIntakeSpeed(0.4)
-            //, intake.jiggle()
+            , intake.jiggleWithReverse()
             // , indexer.startCommand()
             ));
         }
 
         public Command stopFeeding() {
             return manualGate(Commands.parallel(shooter.stopFeedingCommand()
-            //, intake.stopJiggle()
+            , intake.stopJiggle()
             ));
         }
 
@@ -293,9 +293,12 @@ public class SystemStateMachine extends SubsystemBase {
         }
 
         // Reset
-        public Command reset() {
-            return Commands.parallel(intake.stopIntake(), intake.stopHinge(), shooter.stopShooterCommand(),
-                    indexer.stopIndexerCommand());
+        public Command stopIntake() {
+            return Commands.parallel(intake.stopIntake(), intake.stopHinge());
+        }
+
+        public Command stopShooter() {
+            return Commands.parallel(shooter.stopShooterCommand());
         }
 
         private Command manualGate(Command action) {

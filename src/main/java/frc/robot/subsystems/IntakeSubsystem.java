@@ -57,10 +57,10 @@ public class IntakeSubsystem extends SubsystemBase {
 
     /* ----- Intake ----- */
     // Intake motor and controller.
-    private final SparkFlex intakeMotorLeft;
-    private final SparkFlexConfig intakeMotorLeftConfig;
-    private final SparkFlex intakeMotorRight;
-    private final SparkFlexConfig intakeMotorRightConfig;
+    private final SparkMax intakeMotorLeft;
+    private final SparkMaxConfig intakeMotorLeftConfig;
+    private final SparkMax intakeMotorRight;
+    private final SparkMaxConfig intakeMotorRightConfig;
 
     private final SparkClosedLoopController intakeMotorLeftController;
     private final RelativeEncoder intakeMotorLeftRelativeEncoder;
@@ -97,10 +97,10 @@ public class IntakeSubsystem extends SubsystemBase {
 
     public IntakeSubsystem() {
         // Intake motors and controllers
-        intakeMotorLeft = new SparkFlex(INTAKE_MOTOR_LEFT_ID, BRUSHLESS);
-        intakeMotorLeftConfig = new SparkFlexConfig();
-        intakeMotorRight = new SparkFlex(INTAKE_MOTOR_RIGHT_ID, BRUSHLESS);
-        intakeMotorRightConfig = new SparkFlexConfig();
+        intakeMotorLeft = new SparkMax(INTAKE_MOTOR_LEFT_ID, BRUSHLESS);
+        intakeMotorLeftConfig = new SparkMaxConfig();
+        intakeMotorRight = new SparkMax(INTAKE_MOTOR_RIGHT_ID, BRUSHLESS);
+        intakeMotorRightConfig = new SparkMaxConfig();
 
         intakeMotorLeftController = intakeMotorLeft.getClosedLoopController();
         intakeMotorLeftRelativeEncoder = intakeMotorLeft.getEncoder();
@@ -334,15 +334,15 @@ public class IntakeSubsystem extends SubsystemBase {
                 runHingeAtDutyCycleForSeconds(-HINGE_DEPLOY_DUTY_CYCLE, 0.3)));
     }
 
-    public Command jiggle_with_reverse() {
+    public Command jiggleWithReverse() {
         return new SequentialCommandGroup(
-            Commands.runOnce(() -> setHingeRelativePosition(INTAKE_JIGGLE_HINGE_LIFT_ROTATIONS)),
+            //Commands.runOnce(() -> setHingeRelativePosition(INTAKE_JIGGLE_HINGE_LIFT_ROTATIONS)),
             new RepeatCommand(
                 new SequentialCommandGroup(
                     setState(IntakeState.JIGGLE),
-                    Commands.waitSeconds(0.5),
+                    Commands.waitSeconds(0.2),
                     Commands.runOnce(() -> setIntakeRelativePosition(-INTAKE_JIGGLE_REVERSE_ROTATIONS)),
-                    Commands.waitSeconds(0.5),
+                    Commands.waitSeconds(0.2),
                     Commands.runOnce(() -> setIntakeDutyCycle(INTAKE_JIGGLE_FORWARD_DUTYCYCLE))
                 )
             )

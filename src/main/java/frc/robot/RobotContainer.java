@@ -139,8 +139,9 @@ public class RobotContainer {
     // Shooter: request SHOOT + teleop SCORE (so the system and teleop modes align)
     operator.rt.onTrue(manual.shootShort());
     operator.lt.onTrue(manual.shootLong());
-    operator.a.onTrue(Commands.parallel(manual.reset(),
+    operator.b.onTrue(Commands.parallel(manual.stopIntake(),
       Commands.runOnce(() -> operator.stopSmoothRumble())));
+    operator.a.onTrue(manual.stopShooter());
     // operatorPOVUp.onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT),
     // manual.shootPass()));
     // Start feeding should normally be part of SHOOT; request SHOOT too.
