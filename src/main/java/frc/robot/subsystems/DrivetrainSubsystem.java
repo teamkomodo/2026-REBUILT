@@ -1,25 +1,19 @@
 package frc.robot.subsystems;
 
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.controller.HolonomicDriveController;
 import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
-import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 
-import edu.wpi.first.math.trajectory.TrapezoidProfile;
-import edu.wpi.first.networktables.DoubleArraySubscriber;
-import edu.wpi.first.networktables.DoubleSubscriber;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructArrayPublisher;
@@ -27,7 +21,6 @@ import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.units.Units;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.TimedRobot;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -45,7 +38,6 @@ import static frc.robot.Constants.*;
 import java.util.function.DoubleSupplier;
 
 import com.studica.frc.AHRS;
-import com.ctre.phoenix6.controls.LarsonAnimation;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.util.DriveFeedforwards;
@@ -55,7 +47,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 public class DrivetrainSubsystem implements Subsystem {
 
     // Vision and NavX
-    private static boolean usePoseEstimation = false;
+    //private static boolean usePoseEstimation = false;
 
     public boolean speedMode = !false;
     private double brakeModeScale = 0;
@@ -131,7 +123,6 @@ public class DrivetrainSubsystem implements Subsystem {
     RobotConfig config;
     private boolean slowMode = false;
     private double gyroRotationOffsetRadians = -Math.PI;
-    private double swerveRotationOffsetRadians = -Math.PI;
 
     private ChassisSpeeds lastCommandedChassisSpeeds = new ChassisSpeeds();
 
@@ -344,13 +335,6 @@ public class DrivetrainSubsystem implements Subsystem {
                                 chassisSpeeds, getAdjustedRotation())
                         : chassisSpeeds);
 
-        // var moduleStates = kinematics.toSwerveModuleStates(
-        // ChassisSpeeds.discretize(
-        // fieldRelative
-        // ? ChassisSpeeds.fromFieldRelativeSpeeds(
-        // xSpeed, ySpeed, angularVelocity, getAdjustedRotation())
-        // : new ChassisSpeeds(xSpeed, ySpeed, angularVelocity), periodSeconds));
-
         SwerveDriveKinematics.desaturateWheelSpeeds(moduleStates, MAX_MODULE_VELOCITY);
         setModuleStates(moduleStates);
         lastCommandedChassisSpeeds = chassisSpeeds;
@@ -362,6 +346,7 @@ public class DrivetrainSubsystem implements Subsystem {
 
     private long lastTime = 0;
 
+    @SuppressWarnings("unused")
     private void desaturateChassisSpeedsAcceleration(ChassisSpeeds speeds) {
         long currentTime = RobotController.getFPGATime();
         double dtSeconds = (currentTime - lastTime) / 1e6;
@@ -402,12 +387,6 @@ public class DrivetrainSubsystem implements Subsystem {
     public void zeroGyro() {
         gyroRotationOffsetRadians = -getRotation().getRadians() - Math.PI / 2;
     }
-
-    // public void zeroAutoGyro() {
-    // rotationOffsetRadians = -getRotation().getRadians() - 3 * Math.PI/2 +
-    // Math.PI/2;
-    // resetPose(new Pose2d(getPose().getTranslation(), Rotation2d.fromDegrees(0)));
-    // }
 
     public void runDriveVolts(double voltage) {
         frontLeft.runForward(voltage);
@@ -465,11 +444,6 @@ public class DrivetrainSubsystem implements Subsystem {
     public ChassisSpeeds getChassisSpeeds() {
         return currentChassisSpeeds;
     }
-
-    // public BiConsumer getChassisOutput(ChassisSpeeds chassisSpeed,
-    // DriveFeedforwards feedforwards){
-    // return null; //Needs to return a biconsumer of chassisspeeds and feedforward
-    // }
 
     // Setters
     public void setModuleStates(SwerveModuleState[] moduleStates) {
@@ -594,21 +568,6 @@ public class DrivetrainSubsystem implements Subsystem {
                 steerSysIdRoutine.dynamic(SysIdRoutine.Direction.kReverse).withTimeout(2),
                 Commands.waitSeconds(1));
     }
-
-    // public Command followPathCommand(String pathName) throws IOException,
-    // ParseException{
-    // PathPlannerPath path = PathPlannerPath.fromPathFile(pathName);
-    // return new FollowPathCommand(
-    // path,
-    // this::getPose,
-    // this::getChassisSpeeds,
-    // null, //needs to be replaced with actual biconsumer
-    // HOLONOMIC_PATH_FOLLOWER_CONFIG,
-    // config,
-    // ON_RED_ALLIANCE
-    // this
-    // );
-    // }
 
     public void timedDriveCommand(double xSpeed, double ySpeed, double angularVelocity, boolean fieldRelative,
             double driveTime) {

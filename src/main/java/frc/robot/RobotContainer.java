@@ -6,21 +6,14 @@ package frc.robot;
 
 import static frc.robot.Constants.*;
 
-import java.util.Set;
 import java.util.function.BooleanSupplier;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
-import edu.wpi.first.wpilibj.DataLogManager;
-import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
-import edu.wpi.first.wpilibj2.command.button.CommandPS4Controller;
-import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
-import edu.wpi.first.wpilibj2.command.button.Trigger;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.subsystems.DrivetrainSubsystem;
 import frc.robot.subsystems.IntakeSubsystem;
@@ -36,7 +29,6 @@ import frc.robot.commands.auto.StartFeedingCommand;
 import frc.robot.commands.auto.StopFeedCommand;
 import frc.robot.state_machines.RobotStateMachine;
 import frc.robot.state_machines.RobotStateMachine.RobotState;
-import frc.robot.state_machines.SystemStateMachine.SystemState;
 import frc.robot.state_machines.TeleopStateMachine.TeleopState;
 import frc.robot.util.XboxController;
 
@@ -120,6 +112,8 @@ public class RobotContainer {
     driver.x.onTrue(drivetrain.zeroGyroCommand());
     driver.lb.onTrue(drivetrain.disableSpeedModeCommand());
     driver.lb.onFalse(drivetrain.enableSpeedModeCommand());
+    driver.b.onTrue(drivetrain.toggleAutoAlignCommand());
+    driver.a.onTrue(poseEstimationSubsystem.printDrivetrainPoseEstimation());
 
     // Default drivetrain command (joystick driving)
     drivetrain.setDefaultCommand(
@@ -138,17 +132,16 @@ public class RobotContainer {
     // Teleop quick switches (non-manual): POV left/right pick STEAL/SCORE modes
 
     // Shooter
-    // Map face buttons to both manual shot commands and a guarded request to enter
-    // SHOOT.
+    // Map face buttons to both manual shot commands and a guarded request to enter SHOOT.
     // Shooter: request SHOOT + teleop SCORE (so the system and teleop modes align)
     operator.rt.onTrue(manual.shootShort());
     operator.lt.onTrue(manual.shootLong());
+
     operator.b.onTrue(Commands.parallel(manual.stopIntake(),
       Commands.runOnce(() -> operator.stopSmoothRumble())));
+
     operator.a.onTrue(manual.stopShooter());
-    // operatorPOVUp.onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT),
-    // manual.shootPass()));
-    // Start feeding should normally be part of SHOOT; request SHOOT too.
+
     operator.lb
         .onTrue(manual.startFeeding())
         .onFalse(manual.stopFeeding());
@@ -170,7 +163,7 @@ public class RobotContainer {
     NamedCommands.registerCommand("Ramp Shooter Long", new RampShooterLongCommand(shooter));
     NamedCommands.registerCommand("Deploy Intake", new DeployIntakeCommand(intake));
     NamedCommands.registerCommand("Intake", intake.startIntakeAutoCommand());
-    NamedCommands.registerCommand("Feed All", new StartFeedingCommand(shooter, indexer, intake));
+    NamedCommands.registerCommand("Feed All", new StartFeedingCommand(shooter, intake));
     NamedCommands.registerCommand("Stop", new StopFeedCommand(shooter, intake));
     NamedCommands.registerCommand("Reset Odom", new WaitCommand(0.1));
   }
@@ -264,6 +257,7 @@ public class RobotContainer {
 
 
 }
+
 // COMMANDS FOR AUTO (NOT USED FOR NOW!)
 
 /**

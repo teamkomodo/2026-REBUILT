@@ -6,19 +6,15 @@ import com.revrobotics.RelativeEncoder;
 import com.revrobotics.spark.SparkAbsoluteEncoder;
 import com.revrobotics.spark.SparkClosedLoopController;
 import com.revrobotics.spark.SparkFlex;
-import com.revrobotics.spark.SparkFlex;
 import com.revrobotics.spark.SparkBase.ControlType;
 import com.revrobotics.ResetMode;
 import com.revrobotics.PersistMode;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkFlexConfig;
-import com.revrobotics.spark.config.SparkFlexConfig;
-
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringPublisher;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
@@ -67,6 +63,7 @@ public class IntakeSubsystem extends SubsystemBase {
     private final PIDGains intakePidGains;
 
     private double desiredSpeed;
+    private boolean returnToIntaking = false;
 
     /* ----- Hinge ----- */
     // Hinge motor and controller (single motor)
@@ -240,6 +237,14 @@ public class IntakeSubsystem extends SubsystemBase {
         });
     }
 
+    public Command updateIntakeSpeed(double desiredSpeed) {
+        return Commands.runOnce(() -> {
+            System.out.println("======RUNNING INTAKE");
+            this.desiredSpeed = desiredSpeed;
+            setIntakeDutyCycle(desiredSpeed);
+        });
+    }
+
     public Command updateIntakeRollerRPM(double desiredRPM) {
         return Commands.runOnce(() -> {
             System.out.println("======RUNNING INTAKE RPM");
@@ -316,17 +321,10 @@ public class IntakeSubsystem extends SubsystemBase {
         return runHingeAtDutyCycleForSeconds(HINGE_STOW_DUTY_CYCLE, 1);
     }
 
-    public Command jiggle() {
-        return new RepeatCommand(new SequentialCommandGroup(
-                setState(IntakeState.JIGGLE),
-                runHingeAtDutyCycleForSeconds(0.2, 1.2),
-                runHingeAtDutyCycleForSeconds(-HINGE_DEPLOY_DUTY_CYCLE, 0.3)));
-    }
-
     public Command jiggleWithReverse() {
         return new SequentialCommandGroup(
             setState(IntakeState.JIGGLE),
-            //Commands.runOnce(() -> setHingeRelativePosition(INTAKE_JIGGLE_HINGE_LIFT_ROTATIONS)),
+            setReturnToIntaking(),
             new RepeatCommand(
                 new SequentialCommandGroup(
                     Commands.waitSeconds(0.1),
@@ -338,10 +336,22 @@ public class IntakeSubsystem extends SubsystemBase {
         );
     }
 
+    public Command setReturnToIntaking() {
+        return Commands.runOnce(() -> {
+            if (getIntakeDesiredSpeed() == 0) {
+                returnToIntaking = false;
+            } else {
+                returnToIntaking = true;
+            }
+        });
+    }
+
     public Command stopJiggle() {
-        return Commands.sequence(
-            //runHingeAtDutyCycleForSeconds(HINGE_DEPLOY_DUTY_CYCLE, 0.3),
-            stopIntake());
+        if (returnToIntaking) {
+            return updateIntakeDutyCycle(INTAKE_INTAKE_SPEED);
+        } else {
+            return stopIntake();
+        }
     }
 
     public Command updateHingePosition(double desiredPosition) {

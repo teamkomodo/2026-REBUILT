@@ -167,14 +167,14 @@ public final class Constants {
         public static final int INTAKE_MOTOR_RIGHT_ID = 4;
         public static final int INTAKE_SMART_CURRENT_LIMIT = 70; // FIXME
 
-    public static final double INTAKE_INTAKE_SPEED = 0.4; // FIXME
+    public static final double INTAKE_INTAKE_SPEED = 0.6; // FIXME
     public static final double INTAKE_FEED_SPEED = 0.4; // FIXME
 
         public static final double EVIL_INTAKE_FEED_SPEED = -0.7; // -0.75 for outpost
         public static final double INTAKE_EJECT_SPEED = -0.5; // ` FIXME
 
-    public static final double INTAKE_EJECT_TIME = 0.3; // FIXME
-    public static final double INTAKE_STOWING_SPEED = 0.1; // FIXME
+        public static final double INTAKE_EJECT_TIME = 0.3; // FIXME
+        public static final double INTAKE_STOWING_SPEED = 0.1; // FIXME
 
     public static final double INTAKE_JIGGLE_FORWARD_DUTYCYCLE = 0.55; // FIXME
     public static final double INTAKE_JIGGLE_REVERSE_DUTYCYCLE = -0.53;
@@ -185,10 +185,10 @@ public final class Constants {
         // Intake hinge uses a single motor (right-side convention kept historically)
         public static final int HINGE_MOTOR_ID = 44;
 
-    public static final int HINGE_SMART_CURRENT_LIMIT = 50; // FIXME
-    public static final double HINGE_DEPLOY_DUTY_CYCLE = -0.3;
-    public static final double EVIL_HINGE_DUTY_CYCLE = -0.35;
-    public static final double HINGE_STOW_DUTY_CYCLE = 0.6;
+        public static final int HINGE_SMART_CURRENT_LIMIT = 50; // FIXME
+        public static final double HINGE_DEPLOY_DUTY_CYCLE = -0.3;
+        public static final double EVIL_HINGE_DUTY_CYCLE = -0.35;
+        public static final double HINGE_STOW_DUTY_CYCLE = 0.6;
 
         // Basic constants
         public static final SparkMax.MotorType BRUSHLESS = SparkMax.MotorType.kBrushless;

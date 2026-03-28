@@ -6,8 +6,6 @@ import com.ctre.phoenix6.hardware.CANcoder;
 
 import com.revrobotics.spark.SparkMax;
 import com.revrobotics.RelativeEncoder;
-//import com.revrobotics.servohub.ServoHub.ResetMode;
-import com.revrobotics.servohub.config.ServoHubParameter;
 import com.revrobotics.spark.SparkClosedLoopController;
 import com.revrobotics.spark.SparkBase.ControlType;
 import com.revrobotics.PersistMode;
@@ -82,7 +80,6 @@ public class NeoSwerveModule implements SwerveModule {
     private final PIDController driveController;
 
     private final SparkClosedLoopController steerController;
-    private final SparkClosedLoopController driverController;
 
     private SimpleMotorFeedforward driveFeedforward; // Gains from SysId Analysis
 
@@ -117,7 +114,6 @@ public class NeoSwerveModule implements SwerveModule {
 
         // steerController = steerMotor.getPIDController();
         steerController = steerMotor.getClosedLoopController();
-        driverController = driveMotor.getClosedLoopController();
 
         steeringOffset = steerOffset;
 
@@ -177,7 +173,6 @@ public class NeoSwerveModule implements SwerveModule {
         absEncoderPositionLog = new DoubleLogEntry(log, prefix + "absEncoderPosition");
     }
 
-    @SuppressWarnings("removal")
     private void configureMotors(PIDGains steerGains) {
 
         // Drive Motors

@@ -2,9 +2,6 @@ package frc.robot.subsystems;
 
 import static frc.robot.Constants.*;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.spark.SparkClosedLoopController;
 import com.revrobotics.spark.SparkFlex;
@@ -17,7 +14,6 @@ import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
-import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -103,11 +99,11 @@ public class ShooterSubsystem extends SubsystemBase {
         configureMotors();
 
         SmartDashboard.putNumber("AUTOALIGN SHOOTER RPM", shooterRPM);
-        // SmartDashboard.putNumber("Shooter P", shooterP);
-        // SmartDashboard.putNumber("Shooter I", shooterI);
-        // SmartDashboard.putNumber("Shooter D", shooterD);
-        // SmartDashboard.putNumber("Shooter FF", shooterFF);
-        // SmartDashboard.putNumber("Shooter RPM", shooterRPM);
+        SmartDashboard.putNumber("Shooter P", shooterP);
+        SmartDashboard.putNumber("Shooter I", shooterI);
+        SmartDashboard.putNumber("Shooter D", shooterD);
+        SmartDashboard.putNumber("Shooter FF", shooterFF);
+        SmartDashboard.putNumber("Shooter RPM", shooterRPM);
     }
 
     public void teleopInit() {

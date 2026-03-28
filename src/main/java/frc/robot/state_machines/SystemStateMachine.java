@@ -82,7 +82,7 @@ public class SystemStateMachine extends SubsystemBase {
     private final IntakeSubsystem intake;
     private final ShooterSubsystem shooter;
     private final IndexerSubsystem indexer;
-    private final DrivetrainSubsystem drivetrain;
+    //private final DrivetrainSubsystem drivetrain;
 
     // ManualActions class instance for this instance
     private final ManualActions manualActions;
@@ -98,7 +98,7 @@ public class SystemStateMachine extends SubsystemBase {
         this.intake = Objects.requireNonNull(intake);
         this.shooter = Objects.requireNonNull(shooter);
         this.indexer = Objects.requireNonNull(indexer);
-        this.drivetrain = Objects.requireNonNull(drivetrain);
+        //this.drivetrain = Objects.requireNonNull(drivetrain);
         this.manualActions = new ManualActions();
         configureTriggers();
     }
@@ -265,16 +265,12 @@ public class SystemStateMachine extends SubsystemBase {
         }
 
         public Command feedOnce() {
-            return manualGate(Commands.parallel(shooter.feedOnceCommand()
-            //, indexer.startCommand()
-            ));
+            return manualGate(shooter.feedOnceCommand());
         }
 
         public Command startFeeding() {
             return manualGate(Commands.sequence(shooter.startFeedingCommand()
-            , intake.updateIntakeSpeed(0.4)
             , intake.jiggleWithReverse()
-            // , indexer.startCommand()
             ));
         }
 
@@ -292,7 +288,6 @@ public class SystemStateMachine extends SubsystemBase {
         public Command startIndexer() {
             return manualGate(
                 Commands.none()
-                // indexer.startCommand()
             );
         }
 
