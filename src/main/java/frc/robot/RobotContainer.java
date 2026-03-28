@@ -47,6 +47,7 @@ public class RobotContainer {
   // Controllers
   private final XboxController driver = new XboxController(DRIVER_XBOX_PORT);
   private final XboxController operator = new XboxController(OPERATOR_XBOX_PORT);
+  private final XboxController coach = new XboxController(2);
 
   // Subsystems
   private final DrivetrainSubsystem drivetrain = new DrivetrainSubsystem();
@@ -221,15 +222,19 @@ public class RobotContainer {
        (timer > 105 && timer < 110) || 
        (timer > 135 && timer < 140)) {
       driver.rumbleBoth(0.05);
+      coach.rumbleBoth(0.05);
     } else if((timer > 25 && timer < 25.5) || 
        (timer > 50 && timer < 50.5) || 
        (timer > 75 && timer < 75.5) || 
        (timer > 100 && timer < 100.5) || 
        (timer > 130 && timer < 130.5)) {
       driver.rumbleBoth(1.0);
+      coach.rumbleBoth(1.0);
     } else {
       driver.stopRoughRumble();
       driver.stopSmoothRumble();
+      coach.stopRoughRumble();
+      coach.stopSmoothRumble();
     }
 
     double rpm = Math.abs(shooter.getShooterMotorRPM());

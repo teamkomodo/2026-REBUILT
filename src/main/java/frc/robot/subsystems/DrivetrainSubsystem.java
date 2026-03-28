@@ -544,7 +544,7 @@ public class DrivetrainSubsystem implements Subsystem {
             double x = oX * brakeModeScale + oX * 0.35 * (1 - brakeModeScale);
             double y = oY * brakeModeScale + oY * 0.35 * (1 - brakeModeScale);
             // Blend full-rate rotation with a reduced rate when braking/slow mode is active
-            double r = oR * brakeModeScale + oR * 0.50 * (1 - brakeModeScale);
+            double r = oR * brakeModeScale + oR * 0.80 * (1 - brakeModeScale);
 
             ChassisSpeeds speeds = joystickAxesToChassisSpeeds(x, y, r);
             drive(speeds, true);

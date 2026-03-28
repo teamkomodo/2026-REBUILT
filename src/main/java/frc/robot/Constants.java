@@ -20,7 +20,7 @@ public final class Constants {
     public static final int OPERATOR_XBOX_PORT = 1;
 
     public static final double LINEAR_SLOW_MODE_MODIFIER = 0.5;
-    public static final double ANGULAR_SLOW_MODE_MODIFIER = 0.7;
+    public static final double ANGULAR_SLOW_MODE_MODIFIER = 5;
     public static final double DRIVETRAIN_WIDTH = 0.57785; // Distance between center of left and right swerve wheels in
                                                            // meters
     public static final double DRIVETRAIN_LENGTH = 0.57785; // Distance between center of front and back swerve wheels
@@ -85,9 +85,9 @@ public final class Constants {
     public static final int SHOOTER_MOTOR_RIGHT_ID = 61;
     public static final int SHOOTER_MOTOR_LEFT_ID = 31;
     public static final double SHOOTER_MAX_DUTYCYCLE = 0.7;
-    public static final int SHOOTER_MAX_RPM = 4000;
+    public static final int SHOOTER_MAX_RPM = 10000;
     public static final int SHOOTER_SMART_CURRENT_LIMIT = 80; // FIXME
-    public static final double SHOOTER_GEAR_RATIO = 0.3333333; // 1:1.5 speeding up the flywheel
+    public static final double SHOOTER_GEAR_RATIO = 1/1.5; // 1:1.5 slowing down the flywheel
     public static final double MAX_SHOOTER_SPEED_TOLERANCE = 50.0; // RPM tolerance for considering shooter at target
                                                                    // speed
 
@@ -125,8 +125,8 @@ public final class Constants {
     public static final double MAX_FLYWHEEL_RPM = 6700;
 
     // Manual shot RPMs
-    public static final double SHORT_BASELINE_RPM = 2950;///4725; 
-    public static final double LONG_BASELINE_RPM = 2100;
+    public static final double SHORT_BASELINE_RPM = 9000;///4725; 
+    public static final double LONG_BASELINE_RPM = 3000;//6300
     public static final double PASS_SHOT_RPM = 2750;
 
 
@@ -155,7 +155,7 @@ public final class Constants {
     public static final int INTAKE_MOTOR_RIGHT_ID = 4;
     public static final int INTAKE_SMART_CURRENT_LIMIT = 70; // FIXME
 
-    public static final double INTAKE_INTAKE_SPEED = 0.4; // FIXME
+    public static final double INTAKE_INTAKE_SPEED = 0.6; // FIXME
     public static final double INTAKE_FEED_SPEED = 0.4; // FIXME
 
     public static final double EVIL_INTAKE_FEED_SPEED = -0.7; // -0.75 for outpost
@@ -165,7 +165,7 @@ public final class Constants {
     public static final double INTAKE_STOWING_SPEED = 0.1; // FIXME
 
     public static final double INTAKE_JIGGLE_FORWARD_DUTYCYCLE = 0.55; // FIXME
-    public static final double INTAKE_JIGGLE_REVERSE_ROTATIONS = 0.9;
+    public static final double INTAKE_JIGGLE_REVERSE_DUTYCYCLE = -0.53;
     public static final double INTAKE_JIGGLE_HINGE_LIFT_ROTATIONS = 0.1;
     public static final double INTAKE_GEAR_RATIO = 1.5; // 1:1.5 :: motor:roller 
 

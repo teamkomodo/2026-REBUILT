@@ -341,9 +341,9 @@ public class IntakeSubsystem extends SubsystemBase {
             new RepeatCommand(
                 new SequentialCommandGroup(
                     Commands.waitSeconds(0.1),
-                    Commands.runOnce(() -> setIntakeDutyCycle(-INTAKE_JIGGLE_FORWARD_DUTYCYCLE)),
+                    Commands.runOnce(() -> setIntakeDutyCycle(INTAKE_JIGGLE_FORWARD_DUTYCYCLE)),
                     Commands.waitSeconds(0.3),
-                    Commands.runOnce(() -> setIntakeDutyCycle(INTAKE_JIGGLE_FORWARD_DUTYCYCLE))
+                    Commands.runOnce(() -> setIntakeDutyCycle(INTAKE_JIGGLE_REVERSE_DUTYCYCLE))
                 )
             )
         );
@@ -351,7 +351,7 @@ public class IntakeSubsystem extends SubsystemBase {
 
     public Command stopJiggle() {
         return Commands.sequence(
-            runHingeAtDutyCycleForSeconds(HINGE_DEPLOY_DUTY_CYCLE, 0.3),
+            //runHingeAtDutyCycleForSeconds(HINGE_DEPLOY_DUTY_CYCLE, 0.3),
             stopIntake());
     }
 
