@@ -18,7 +18,7 @@ public class PoseEstimationSubsystem extends SubsystemBase {
     public static final AprilTagFieldLayout kTagLayout = AprilTagFieldLayout
             .loadField(AprilTagFields.k2026RebuiltWelded);
     public static final Transform3d kRobotToCam = new Transform3d(
-            new Translation3d(0 * 2.54 / 100, 0 * 2.54 / 100, 0 * 2.54 / 100),
+            new Translation3d(-11 * 2.54 / 100, -6 * 2.54 / 100, -6 * 2.54 / 100),
             new Rotation3d(0, 20.0 * Math.PI / 180, 0)); // Tune me
     private final PhotonCamera camera = new PhotonCamera("photonvision"); // Todo: configure as front cam, allow for
                                                                           // addtl cameras later
@@ -119,6 +119,7 @@ public class PoseEstimationSubsystem extends SubsystemBase {
             System.out.print("========Rotation: Angle: ");
             System.out.print(drivetrainPoseEstimation.getRotation().getDegrees()); // Verify if z is right
             System.out.println(" degrees.");
+            
         });
 
     };

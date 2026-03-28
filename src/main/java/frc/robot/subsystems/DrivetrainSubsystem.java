@@ -236,13 +236,13 @@ public class DrivetrainSubsystem implements Subsystem {
         if (useAutoAlign) {
             Rotation2d targetAngle = getRotationToHub();
             double targetOmega = MathUtil.clamp(rotationController.calculate(
-                    getRotation().getRadians(),
-                    targetAngle.getRadians() + Math.PI), -MAX_ANGULAR_VELOCITY, MAX_ANGULAR_VELOCITY);
+                getPose().getRotation().getRadians(),
+                    targetAngle.getRadians()), -MAX_ANGULAR_VELOCITY, MAX_ANGULAR_VELOCITY);
             if (rotationController.atSetpoint()) {
                 targetOmega = 0;
             }
-            System.out.println("OMEGA: " + targetOmega + "Current Angle (Deg): " + getRotation().getDegrees() + " Target Angle (Deg): " + targetAngle.getDegrees());
-            drive(xVelocity, yVelocity, targetOmega, true);
+            System.out.println("OMEGA: " + targetOmega + "Current Angle (Deg): " + getPose().getRotation().getDegrees() + " Target Angle (Deg): " + targetAngle.getDegrees());
+            drive(xVelocity, yVelocity, targetOmega, false);
         } else {
             drive(xVelocity, yVelocity, -angularVelocity, FIELD_RELATIVE_DRIVE);
 
@@ -602,6 +602,6 @@ public class DrivetrainSubsystem implements Subsystem {
         }
         return hubPosMeters
                 .minus(getPose().getTranslation())
-                .getAngle().plus(Rotation2d.k180deg);
+                .getAngle();
     }
 }
