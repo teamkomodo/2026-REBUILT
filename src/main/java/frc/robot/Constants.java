@@ -125,7 +125,7 @@ public final class Constants {
     public static final double MAX_FLYWHEEL_RPM = 6700;
 
     // Manual shot RPMs
-    public static final double SHORT_BASELINE_RPM = 2050;///4725; 
+    public static final double SHORT_BASELINE_RPM = 2950;///4725; 
     public static final double LONG_BASELINE_RPM = 2100;
     public static final double PASS_SHOT_RPM = 2750;
 
@@ -151,11 +151,11 @@ public final class Constants {
             4545.577, 4607.759, 4669.065, 4730.113, 4793.585, 4857.450, 4919.507, 4981.861, 5046.699 };
 
     // Intake
-    public static final int INTAKE_MOTOR_LEFT_ID = 15;
-    public static final int INTAKE_MOTOR_RIGHT_ID = 34;
+    public static final int INTAKE_MOTOR_LEFT_ID = 51;
+    public static final int INTAKE_MOTOR_RIGHT_ID = 4;
     public static final int INTAKE_SMART_CURRENT_LIMIT = 70; // FIXME
 
-    public static final double INTAKE_INTAKE_SPEED = 0.55; // FIXME
+    public static final double INTAKE_INTAKE_SPEED = 0.4; // FIXME
     public static final double INTAKE_FEED_SPEED = 0.4; // FIXME
 
     public static final double EVIL_INTAKE_FEED_SPEED = -0.7; // -0.75 for outpost

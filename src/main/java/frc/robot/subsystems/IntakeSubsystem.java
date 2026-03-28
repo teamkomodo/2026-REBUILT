@@ -6,13 +6,13 @@ import com.revrobotics.RelativeEncoder;
 import com.revrobotics.spark.SparkAbsoluteEncoder;
 import com.revrobotics.spark.SparkClosedLoopController;
 import com.revrobotics.spark.SparkFlex;
-import com.revrobotics.spark.SparkMax;
+import com.revrobotics.spark.SparkFlex;
 import com.revrobotics.spark.SparkBase.ControlType;
 import com.revrobotics.ResetMode;
 import com.revrobotics.PersistMode;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkFlexConfig;
-import com.revrobotics.spark.config.SparkMaxConfig;
+import com.revrobotics.spark.config.SparkFlexConfig;
 
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTable;
@@ -57,10 +57,10 @@ public class IntakeSubsystem extends SubsystemBase {
 
     /* ----- Intake ----- */
     // Intake motor and controller.
-    private final SparkMax intakeMotorLeft;
-    private final SparkMaxConfig intakeMotorLeftConfig;
-    private final SparkMax intakeMotorRight;
-    private final SparkMaxConfig intakeMotorRightConfig;
+    private final SparkFlex intakeMotorLeft;
+    private final SparkFlexConfig intakeMotorLeftConfig;
+    private final SparkFlex intakeMotorRight;
+    private final SparkFlexConfig intakeMotorRightConfig;
 
     private final SparkClosedLoopController intakeMotorLeftController;
     private final RelativeEncoder intakeMotorLeftRelativeEncoder;
@@ -70,8 +70,8 @@ public class IntakeSubsystem extends SubsystemBase {
 
     /* ----- Hinge ----- */
     // Hinge motor and controller (single motor)
-    private final SparkMax hingeMotor;
-    private final SparkMaxConfig hingeMotorConfig;
+    private final SparkFlex hingeMotor;
+    private final SparkFlexConfig hingeMotorConfig;
 
     private final SparkClosedLoopController hingeMotorController;
     private final RelativeEncoder hingeMotorRelativeEncoder;
@@ -97,10 +97,10 @@ public class IntakeSubsystem extends SubsystemBase {
 
     public IntakeSubsystem() {
         // Intake motors and controllers
-        intakeMotorLeft = new SparkMax(INTAKE_MOTOR_LEFT_ID, BRUSHLESS);
-        intakeMotorLeftConfig = new SparkMaxConfig();
-        intakeMotorRight = new SparkMax(INTAKE_MOTOR_RIGHT_ID, BRUSHLESS);
-        intakeMotorRightConfig = new SparkMaxConfig();
+        intakeMotorLeft = new SparkFlex(INTAKE_MOTOR_LEFT_ID, BRUSHLESS);
+        intakeMotorLeftConfig = new SparkFlexConfig();
+        intakeMotorRight = new SparkFlex(INTAKE_MOTOR_RIGHT_ID, BRUSHLESS);
+        intakeMotorRightConfig = new SparkFlexConfig();
 
         intakeMotorLeftController = intakeMotorLeft.getClosedLoopController();
         intakeMotorLeftRelativeEncoder = intakeMotorLeft.getEncoder();
@@ -111,8 +111,8 @@ public class IntakeSubsystem extends SubsystemBase {
 
         // Hinge motors and controllers and variables
 
-        hingeMotor = new SparkMax(HINGE_MOTOR_ID, BRUSHLESS);
-        hingeMotorConfig = new SparkMaxConfig();
+        hingeMotor = new SparkFlex(HINGE_MOTOR_ID, BRUSHLESS);
+        hingeMotorConfig = new SparkFlexConfig();
 
         hingeMotorController = hingeMotor.getClosedLoopController();
         hingeMotorRelativeEncoder = hingeMotor.getEncoder();
@@ -336,13 +336,13 @@ public class IntakeSubsystem extends SubsystemBase {
 
     public Command jiggleWithReverse() {
         return new SequentialCommandGroup(
+            setState(IntakeState.JIGGLE),
             //Commands.runOnce(() -> setHingeRelativePosition(INTAKE_JIGGLE_HINGE_LIFT_ROTATIONS)),
             new RepeatCommand(
                 new SequentialCommandGroup(
-                    setState(IntakeState.JIGGLE),
-                    Commands.waitSeconds(0.2),
-                    Commands.runOnce(() -> setIntakeRelativePosition(-INTAKE_JIGGLE_REVERSE_ROTATIONS)),
-                    Commands.waitSeconds(0.2),
+                    Commands.waitSeconds(0.1),
+                    Commands.runOnce(() -> setIntakeDutyCycle(-INTAKE_JIGGLE_FORWARD_DUTYCYCLE)),
+                    Commands.waitSeconds(0.3),
                     Commands.runOnce(() -> setIntakeDutyCycle(INTAKE_JIGGLE_FORWARD_DUTYCYCLE))
                 )
             )
