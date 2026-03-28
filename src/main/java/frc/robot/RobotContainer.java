@@ -71,7 +71,7 @@ public class RobotContainer {
   private final TeleopStateMachine teleopSM = new TeleopStateMachine(systemSM, operatorOverrideSupplier);
   private final RobotStateMachine robotSM = new RobotStateMachine(teleopSM, systemSM, operatorOverrideSupplier);
 
-  //Timer
+  // Timer
   private final Timer teleopTimer = new Timer();
 
   // Manual-actions helper from the SystemStateMachine
@@ -134,7 +134,8 @@ public class RobotContainer {
     driver.lb.onTrue(drivetrain.disableSpeedModeCommand());
     driver.lb.onFalse(drivetrain.enableSpeedModeCommand());
     driver.b.onTrue(drivetrain.toggleAutoAlignCommand());
-    driver.a.onTrue(poseEstimationSubsystem.printDrivetrainPoseEstimation());
+    driver.y.onTrue(shooter.runShooterToShuffleboardRPM());
+    driver.a.onTrue(shooter.toggleAutoDistanceCommand());
 
     // Default drivetrain command (joystick driving)
     drivetrain.setDefaultCommand(
@@ -145,37 +146,38 @@ public class RobotContainer {
         ));
 
     operator.rb.onTrue(Commands.parallel(manual.intake(),
-      Commands.runOnce(() -> operator.rumbleSmooth(0.2))));
+        Commands.runOnce(() -> operator.rumbleSmooth(0.2))));
     operator.povUp.onTrue(Commands.parallel(manual.intakeDeploy(),
-      Commands.runOnce(() -> operator.rumbleSmooth(0.2))));
+        Commands.runOnce(() -> operator.rumbleSmooth(0.2))));
     operator.povDown.onTrue(manual.eject());
 
     // Teleop quick switches (non-manual): POV left/right pick STEAL/SCORE modes
 
     // Shooter
-    // Map face buttons to both manual shot commands and a guarded request to enter SHOOT.
+    // Map face buttons to both manual shot commands and a guarded request to enter
+    // SHOOT.
     // Shooter: request SHOOT + teleop SCORE (so the system and teleop modes align)
     operator.rt.onTrue(manual.shootShort());
     operator.lt.onTrue(manual.shootLong());
 
     operator.b.onTrue(Commands.parallel(manual.stopIntake(),
-      Commands.runOnce(() -> operator.stopSmoothRumble())));
+        Commands.runOnce(() -> operator.stopSmoothRumble())));
 
     operator.a.onTrue(manual.stopShooter());
 
     operator.lb
         .onTrue(manual.startFeeding())
         .onFalse(manual.stopFeeding());
-    
-    //Tuning
+
+    // Tuning
     operator.leftStick
-      .onTrue(Commands.runOnce(() -> System.out.println("=========  RECONFIGURE PID"))
-        .andThen(shooter.reconfigureRobotTuningCommand()));
+        .onTrue(Commands.runOnce(() -> System.out.println("=========  RECONFIGURE PID"))
+            .andThen(shooter.reconfigureRobotTuningCommand()));
   }
 
   public Command getAutonomousCommand() {
     // If you later add an auto chooser, return selected command here.
-    if(autoChooser != null){
+    if (autoChooser != null) {
       return autoChooser.getSelected();
     }
     return null;
@@ -223,21 +225,21 @@ public class RobotContainer {
             teleopSM.enterDisabled()));
   }
 
-  // @N/A  20s autonomous period
-  // @0s   10s transition shift
-  // @10s  25s loser shift
-  // @35s  25s winner shift
-  // @60s  25s loser shift
-  // @85s  25s winner shift
+  // @N/A 20s autonomous period
+  // @0s 10s transition shift
+  // @10s 25s loser shift
+  // @35s 25s winner shift
+  // @60s 25s loser shift
+  // @85s 25s winner shift
   // @110s 30s endgame shift
-  // @140s 0s  game end
+  // @140s 0s game end
 
   public void setRumbles() {
 
-    if(periodTimer.getController5SecRumble()) {
+    if (periodTimer.getController5SecRumble()) {
       driver.rumbleBoth(0.05);
       coach.rumbleBoth(0.05);
-    } else if(periodTimer.getController10SecRumble()) {
+    } else if (periodTimer.getController10SecRumble()) {
       driver.rumbleBoth(1.0);
       coach.rumbleBoth(1.0);
     } else {
@@ -248,7 +250,7 @@ public class RobotContainer {
     }
 
     double rpm = Math.abs(shooter.getShooterMotorRPM());
-    if(rpm > (4275)) {
+    if (rpm > (4275)) {
       operator.rumbleRough(1.0);
     } else {
       operator.stopRoughRumble();
@@ -266,10 +268,9 @@ public class RobotContainer {
   public void periodic() {
     setRumbles();
     timeLeft = periodTimer.getPeriodTimer();
-    //System.out.println(timeLeft);
+    // System.out.println(timeLeft);
     timePublisher.set(timeLeft);
   }
-
 
 }
 
