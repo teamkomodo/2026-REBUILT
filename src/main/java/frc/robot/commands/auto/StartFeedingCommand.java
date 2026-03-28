@@ -1,6 +1,6 @@
 package frc.robot.commands.auto;
 
-import static frc.robot.Constants.EVIL_INTAKE_FEED_SPEED;
+import static frc.robot.Constants.*;
 
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
@@ -33,6 +33,6 @@ public class StartFeedingCommand extends DynamicCommand {
     protected Command getCommand() {
         return new SequentialCommandGroup(
                 shooterSubsystem.startFeedingCommand(),
-                intakeSubsystem.updateIntakeSpeed(EVIL_INTAKE_FEED_SPEED));
+                intakeSubsystem.updateIntakeDutyCycle(INTAKE_INTAKE_SPEED));
     }
 }

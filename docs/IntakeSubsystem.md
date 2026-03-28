@@ -32,9 +32,6 @@ Public API (important methods)
 - void setIntakeDutyCycle(double dutyCycle)
   - Low-level duty-cycle control for the intake master motor.
 
-- void setHingePosition(double position)
-  - Command hinge to a closed-loop position setpoint.
-
 Telemetry
 - `intake-speed`, `intake-rpm`, `intake-desired-speed`
 - `hinge-speed`, `hinge-rpm`, `hinge-desired-position`, `hinge-absolute-position`
