@@ -10,7 +10,16 @@ import java.util.function.BooleanSupplier;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
+
+import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.networktables.DoublePublisher;
+import edu.wpi.first.networktables.NetworkTable;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.StructArrayPublisher;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
@@ -30,9 +39,13 @@ import frc.robot.commands.auto.StopFeedCommand;
 import frc.robot.state_machines.RobotStateMachine;
 import frc.robot.state_machines.RobotStateMachine.RobotState;
 import frc.robot.state_machines.TeleopStateMachine.TeleopState;
+import frc.robot.util.PeriodTimer;
 import frc.robot.util.XboxController;
 
 public class RobotContainer {
+
+  private final SendableChooser<Command> autoChooser;
+  private final Field2d field = new Field2d();
 
   // Code override
   private final boolean START_IN_MANUAL = true;
@@ -43,7 +56,7 @@ public class RobotContainer {
   private final XboxController coach = new XboxController(2);
 
   // Subsystems
-  private final DrivetrainSubsystem drivetrain = new DrivetrainSubsystem();
+  private final DrivetrainSubsystem drivetrain = new DrivetrainSubsystem(field);
   private final PoseEstimationSubsystem poseEstimationSubsystem = new PoseEstimationSubsystem(drivetrain);
   private final IntakeSubsystem intake = new IntakeSubsystem();
   private final IndexerSubsystem indexer = new IndexerSubsystem();
@@ -63,6 +76,11 @@ public class RobotContainer {
 
   // Manual-actions helper from the SystemStateMachine
   private final SystemStateMachine.ManualActions manual = systemSM.getManualActions();
+  private final PeriodTimer periodTimer = new PeriodTimer(teleopTimer);
+  private double timeLeft = 0;
+
+  public static final NetworkTable timeNT = NetworkTableInstance.getDefault().getTable("time");
+  private final DoublePublisher timePublisher = timeNT.getDoubleTopic("time").publish();
 
   private Command teleopMasterCommand; // the master command that runs the teleop timeline (scheduled in startTeleop)
 
@@ -70,6 +88,9 @@ public class RobotContainer {
     configureBindings();
 
     registerNamedCommands();
+
+    autoChooser = AutoBuilder.buildAutoChooser();
+    SmartDashboard.putData("Auto Chooser", autoChooser);
   }
 
   // Configure controller button -> command bindings.
@@ -154,8 +175,10 @@ public class RobotContainer {
 
   public Command getAutonomousCommand() {
     // If you later add an auto chooser, return selected command here.
-    return AutoBuilder.buildAuto("New Auto");
-    //return null;
+    if(autoChooser != null){
+      return autoChooser.getSelected();
+    }
+    return null;
   }
 
   private void registerNamedCommands() {
@@ -173,9 +196,7 @@ public class RobotContainer {
     // Request the top-level robot state machine to enter TELEOP and start the
     // teleop timeline (non-blocking; these return Commands and are scheduled).
     CommandScheduler.getInstance().schedule(robotSM.requestState(RobotState.TELEOP));
-    // No master command; it is not helping
-    // CommandScheduler.getInstance().schedule(teleopMasterCommand =
-    // teleopSM.teleopMasterCommand());
+    // No master command; it is not helping\
     if (START_IN_MANUAL) {
       CommandScheduler.getInstance().schedule(
           Commands.sequence(
@@ -212,20 +233,11 @@ public class RobotContainer {
   // @140s 0s  game end
 
   public void setRumbles() {
-    double timer = getTime();
-    if((timer > 5 && timer < 10) || 
-       (timer > 30 && timer < 35) || 
-       (timer > 55 && timer < 60) || 
-       (timer > 80 && timer < 85) || 
-       (timer > 105 && timer < 110) || 
-       (timer > 135 && timer < 140)) {
+
+    if(periodTimer.getController5SecRumble()) {
       driver.rumbleBoth(0.05);
       coach.rumbleBoth(0.05);
-    } else if((timer > 25 && timer < 25.5) || 
-       (timer > 50 && timer < 50.5) || 
-       (timer > 75 && timer < 75.5) || 
-       (timer > 100 && timer < 100.5) || 
-       (timer > 130 && timer < 130.5)) {
+    } else if(periodTimer.getController10SecRumble()) {
       driver.rumbleBoth(1.0);
       coach.rumbleBoth(1.0);
     } else {
@@ -253,6 +265,9 @@ public class RobotContainer {
 
   public void periodic() {
     setRumbles();
+    timeLeft = periodTimer.getPeriodTimer();
+    //System.out.println(timeLeft);
+    timePublisher.set(timeLeft);
   }
 
 

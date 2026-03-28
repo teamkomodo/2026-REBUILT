@@ -2,6 +2,8 @@ package frc.robot.subsystems;
 
 import static frc.robot.Constants.*;
 
+import java.util.Set;
+
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.spark.SparkAbsoluteEncoder;
 import com.revrobotics.spark.SparkClosedLoopController;
@@ -352,6 +354,14 @@ public class IntakeSubsystem extends SubsystemBase {
         } else {
             return stopIntake();
         }
+    }
+
+    public Command stopJiggleFixed() {
+        return Commands.either(
+            updateIntakeDutyCycle(INTAKE_INTAKE_SPEED),
+            stopIntake(),
+            () -> returnToIntaking
+        );
     }
 
     public Command updateHingePosition(double desiredPosition) {

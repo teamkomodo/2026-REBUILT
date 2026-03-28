@@ -21,6 +21,7 @@ import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.units.Units;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -33,8 +34,10 @@ import frc.robot.util.PIDGains;
 import frc.robot.util.SwerveModule;
 import frc.robot.util.Util;
 
+import static edu.wpi.first.units.Units.Rotation;
 import static frc.robot.Constants.*;
 
+import java.lang.reflect.Field;
 import java.util.function.DoubleSupplier;
 
 import com.studica.frc.AHRS;
@@ -123,10 +126,13 @@ public class DrivetrainSubsystem implements Subsystem {
     RobotConfig config;
     private boolean slowMode = false;
     private double gyroRotationOffsetRadians = -Math.PI;
+    private final Field2d field;
 
     private ChassisSpeeds lastCommandedChassisSpeeds = new ChassisSpeeds();
 
-    public DrivetrainSubsystem() {
+    public DrivetrainSubsystem(Field2d field) {
+
+        SmartDashboard.putData("Field", field);
 
         rotationController.enableContinuousInput(-Math.PI, Math.PI);
         rotationController.setTolerance(Math.toRadians(0.01));
@@ -176,7 +182,7 @@ public class DrivetrainSubsystem implements Subsystem {
 
         poseEstimator = new SwerveDrivePoseEstimator(
                 kinematics,
-                getAdjustedRotation(),
+                getRotation().plus(Rotation2d.fromDegrees(-90)),
                 new SwerveModulePosition[] {
                         frontLeft.getPosition(),
                         frontRight.getPosition(),
@@ -187,6 +193,7 @@ public class DrivetrainSubsystem implements Subsystem {
         resetPose(new Pose2d(new Translation2d(10, 0), Rotation2d.fromDegrees(-90)));
         zeroGyro();
         setupPathPlanner();
+        this.field = field;
     }
 
     void resetAutoPose(Pose2d pose) {
@@ -212,6 +219,7 @@ public class DrivetrainSubsystem implements Subsystem {
                 this.backRight.getAbsoluteModuleRotation().getDegrees());
 
         SmartDashboard.updateValues();
+        field.setRobotPose(getPose());
 
         // does not need to use adjusted rotation, odometry handles it.
         // updates pose with rotation and swerve positions
@@ -224,18 +232,19 @@ public class DrivetrainSubsystem implements Subsystem {
         frontRight.periodic();
         backLeft.periodic();
         backRight.periodic();
+
         if (useAutoAlign) {
             Rotation2d targetAngle = getRotationToHub();
             double targetOmega = MathUtil.clamp(rotationController.calculate(
-                    navX.getRotation2d().getRadians(),
-                    targetAngle.getRadians()), -MAX_ANGULAR_VELOCITY, MAX_ANGULAR_VELOCITY);
+                    getRotation().getRadians(),
+                    targetAngle.getRadians() + Math.PI), -MAX_ANGULAR_VELOCITY, MAX_ANGULAR_VELOCITY);
             if (rotationController.atSetpoint()) {
                 targetOmega = 0;
             }
-            System.out.println("OMEGA: " + targetOmega + ", DIST: " + getDistanceToHubCenterMeters() + "meters");
-            drive(xVelocity, yVelocity, -targetOmega, true);
+            System.out.println("OMEGA: " + targetOmega + "Current Angle (Deg): " + getRotation().getDegrees() + " Target Angle (Deg): " + targetAngle.getDegrees());
+            drive(xVelocity, yVelocity, targetOmega, true);
         } else {
-            drive(xVelocity, yVelocity, angularVelocity, FIELD_RELATIVE_DRIVE);
+            drive(xVelocity, yVelocity, -angularVelocity, FIELD_RELATIVE_DRIVE);
 
         }
     }
@@ -247,7 +256,7 @@ public class DrivetrainSubsystem implements Subsystem {
     
     public double getDistanceToHubCenterMeters() {
         Translation2d hubPosMeters;
-        if (ON_RED_ALLIANCE.getAsBoolean()) { // FIXME: Replace placeholders with actual hub positions
+        if (ON_RED_ALLIANCE.getAsBoolean()) {
             hubPosMeters = RED_HUB_POS_METERS;
         } else {
             hubPosMeters = BLUE_HUB_POS_METERS;
@@ -312,6 +321,7 @@ public class DrivetrainSubsystem implements Subsystem {
     }
 
     public Pose2d getPoseEstimation() {
+        Pose2d pose = poseEstimator.getEstimatedPosition();
         return (poseEstimator.getEstimatedPosition());
     }
 
