@@ -20,19 +20,18 @@ public class PeriodTimer {
     // @140s 0s  game end
 
     public double getPeriodTimer() {
-        double time = timer.getMatchTime();
-        if(time < 10) {
-            return 10-time;
-        } else if(time < 35) {
-            return 35-time;
-        }  else if(time < 60) {
-            return 60-time;
-        }  else if(time < 85) {
-            return 85-time;
-        }  else if(time < 110) {
-            return 110-time;
-        }  else if(time < 140) {
-            return 140-time;
+        if(timer.getMatchTime() < 10) {
+            return 10-timer.getMatchTime();
+        } else if(timer.getMatchTime() < 35) {
+            return 35-timer.getMatchTime();
+        }  else if(timer.getMatchTime() < 60) {
+            return 60-timer.getMatchTime();
+        }  else if(timer.getMatchTime() < 85) {
+            return 85-timer.getMatchTime();
+        }  else if(timer.getMatchTime() < 110) {
+            return 110-timer.getMatchTime();
+        }  else if(timer.getMatchTime() < 140) {
+            return 140-timer.getMatchTime();
         }
         return 0;
     }

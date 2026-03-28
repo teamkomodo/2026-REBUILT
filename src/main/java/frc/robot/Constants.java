@@ -132,7 +132,7 @@ public final class Constants {
 
     // Manual shot RPMs
     public static final double SHORT_BASELINE_RPM = 9000;/// 4725;
-    public static final double LONG_BASELINE_RPM = 3000;// 6300
+    public static final double LONG_BASELINE_RPM = 3500;// 6300
     public static final double PASS_SHOT_RPM = 2750;
 
     // Finished table

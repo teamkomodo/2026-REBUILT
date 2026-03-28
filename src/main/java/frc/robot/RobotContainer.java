@@ -134,8 +134,8 @@ public class RobotContainer {
     driver.lb.onTrue(drivetrain.disableSpeedModeCommand());
     driver.lb.onFalse(drivetrain.enableSpeedModeCommand());
     driver.b.onTrue(drivetrain.toggleAutoAlignCommand());
-    driver.y.onTrue(shooter.runShooterToShuffleboardRPM());
-    driver.a.onTrue(shooter.toggleAutoDistanceCommand());
+    //driver.y.onTrue(shooter.runShooterToShuffleboardRPM());
+    
 
     // Default drivetrain command (joystick driving)
     drivetrain.setDefaultCommand(
@@ -157,7 +157,8 @@ public class RobotContainer {
     // Map face buttons to both manual shot commands and a guarded request to enter
     // SHOOT.
     // Shooter: request SHOOT + teleop SCORE (so the system and teleop modes align)
-    operator.rt.onTrue(manual.shootShort());
+    operator.rt.onTrue(shooter.toggleAutoDistanceCommand());
+    // operator.rt.onTrue(manual.shootShort());
     operator.lt.onTrue(manual.shootLong());
 
     operator.b.onTrue(Commands.parallel(manual.stopIntake(),

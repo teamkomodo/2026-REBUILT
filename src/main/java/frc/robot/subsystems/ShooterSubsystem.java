@@ -297,7 +297,14 @@ public class ShooterSubsystem extends SubsystemBase {
 
     public Command toggleAutoDistanceCommand() {
         return Commands.runOnce(() -> {
-            autoDistanceEnabled = !autoDistanceEnabled;
+            autoDistanceEnabled = true;
+            System.out.println("Auto-distance RPM: " + (autoDistanceEnabled ? "ON" : "OFF"));
+        }, this);
+    }
+
+    public Command shooterOffAutoCommand() {
+        return Commands.runOnce(() -> {
+            autoDistanceEnabled = false;
             System.out.println("Auto-distance RPM: " + (autoDistanceEnabled ? "ON" : "OFF"));
         }, this);
     }
