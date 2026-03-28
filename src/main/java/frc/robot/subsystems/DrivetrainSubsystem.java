@@ -241,7 +241,7 @@ public class DrivetrainSubsystem implements Subsystem {
             if (rotationController.atSetpoint()) {
                 targetOmega = 0;
             }
-            System.out.println("OMEGA: " + targetOmega + "Current Angle (Deg): " + getPose().getRotation().getDegrees() + " Target Angle (Deg): " + targetAngle.getDegrees());
+            System.out.println("Dist: " + getDistanceToHubCenterMeters() + "m, Omega: " + targetOmega + "rad/s");
             drive(xVelocity, yVelocity, targetOmega, true);
         } else {
             drive(xVelocity, yVelocity, -angularVelocity, FIELD_RELATIVE_DRIVE);
