@@ -190,7 +190,8 @@ public class ShooterSubsystem extends SubsystemBase {
                     shooterMotorRightConfig.closedLoop
                             .p(SmartDashboard.getNumber("Shooter P", shooterPidGains.p))
                             .i(SmartDashboard.getNumber("Shooter I", shooterPidGains.i))
-                            .d(SmartDashboard.getNumber("Shooter D", shooterPidGains.d));
+                            .d(SmartDashboard.getNumber("Shooter D", shooterPidGains.d))
+                            .velocityFF(SmartDashboard.getNumber("Shooter FF", shooterPidGains.FF));
                     shooterMotorRight.configure(
                             shooterMotorRightConfig,
                             ResetMode.kResetSafeParameters,
