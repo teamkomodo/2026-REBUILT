@@ -31,8 +31,9 @@ public class ShooterSubsystem extends SubsystemBase {
     private final NetworkTable shooterTable = NetworkTableInstance.getDefault().getTable("shooter");
 
     // Shooter telementry
-    private final DoublePublisher shooterSpeedPublisher = shooterTable.getDoubleTopic("shooter-speed").publish();
-    private final DoublePublisher shooterRpmPublisher = shooterTable.getDoubleTopic("shooter-rpm").publish();
+    private final DoublePublisher shooterSpeedPublisher = shooterTable.getDoubleTopic("shooter-motor-speed").publish();
+    private final DoublePublisher shooterMotorRpmPublisher = shooterTable.getDoubleTopic("shooter-motor-rpm").publish();
+    private final DoublePublisher shooterFlywheelRpmPublisher = shooterTable.getDoubleTopic("shooter-flywheel-rpm").publish();
     private final DoublePublisher shooterDesiredSpeedPublisher = shooterTable.getDoubleTopic("shooter-desired-speed")
             .publish();
 
@@ -117,12 +118,14 @@ public class ShooterSubsystem extends SubsystemBase {
         updateTelemetry();
         if (autoDistanceEnabled) {
             double distanceToHub = poseEstimationSubsystem.getDistanceToHubCenterMeters();
-            setShooterVelocityRPM(findShooterFlywheelSpeedFromDistance(distanceToHub));
+            double flywheelRPM = findShooterFlywheelSpeedFromDistance(distanceToHub);
+            System.out.println("AUTO DISTANCING, setting shooter rpm to  " + flywheelRPM);
+            setShooterFlywheelRPM(flywheelRPM);
         }
-        if (shooterMotorRightRelativeEncoder.getVelocity() > SHOOTER_MAX_RPM / SHOOTER_GEAR_RATIO* 1.1) {
+        // Limit flywheel speed
+        if (Math.abs(shooterMotorRightRelativeEncoder.getVelocity() * SHOOTER_GEAR_RATIO) > Math.abs(SHOOTER_MAX_RPM * 1.1)) {
             stopShooter();
         }
-        System.out.println(shooterMotorRight.getOutputCurrent());
     }
 
     public void configureMotors() {
@@ -175,7 +178,8 @@ public class ShooterSubsystem extends SubsystemBase {
 
     public void updateTelemetry() {
         shooterSpeedPublisher.set(shooterMotorRight.getAppliedOutput());
-        shooterRpmPublisher.set(shooterMotorRightRelativeEncoder.getVelocity() * SHOOTER_MAIN_INVERSION);
+        shooterMotorRpmPublisher.set(shooterMotorRightRelativeEncoder.getVelocity() * SHOOTER_MAIN_INVERSION);
+        shooterFlywheelRpmPublisher.set(shooterMotorRightRelativeEncoder.getVelocity() * SHOOTER_MAIN_INVERSION * SHOOTER_GEAR_RATIO);
         shooterDesiredSpeedPublisher.set(desiredFlywheelSpeed);
 
         // Feeder telemetry
@@ -196,8 +200,11 @@ public class ShooterSubsystem extends SubsystemBase {
                             shooterMotorRightConfig,
                             ResetMode.kResetSafeParameters,
                             PersistMode.kNoPersistParameters);
-                }),
-                tunedShotCommand(SmartDashboard.getNumber("Shooter RPM", 0)));
+                    System.out.println(SmartDashboard.getNumber("Shooter P", shooterPidGains.p));
+                    System.out.println(SmartDashboard.getNumber("Shooter I", shooterPidGains.i));
+                    System.out.println(SmartDashboard.getNumber("Shooter D", shooterPidGains.d));
+                    System.out.println(SmartDashboard.getNumber("Shooter FF", shooterPidGains.FF));
+                }));
     }
 
     public void setShooterDutyCycle(double dutyCycle) {
@@ -211,18 +218,12 @@ public class ShooterSubsystem extends SubsystemBase {
         shooterMotorRightController.setSetpoint(commandedDutyCycle, ControlType.kDutyCycle);
     }
 
-    /** Set motor velocity in motor RPM (internal helper). */
-    private void setShooterMotorVelocityRPM(double motorRPM) {
-        desiredMotorSpeed = motorRPM;
-        desiredFlywheelSpeed = motorRPM * Constants.SHOOTER_GEAR_RATIO;
-        shooterMotorRightController.setSetpoint(motorRPM * SHOOTER_MAIN_INVERSION, ControlType.kVelocity);
-    }
-
     /** Set flywheel velocity in flywheel RPM (recommended). */
-    public void setShooterVelocityRPM(double flywheelRPM) {
+    public void setShooterFlywheelRPM(double flywheelRPM) {
         desiredFlywheelSpeed = flywheelRPM;
         double motorRPM = flywheelRPM / SHOOTER_GEAR_RATIO;
         desiredMotorSpeed = motorRPM;
+        System.out.println("------- Motor rpm: " + motorRPM);
         shooterMotorRightController.setSetpoint(motorRPM * SHOOTER_MAIN_INVERSION, ControlType.kVelocity);
     }
 
@@ -278,17 +279,12 @@ public class ShooterSubsystem extends SubsystemBase {
         shooterMotorRightController.setSetpoint(shooterMotorRightRelativeEncoder.getPosition(), ControlType.kPosition);
     }
 
-    /** Command the shooter using motor RPM (kept for compatibility). */
-    public Command updateShooterSpeed(double desiredMotorRPM) {
-        return Commands.runOnce(() -> setShooterMotorVelocityRPM(desiredMotorRPM), this);
-    }
-
     /** Command the shooter using flywheel RPM (preferred). */
     public Command updateFlywheelSpeedRPM(double desiredFlywheelSpeed) {
         return Commands.sequence(
                 Commands.runOnce(
                         () -> System.out.println("-----------------UPDATING SHOOTER RPM: " + desiredFlywheelSpeed)),
-                Commands.runOnce(() -> setShooterVelocityRPM(desiredFlywheelSpeed), this));
+                Commands.runOnce(() -> setShooterFlywheelRPM(desiredFlywheelSpeed), this));
     }
 
     public boolean isAtTargetSpeed() {
@@ -367,7 +363,7 @@ public class ShooterSubsystem extends SubsystemBase {
         return Commands.runOnce(() -> {
             double trpm = SmartDashboard.getNumber("Target Shooter RPM", 0);
             System.out.println("SETTING SHOOTER TO: " + trpm);
-            setShooterVelocityRPM(trpm);
+            setShooterFlywheelRPM(trpm);
         }, this);
     }
 

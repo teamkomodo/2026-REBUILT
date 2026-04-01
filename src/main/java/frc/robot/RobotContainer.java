@@ -157,7 +157,7 @@ public class RobotContainer {
     // Map face buttons to both manual shot commands and a guarded request to enter
     // SHOOT.
     // Shooter: request SHOOT + teleop SCORE (so the system and teleop modes align)
-    operator.rt.onTrue(shooter.toggleAutoDistanceCommand());
+    //operator.rt.onTrue(shooter.toggleAutoDistanceCommand());
     // operator.rt.onTrue(manual.shootShort());
     operator.lt.onTrue(manual.shootLong());
 
