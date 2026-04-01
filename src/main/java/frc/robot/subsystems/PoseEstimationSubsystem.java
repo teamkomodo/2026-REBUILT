@@ -75,14 +75,14 @@ public class PoseEstimationSubsystem extends SubsystemBase {
 
             double error = incomingVisionPose.getTranslation().getDistance(currentPose.getTranslation());
 
-            if (error < 2 || est.targetsUsed.size() >= 1) { // I completely pulled this error rate out of my butt, we
+            if (error < 2 || est.targetsUsed.size() >= 2) { // I completely pulled this error rate out of my butt, we
                                                             // need to some
                                                             // velocity adjustment FIXME: Change 1 to 2 on real
                                                             // field!!!!
                 // for this
                 drivetrainSubsystem.addVisionMeasurement(
                         incomingVisionPose,
-                        est.timestampSeconds, VecBuilder.fill(0.3, 0.3, 10 * Math.PI / 180)); // TODO: Add
+                        est.timestampSeconds, VecBuilder.fill(0.5, 0.5, 60 * Math.PI / 180)); // TODO: Add
                                                                                               // VisionStdDevs
                                                                                               // to improve pose
                                                                                               // estimation by a

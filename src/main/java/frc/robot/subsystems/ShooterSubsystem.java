@@ -149,7 +149,7 @@ public class ShooterSubsystem extends SubsystemBase {
                 PersistMode.kPersistParameters);
 
         shooterMotorLeftConfig
-                .follow(SHOOTER_MOTOR_LEFT_ID, true);
+                .follow(SHOOTER_MOTOR_RIGHT_ID, true);
 
         shooterMotorLeft.configure(
                 shooterMotorLeftConfig,

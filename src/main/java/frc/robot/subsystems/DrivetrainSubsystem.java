@@ -135,7 +135,7 @@ public class DrivetrainSubsystem implements Subsystem {
         SmartDashboard.putData("Field", field);
 
         rotationController.enableContinuousInput(-Math.PI, Math.PI);
-        rotationController.setTolerance(Math.toRadians(0.01));
+        rotationController.setTolerance(Math.toRadians(0.8));
         frontLeft = new NeoSwerveModule(
                 FRONT_LEFT_DRIVE_MOTOR_ID,
                 FRONT_LEFT_STEER_MOTOR_ID,
