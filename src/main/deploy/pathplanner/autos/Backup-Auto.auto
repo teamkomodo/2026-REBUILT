@@ -5,19 +5,13 @@
     "data": {
       "commands": [
         {
-          "type": "named",
-          "data": {
-            "name": "Deploy Intake"
-          }
-        },
-        {
           "type": "parallel",
           "data": {
             "commands": [
               {
                 "type": "path",
                 "data": {
-                  "pathName": "Start-to-Outpost"
+                  "pathName": "Back-Up-Path"
                 }
               },
               {
@@ -32,13 +26,7 @@
         {
           "type": "wait",
           "data": {
-            "waitTime": 2.0
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "Outpost-to-Shoot"
+            "waitTime": 5.0
           }
         },
         {
@@ -57,12 +45,6 @@
           "type": "named",
           "data": {
             "name": "Stop"
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "New New Path"
           }
         }
       ]

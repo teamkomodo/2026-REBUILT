@@ -375,6 +375,10 @@ public class ShooterSubsystem extends SubsystemBase {
         return shooterMotorRightRelativeEncoder.getVelocity();
     }
 
+    public double getShooterDesiredMotorRPM() {
+        return desiredFlywheelSpeed;
+    }
+
     public double getShooterDesiredRPM() {
         return shooterMotorRightRelativeEncoder.getVelocity();
     }
