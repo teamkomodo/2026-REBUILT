@@ -182,7 +182,7 @@ public final class Constants {
 
     public static final int HINGE_SMART_CURRENT_LIMIT = 50; // FIXME
     public static final double HINGE_DEPLOY_DUTY_CYCLE = -0.3;
-    public static final double EVIL_HINGE_DUTY_CYCLE = -0.35;
+    public static final double EVIL_HINGE_DUTY_CYCLE = -0.20;
     public static final double HINGE_STOW_DUTY_CYCLE = 0.6;
 
     // Basic constants

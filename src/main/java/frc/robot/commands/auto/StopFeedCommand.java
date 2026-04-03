@@ -27,7 +27,7 @@ public class StopFeedCommand extends DynamicCommand {
     protected Command getCommand() {
         return new SequentialCommandGroup(
                 shooterSubsystem.stopFeedingCommand(),
-                shooterSubsystem.stopShooterCommand(),
+                shooterSubsystem.offAutoDistanceCommand(),
                 intakeSubsystem.updateIntakeDutyCycle(INTAKE_FEED_SPEED));
     }
 }

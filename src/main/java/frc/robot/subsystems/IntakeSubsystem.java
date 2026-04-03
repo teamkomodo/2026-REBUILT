@@ -316,7 +316,7 @@ public class IntakeSubsystem extends SubsystemBase {
     }
 
     public Command deployIntakeAuto() {
-        return runHingeAtDutyCycleForSeconds(EVIL_HINGE_DUTY_CYCLE, 2);
+        return runHingeAtDutyCycleForSeconds(EVIL_HINGE_DUTY_CYCLE, 4);
     }
 
     public Command stowIntake() {
@@ -379,8 +379,8 @@ public class IntakeSubsystem extends SubsystemBase {
     public Command startIntakeAutoCommand() {
         return new SequentialCommandGroup(
                 setState(IntakeState.INTAKE),
-                updateIntakeSpeed(INTAKE_INTAKE_SPEED),
-                deployIntakeAuto());
+                updateIntakeSpeed(INTAKE_INTAKE_SPEED));
+                // deployIntakeAuto());
     }
 
     public Command feedIntakeCommand() {

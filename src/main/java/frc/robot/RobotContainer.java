@@ -186,7 +186,7 @@ public class RobotContainer {
 
   private void registerNamedCommands() {
     NamedCommands.registerCommand("Shoot", new CompleteScoreCommand(shooter, indexer));
-    NamedCommands.registerCommand("Ramp Shooter Long", new RampShooterLongCommand(shooter));
+    NamedCommands.registerCommand("Ramp Shooter Long", shooter.onAutoDistanceCommand());
     NamedCommands.registerCommand("Deploy Intake", new DeployIntakeCommand(intake));
     NamedCommands.registerCommand("Intake", intake.startIntakeAutoCommand());
     NamedCommands.registerCommand("Feed All", new StartFeedingCommand(shooter, intake));
