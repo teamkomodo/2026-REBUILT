@@ -134,8 +134,6 @@ public class RobotContainer {
     driver.lb.onTrue(drivetrain.disableSpeedModeCommand());
     driver.lb.onFalse(drivetrain.enableSpeedModeCommand());
     driver.b.onTrue(drivetrain.toggleAutoAlignCommand());
-    driver.rb.onTrue(manual.startFeeding());
-    driver.rb.onFalse(manual.stopFeeding());
     //driver.y.onTrue(shooter.runShooterToShuffleboardRPM());
     
 
@@ -147,8 +145,8 @@ public class RobotContainer {
             () -> (driver.getRightJoystickX() / 1.6) // rotation scaled
         ));
 
-    // operator.rb.onTrue(Commands.parallel(manual.intake(),
-        // Commands.runOnce(() -> operator.rumbleSmooth(0.2))));
+    operator.rb.onTrue(Commands.parallel(manual.intake(),
+        Commands.runOnce(() -> operator.rumbleSmooth(0.2))));
     operator.povUp.onTrue(Commands.parallel(manual.intakeDeploy(),
         Commands.runOnce(() -> operator.rumbleSmooth(0.2))));
     operator.povDown.onTrue(manual.eject());
@@ -159,14 +157,14 @@ public class RobotContainer {
     // Map face buttons to both manual shot commands and a guarded request to enter
     // SHOOT.
     // Shooter: request SHOOT + teleop SCORE (so the system and teleop modes align)
-    driver.rt.onTrue(shooter.toggleAutoDistanceCommand());
+    operator.rt.onTrue(shooter.onAutoDistanceCommand());
     // operator.rt.onTrue(manual.shootShort());
-    operator.lt.onTrue(manual.shootLong());
+    //operator.lt.onTrue(manual.shootLong());
 
     operator.b.onTrue(Commands.parallel(manual.stopIntake(),
         Commands.runOnce(() -> operator.stopSmoothRumble())));
 
-    operator.a.onTrue(manual.stopShooter());
+    operator.a.onTrue(shooter.offAutoDistanceCommand());
 
     operator.lb
         .onTrue(manual.startFeeding())
@@ -252,8 +250,9 @@ public class RobotContainer {
       coach.stopSmoothRumble();
     }
 
+
     double rpm = Math.abs(shooter.getShooterMotorRPM());
-    if (rpm > (4275)) {
+    if (rpm > (4275) && rpm > 500) {
       operator.rumbleRough(1.0);
     } else {
       operator.stopRoughRumble();
