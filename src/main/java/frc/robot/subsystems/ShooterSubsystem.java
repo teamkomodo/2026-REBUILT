@@ -72,7 +72,7 @@ public class ShooterSubsystem extends SubsystemBase {
     private double shooterFF = 0.00045;
     private double shooterRPM = 0;
 
-    private boolean autoDistanceEnabled = false;
+    public boolean autoDistanceEnabled = false;
 
     public ShooterSubsystem(PoseEstimationSubsystem poseEstimationSubsystem) {
         this.poseEstimationSubsystem = poseEstimationSubsystem;
@@ -117,12 +117,14 @@ public class ShooterSubsystem extends SubsystemBase {
         updateTelemetry();
         if (autoDistanceEnabled) {
             double distanceToHub = poseEstimationSubsystem.getDistanceToHubCenterMeters();
-            setShooterVelocityRPM(findShooterFlywheelSpeedFromDistance(distanceToHub));
+            setShooterVelocityRPM(
+                calculateShooterSpeedWithCurve(
+                findShooterFlywheelSpeedFromDistance(distanceToHub)));
         }
         if (shooterMotorRightRelativeEncoder.getVelocity() > SHOOTER_MAX_RPM / SHOOTER_GEAR_RATIO* 1.1) {
             stopShooter();
         }
-        System.out.println(shooterMotorRight.getOutputCurrent());
+        //System.out.println(shooterMotorRight.getOutputCurrent());
     }
 
     public void configureMotors() {
@@ -231,7 +233,11 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     public Command stopShooterCommand() {
-        return Commands.runOnce(this::stopShooter, this);
+        return Commands.runOnce(() -> setShooterDutyCycle(0.0));
+    }
+
+    public Command stopShooterComplete() {
+        return stopShooterCommand().alongWith(offAutoDistanceCommand());
     }
 
     // --- Feeder controls -------------------------------------------------
@@ -296,9 +302,17 @@ public class ShooterSubsystem extends SubsystemBase {
                 .abs(shooterMotorRightRelativeEncoder.getVelocity() - desiredMotorSpeed) < MAX_SHOOTER_SPEED_TOLERANCE;
     }
 
-    public Command toggleAutoDistanceCommand() {
+    public Command onAutoDistanceCommand() {
         return Commands.runOnce(() -> {
             autoDistanceEnabled = true;
+            System.out.println("Auto-distance RPM: " + (autoDistanceEnabled ? "ON" : "OFF"));
+        }, this);
+    }
+
+    public Command offAutoDistanceCommand() {
+        return Commands.runOnce(() -> {
+            autoDistanceEnabled = false;
+            setShooterDutyCycle(0.0);
             System.out.println("Auto-distance RPM: " + (autoDistanceEnabled ? "ON" : "OFF"));
         }, this);
     }
@@ -361,6 +375,15 @@ public class ShooterSubsystem extends SubsystemBase {
         double calculatedRPM = y0 + (distance - x0) * ((y1 - y0) / (x1 - x0));
         
         return Math.min(calculatedRPM, MAX_FLYWHEEL_RPM);
+    }
+
+    public double calculateShooterSpeedWithCurve(double initialSpeed) {
+        double perfectSpeed = 3500;
+        if(initialSpeed > perfectSpeed) {
+            double finalSpeed = 0.87*(initialSpeed - perfectSpeed) + perfectSpeed;
+            return finalSpeed;
+        }
+        return initialSpeed;
     }
 
     public Command runShooterToShuffleboardRPM() {

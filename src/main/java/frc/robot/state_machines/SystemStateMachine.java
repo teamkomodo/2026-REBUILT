@@ -13,6 +13,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.IndexerSubsystem;
 import frc.robot.subsystems.ShooterSubsystem;
@@ -257,7 +258,10 @@ public class SystemStateMachine extends SubsystemBase {
         }
 
         public Command shootLong() {
-            return manualGate(shooter.longShotCommand());
+            return manualGate(Commands.either(
+                shooter.onAutoDistanceCommand(),
+                shooter.longShotCommand(),
+                () -> shooter.autoDistanceEnabled));
         }
 
         public Command shootPass() {
@@ -281,7 +285,7 @@ public class SystemStateMachine extends SubsystemBase {
         }
 
         public Command autoShooterDistanceToggleCommand() {
-            return manualGate(shooter.toggleAutoDistanceCommand());
+            return manualGate(shooter.onAutoDistanceCommand());
         }
 
         // Indexer Controls
@@ -293,11 +297,12 @@ public class SystemStateMachine extends SubsystemBase {
 
         // Reset
         public Command stopIntake() {
-            return Commands.parallel(intake.stopIntake(), intake.stopHinge());
+            return new ParallelCommandGroup(intake.stopIntake(), intake.stopHinge());
         }
 
         public Command stopShooter() {
-            return Commands.parallel(shooter.stopShooterCommand());
+            return Commands.parallel(
+                shooter.stopShooterCommand());
         }
 
         private Command manualGate(Command action) {
