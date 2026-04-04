@@ -258,10 +258,8 @@ public class SystemStateMachine extends SubsystemBase {
         }
 
         public Command shootLong() {
-            return manualGate(Commands.either(
-                shooter.onAutoDistanceCommand(),
-                shooter.longShotCommand(),
-                () -> shooter.autoDistanceEnabled));
+            return manualGate(
+                shooter.longShotCommand());
         }
 
         public Command shootPass() {

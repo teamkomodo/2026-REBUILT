@@ -1,8 +1,9 @@
 package frc.robot.util;
 
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
-public class PeriodTimer {
+public class PeriodTimer{
 
     Timer timer;
 
@@ -20,18 +21,19 @@ public class PeriodTimer {
     // @140s 0s  game end
 
     public double getPeriodTimer() {
-        if(timer.getMatchTime() < 10) {
-            return 10-timer.getMatchTime();
-        } else if(timer.getMatchTime() < 35) {
-            return 35-timer.getMatchTime();
-        }  else if(timer.getMatchTime() < 60) {
-            return 60-timer.getMatchTime();
-        }  else if(timer.getMatchTime() < 85) {
-            return 85-timer.getMatchTime();
-        }  else if(timer.getMatchTime() < 110) {
-            return 110-timer.getMatchTime();
-        }  else if(timer.getMatchTime() < 140) {
-            return 140-timer.getMatchTime();
+        double time = timer.get();
+        if(time < 10) {
+            return 10-time;
+        } else if(time < 35) {
+            return 35-time;
+        }  else if(time < 60) {
+            return 60-time;
+        }  else if(time < 85) {
+            return 85-time;
+        }  else if(time < 110) {
+            return 110-time;
+        }  else if(time < 140) {
+            return 140-time;
         }
         return 0;
     }
@@ -48,6 +50,18 @@ public class PeriodTimer {
             return true;
         }
         return false;
+    }
+
+    public void reset() {
+        timer.reset();
+    }
+
+    public void start() {
+        timer.start();
+    }
+
+    public double getTime() {
+        return timer.get();
     }
     
 }

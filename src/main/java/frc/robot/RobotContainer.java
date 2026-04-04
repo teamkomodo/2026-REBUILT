@@ -260,17 +260,16 @@ public class RobotContainer {
   }
 
   public void resetTimer() {
-    teleopTimer.restart();
+    periodTimer.reset();
+    periodTimer.start();
   }
 
   public double getTime() {
-    return teleopTimer.get();
+    return periodTimer.getTime();
   }
 
   public void periodic() {
     setRumbles();
-    timeLeft = periodTimer.getPeriodTimer();
-    // System.out.println(timeLeft);
     timePublisher.set(timeLeft);
   }
 

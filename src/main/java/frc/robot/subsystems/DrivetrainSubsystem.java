@@ -19,6 +19,8 @@ import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructArrayPublisher;
 import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.units.Units;
+import edu.wpi.first.util.sendable.Sendable;
+import edu.wpi.first.util.sendable.SendableBuilder;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
@@ -131,6 +133,16 @@ public class DrivetrainSubsystem implements Subsystem {
     private ChassisSpeeds lastCommandedChassisSpeeds = new ChassisSpeeds();
 
     public DrivetrainSubsystem(Field2d field) {
+
+        SmartDashboard.putData("Swerve Drive", (Sendable) new Sendable() {
+                @Override
+                public void initSendable(SendableBuilder builder) {
+                    builder.setSmartDashboardType("Swerve Drive");
+                    builder.addDoubleProperty("X Velocity (m/s)", () -> currentChassisSpeeds.vxMetersPerSecond, null);
+                    builder.addDoubleProperty("Y Velocity (m/s)", () -> currentChassisSpeeds.vyMetersPerSecond, null);
+                    builder.addDoubleProperty("Angular Velocity (rad/s)", () -> currentChassisSpeeds.omegaRadiansPerSecond, null);
+                }
+        });
 
         SmartDashboard.putData("Field", field);
 
@@ -261,7 +273,7 @@ public class DrivetrainSubsystem implements Subsystem {
         } else {
             hubPosMeters = BLUE_HUB_POS_METERS;
         }
-        return getPoseEstimation().getTranslation().getDistance(hubPosMeters);
+        return getPoseEstimation().getTranslation().getDistance(hubPosMeters) - 0.3;
     }
 
     public void addVisionMeasurement(Pose2d pose, double timestamp, Matrix<N3, N1> stdDevs) {
