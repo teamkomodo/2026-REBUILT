@@ -158,11 +158,11 @@ public final class Constants {
     };
 
     // Intake
-    public static final int INTAKE_MOTOR_LEFT_ID = 51;
+    public static final int INTAKE_MOTOR_LEFT_ID = 62;
     public static final int INTAKE_MOTOR_RIGHT_ID = 4;
-    public static final int INTAKE_SMART_CURRENT_LIMIT = 70; // FIXME
+    public static final int INTAKE_SMART_CURRENT_LIMIT = 50; // FIXME
 
-    public static final double INTAKE_INTAKE_SPEED = 0.6; // FIXME
+    public static final double INTAKE_INTAKE_SPEED = 0.9; // FIXME
     public static final double INTAKE_FEED_SPEED = 0.4; // FIXME
 
     public static final double EVIL_INTAKE_FEED_SPEED = -0.7; // -0.75 for outpost
@@ -180,7 +180,7 @@ public final class Constants {
     // Intake hinge uses a single motor (right-side convention kept historically)
     public static final int HINGE_MOTOR_ID = 44;
 
-    public static final int HINGE_SMART_CURRENT_LIMIT = 50; // FIXME
+    public static final int HINGE_SMART_CURRENT_LIMIT = 80; // FIXME
     public static final double HINGE_DEPLOY_DUTY_CYCLE = -0.3;
     public static final double EVIL_HINGE_DUTY_CYCLE = -0.20;
     public static final double HINGE_STOW_DUTY_CYCLE = 0.6;

@@ -57,8 +57,8 @@ public class IntakeSubsystem extends SubsystemBase {
     // Intake motor and controller.
     private final SparkFlex intakeMotorLeft;
     private final SparkFlexConfig intakeMotorLeftConfig;
-    private final SparkFlex intakeMotorRight;
-    private final SparkFlexConfig intakeMotorRightConfig;
+    // private final SparkFlex intakeMotorRight;
+    // private final SparkFlexConfig intakeMotorRightConfig;
 
     private final SparkClosedLoopController intakeMotorLeftController;
     private final RelativeEncoder intakeMotorLeftRelativeEncoder;
@@ -98,12 +98,12 @@ public class IntakeSubsystem extends SubsystemBase {
         // Intake motors and controllers
         intakeMotorLeft = new SparkFlex(INTAKE_MOTOR_LEFT_ID, BRUSHLESS);
         intakeMotorLeftConfig = new SparkFlexConfig();
-        intakeMotorRight = new SparkFlex(INTAKE_MOTOR_RIGHT_ID, BRUSHLESS);
-        intakeMotorRightConfig = new SparkFlexConfig();
+        // intakeMotorRight = new SparkFlex(INTAKE_MOTOR_RIGHT_ID, BRUSHLESS);
+        // intakeMotorRightConfig = new SparkFlexConfig();
 
         intakeMotorLeftController = intakeMotorLeft.getClosedLoopController();
         intakeMotorLeftRelativeEncoder = intakeMotorLeft.getEncoder();
-        intakePidGains = new PIDGains(1.0, 0.0, 0.0, 0.0); // FIXME: Tune pid constants
+        intakePidGains = new PIDGains(1.0, 0.000, 0.0, 0.00); // FIXME: Tune pid constants
 
         // Intake target variable
         desiredSpeed = 0.0;
@@ -115,7 +115,7 @@ public class IntakeSubsystem extends SubsystemBase {
 
         hingeMotorController = hingeMotor.getClosedLoopController();
         hingeMotorRelativeEncoder = hingeMotor.getEncoder();
-        hingePidGains = new PIDGains(1.0, 0.0, 0.0, 0.0); // FIXME: Tune pid constants
+        hingePidGains = new PIDGains(1.0, 0.0002, 0.01, 0.001); // FIXME: Tune pid constants
 
         // Hinge target variable
         desiredPositionRotations = 0.0;
@@ -151,31 +151,32 @@ public class IntakeSubsystem extends SubsystemBase {
         intakeMotorLeftConfig.closedLoop
                 .p(intakePidGains.p)
                 .i(intakePidGains.i)
-                .d(intakePidGains.d);
+                .d(intakePidGains.d)
+                .velocityFF(intakePidGains.FF);
 
         intakeMotorLeft.configure(
                 intakeMotorLeftConfig,
                 ResetMode.kResetSafeParameters,
                 PersistMode.kPersistParameters);
 
-        intakeMotorRightConfig
-                .smartCurrentLimit(INTAKE_SMART_CURRENT_LIMIT)
-                .follow(INTAKE_MOTOR_LEFT_ID, true)
-                .idleMode(IdleMode.kCoast);
+        // intakeMotorRightConfig
+        //         .smartCurrentLimit(INTAKE_SMART_CURRENT_LIMIT)
+        //         .follow(INTAKE_MOTOR_LEFT_ID, true)
+        //         .idleMode(IdleMode.kCoast);
 
-        intakeMotorRight.configure(
-                intakeMotorRightConfig,
-                ResetMode.kResetSafeParameters,
-                PersistMode.kPersistParameters);
-        intakeMotorRightConfig
-                .smartCurrentLimit(INTAKE_SMART_CURRENT_LIMIT)
-                .follow(INTAKE_MOTOR_LEFT_ID, true)
-                .idleMode(IdleMode.kCoast);
+        // intakeMotorRight.configure(
+        //         intakeMotorRightConfig,
+        //         ResetMode.kResetSafeParameters,
+        //         PersistMode.kPersistParameters);
+        // intakeMotorRightConfig
+        //         .smartCurrentLimit(INTAKE_SMART_CURRENT_LIMIT)
+        //         .follow(INTAKE_MOTOR_LEFT_ID, true)
+        //         .idleMode(IdleMode.kCoast);
 
-        intakeMotorRight.configure(
-                intakeMotorRightConfig,
-                ResetMode.kResetSafeParameters,
-                PersistMode.kPersistParameters);
+        // intakeMotorRight.configure(
+        //         intakeMotorRightConfig,
+        //         ResetMode.kResetSafeParameters,
+        //         PersistMode.kPersistParameters);
 
         hingeMotorConfig
                 .smartCurrentLimit(HINGE_SMART_CURRENT_LIMIT)
@@ -379,7 +380,8 @@ public class IntakeSubsystem extends SubsystemBase {
     public Command startIntakeAutoCommand() {
         return new SequentialCommandGroup(
                 setState(IntakeState.INTAKE),
-                updateIntakeSpeed(INTAKE_INTAKE_SPEED));
+                updateIntakeSpeed(INTAKE_INTAKE_SPEED),
+                Commands.runOnce(() -> holdHinge()));
                 // deployIntakeAuto());
     }
 

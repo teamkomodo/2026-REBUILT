@@ -348,6 +348,7 @@ public class DrivetrainSubsystem implements Subsystem {
         SwerveDriveKinematics.desaturateWheelSpeeds(moduleStates, MAX_MODULE_VELOCITY);
         setModuleStates(moduleStates);
         lastCommandedChassisSpeeds = chassisSpeeds;
+        currentChassisSpeeds = chassisSpeeds;
     }
 
     public void drive(ChassisSpeeds speeds, boolean fieldRelative) {
@@ -600,6 +601,8 @@ public class DrivetrainSubsystem implements Subsystem {
         } else { // Blue alliance 
             hubPosMeters = BLUE_HUB_POS_METERS;
         }
+        // hubPosMeters = hubPosMeters.minus(new Translation2d(ChassisSpeeds.fromRobotRelativeSpeeds(currentChassisSpeeds, getAdjustedRotation()).vxMetersPerSecond, ChassisSpeeds.fromRobotRelativeSpeeds(currentChassisSpeeds, getAdjustedRotation()).vyMetersPerSecond).times(0.8));
+
         return hubPosMeters
                 .minus(getPose().getTranslation())
                 .getAngle();
