@@ -380,7 +380,7 @@ public class ShooterSubsystem extends SubsystemBase {
     public double calculateShooterSpeedWithCurve(double initialSpeed) {
         double perfectSpeed = 4000;
         if(initialSpeed > perfectSpeed) {
-            double finalSpeed = 0.87*(initialSpeed - perfectSpeed) + perfectSpeed;
+            double finalSpeed = 0.87*(initialSpeed - perfectSpeed) + perfectSpeed + 400;
             return finalSpeed;
         }
         return initialSpeed;
