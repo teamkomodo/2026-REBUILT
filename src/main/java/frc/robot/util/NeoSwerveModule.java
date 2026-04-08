@@ -6,13 +6,14 @@ import com.ctre.phoenix6.hardware.CANcoder;
 
 import com.revrobotics.spark.SparkMax;
 import com.revrobotics.RelativeEncoder;
-//import com.revrobotics.servohub.ServoHub.ResetMode;
-import com.revrobotics.servohub.config.ServoHubParameter;
 import com.revrobotics.spark.SparkClosedLoopController;
 import com.revrobotics.spark.SparkBase.ControlType;
 import com.revrobotics.PersistMode;
 import com.revrobotics.ResetMode;
 import com.revrobotics.spark.config.SparkMaxConfig;
+import edu.wpi.first.util.datalog.DataLog;
+import edu.wpi.first.util.datalog.DoubleLogEntry;
+import edu.wpi.first.wpilibj.DataLogManager;
 import com.revrobotics.spark.FeedbackSensor;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
@@ -45,6 +46,13 @@ public class NeoSwerveModule implements SwerveModule {
     private final DoubleEntry drivekVEntry;
     private final DoubleEntry drivekAEntry;
 
+    private final DoubleLogEntry driveCurrentLog;
+    private final DoubleLogEntry steerCurrentLog;
+    private final DoubleLogEntry batteryVoltageLog;
+    private final DoubleLogEntry driveVelocityLog;
+    private final DoubleLogEntry steerPositionLog;
+    private final DoubleLogEntry absEncoderPositionLog;
+
     private final DoubleEntry steerkPEntry;
     private final DoubleEntry steerkIEntry;
     private final DoubleEntry steerkDEntry;
@@ -72,7 +80,6 @@ public class NeoSwerveModule implements SwerveModule {
     private final PIDController driveController;
 
     private final SparkClosedLoopController steerController;
-    private final SparkClosedLoopController driverController;
 
     private SimpleMotorFeedforward driveFeedforward; // Gains from SysId Analysis
 
@@ -84,8 +91,11 @@ public class NeoSwerveModule implements SwerveModule {
             PIDGains steerPIDGains, PIDGains drivePIDGains, FFGains driveFFGains, NetworkTable moduleNT) {
         this.driveMotor = new SparkMax(driveMotorId, MotorType.kBrushless);
         this.steerMotor = new SparkMax(steerMotorId, MotorType.kBrushless);
+        // steerMotor.set
         this.steerAbsoluteEncoder = new CANcoder(steerAbsoluteEncoderId);
         this.desiredState = new SwerveModuleState(0.0, Rotation2d.fromRadians(0));
+
+        // this.steerMotor.setSmartCurrentLimit(25);
 
         driveController = new PIDController(drivePIDGains.p, drivePIDGains.i, drivePIDGains.d);
         driveFeedforward = new SimpleMotorFeedforward(driveFFGains.kS, driveFFGains.kV, driveFFGains.kA);
@@ -104,7 +114,6 @@ public class NeoSwerveModule implements SwerveModule {
 
         // steerController = steerMotor.getPIDController();
         steerController = steerMotor.getClosedLoopController();
-        driverController = driveMotor.getClosedLoopController();
 
         steeringOffset = steerOffset;
 
@@ -153,15 +162,24 @@ public class NeoSwerveModule implements SwerveModule {
         steerVelocityEntry.set(getSteerVelocity());
         steerPositionEntry.set(getSteerPosition());
         steerVoltageEntry.set(getSteerVoltage());
+
+        DataLog log = DataLogManager.getLog();
+        String prefix = "swerve/" + moduleNT.getPath() + "/";
+        driveCurrentLog = new DoubleLogEntry(log, prefix + "driveCurrent");
+        steerCurrentLog = new DoubleLogEntry(log, prefix + "steerCurrent");
+        batteryVoltageLog = new DoubleLogEntry(log, prefix + "batteryVoltage");
+        driveVelocityLog = new DoubleLogEntry(log, prefix + "driveVelocity");
+        steerPositionLog = new DoubleLogEntry(log, prefix + "steerPosition");
+        absEncoderPositionLog = new DoubleLogEntry(log, prefix + "absEncoderPosition");
     }
 
-    @SuppressWarnings("removal")
     private void configureMotors(PIDGains steerGains) {
 
         // Drive Motors
         driveConfig
                 .inverted(false)
-                .idleMode(IdleMode.kBrake);
+                .idleMode(IdleMode.kBrake)
+                .smartCurrentLimit(40);
 
         double wheelPositionConversionFactor = Math.PI * WHEEL_DIAMETER * DRIVE_REDUCTION; // motor rotations -> wheel
                                                                                            // travel in meters
@@ -174,7 +192,9 @@ public class NeoSwerveModule implements SwerveModule {
 
         // Steer Motor
         steerConfig.inverted(true)
-                .idleMode(IdleMode.kBrake);
+                .idleMode(IdleMode.kBrake)
+                .smartCurrentLimit(40);
+        ;
 
         steerConfig.encoder
                 .positionConversionFactor(2 * Math.PI * STEER_REDUCTION)
@@ -261,6 +281,12 @@ public class NeoSwerveModule implements SwerveModule {
         driveMotor.setVoltage(driveOutput + driveFeedforward);
         steerController.setSetpoint(desiredState.angle.getRadians(), ControlType.kPosition);
         updateSysIDValues();
+        driveCurrentLog.append(driveMotor.getOutputCurrent());
+        steerCurrentLog.append(steerMotor.getOutputCurrent());
+        batteryVoltageLog.append(RobotController.getBatteryVoltage());
+        driveVelocityLog.append(driveRelativeEncoder.getVelocity());
+        steerPositionLog.append(steerRelativeEncoder.getPosition());
+        absEncoderPositionLog.append(steerAbsoluteEncoder.getAbsolutePosition().getValueAsDouble());
     }
 
     public Rotation2d getModuleRotation() {

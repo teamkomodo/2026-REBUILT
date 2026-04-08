@@ -1,10 +1,20 @@
+
 package frc.robot;
+
+import java.util.Optional;
+import java.util.function.BooleanSupplier;
 
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 import com.revrobotics.spark.SparkMax;
 
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
+
 public final class Constants {
+    public static final Translation2d RED_HUB_POS_METERS = new Translation2d(16.540 - 4.6255, 4.0345);
+    public static final Translation2d BLUE_HUB_POS_METERS = new Translation2d(4.6255, 4.0345);
 
     public static final boolean TUNING_MODE = false;
 
@@ -15,9 +25,11 @@ public final class Constants {
 
     public static final double LINEAR_SLOW_MODE_MODIFIER = 0.5;
     public static final double ANGULAR_SLOW_MODE_MODIFIER = 0.3;
-    public static final double DRIVETRAIN_WIDTH = 0.57785; // Distance between center of left and right swerve wheels in
+    public static final double DRIVETRAIN_WIDTH = 0.57785; // Distance between center of left and right swerve
+                                                           // wheels in
                                                            // meters
-    public static final double DRIVETRAIN_LENGTH = 0.57785; // Distance between center of front and back swerve wheels
+    public static final double DRIVETRAIN_LENGTH = 0.57785; // Distance between center of front and back swerve
+                                                            // wheels
                                                             // in
                                                             // meters
 
@@ -25,22 +37,22 @@ public final class Constants {
     public static final int BACK_RIGHT_STEER_MOTOR_ID = 38;
     public static final int BACK_RIGHT_STEER_ENCODER_ID = 22;
     // public static final double BACK_RIGHT_STEER_OFFSET = 5.277 - 0.419 + 0.622;
-    public static final double BACK_RIGHT_STEER_OFFSET = 0.55 + Math.PI + Math.PI/2;
+    public static final double BACK_RIGHT_STEER_OFFSET = 0.55 + Math.PI / 2;
 
-    public static final int BACK_LEFT_DRIVE_MOTOR_ID = 11;
-    public static final int BACK_LEFT_STEER_MOTOR_ID = 14;
+    public static final int BACK_LEFT_DRIVE_MOTOR_ID = 16;
+    public static final int BACK_LEFT_STEER_MOTOR_ID = 33;
     public static final int BACK_LEFT_STEER_ENCODER_ID = 21;
-    public static final double BACK_LEFT_STEER_OFFSET = -0.407 + Math.PI/2;
+    public static final double BACK_LEFT_STEER_OFFSET = -0.407 + Math.PI / 2 + Math.PI;
 
     public static final int FRONT_RIGHT_DRIVE_MOTOR_ID = 12;
     public static final int FRONT_RIGHT_STEER_MOTOR_ID = 23;
     public static final int FRONT_RIGHT_STEER_ENCODER_ID = 23;
-    public static final double FRONT_RIGHT_STEER_OFFSET = -1.493 + Math.PI/2;
+    public static final double FRONT_RIGHT_STEER_OFFSET = -1.493 + Math.PI / 2 + Math.PI;
 
-    public static final int FRONT_LEFT_DRIVE_MOTOR_ID = 36;
-    public static final int FRONT_LEFT_STEER_MOTOR_ID = 21;
+    public static final int FRONT_LEFT_DRIVE_MOTOR_ID = 39;
+    public static final int FRONT_LEFT_STEER_MOTOR_ID = 37;
     public static final int FRONT_LEFT_STEER_ENCODER_ID = 20;
-    public static final double FRONT_LEFT_STEER_OFFSET = 1.209 + Math.PI/2;
+    public static final double FRONT_LEFT_STEER_OFFSET = 1.209 + Math.PI / 2 + Math.PI;
 
     public static final double WHEEL_DIAMETER = 0.1016;
 
@@ -52,36 +64,37 @@ public final class Constants {
     // motor rotations -> module rotations
     public static final double STEER_REDUCTION = (14.0 / 50.0) * (10.0 / 60.0);
 
-    public static double MAX_ATTAINABLE_VELOCITY = 4.5;
+    public static double MAX_ATTAINABLE_VELOCITY = 6.5; // 6.5
 
     public static final double LINEAR_VELOCITY_CONSTRAINT = MAX_ATTAINABLE_VELOCITY;
-    public static final double LINEAR_ACCEL_CONSTRAINT = 3.0; // 12 ORGINALL
+    public static final double LINEAR_ACCEL_CONSTRAINT = 12; // 12 ORGINALL
 
     public static final double ANGULAR_VELOCITY_CONSTRAINT = (LINEAR_VELOCITY_CONSTRAINT * Math.PI)
-            / (DRIVETRAIN_WIDTH * DRIVETRAIN_WIDTH + DRIVETRAIN_LENGTH * DRIVETRAIN_LENGTH) * 0.8;
+            / (DRIVETRAIN_WIDTH * DRIVETRAIN_WIDTH + DRIVETRAIN_LENGTH * DRIVETRAIN_LENGTH) * 1.1; // 0.8
     public static final double ANGULAR_ACCEL_CONSTRAINT = (LINEAR_ACCEL_CONSTRAINT * Math.PI)
-            / (DRIVETRAIN_WIDTH * DRIVETRAIN_WIDTH + DRIVETRAIN_LENGTH * DRIVETRAIN_LENGTH) * 0.5;
+            / (DRIVETRAIN_WIDTH * DRIVETRAIN_WIDTH + DRIVETRAIN_LENGTH * DRIVETRAIN_LENGTH) * 0.9; // 0.5
 
     public static final boolean FIELD_RELATIVE_DRIVE = true;
     public static final boolean ALIGNMENT_DRIVE = false;
 
     public static final double MAX_MODULE_VELOCITY = 4.058; // physical maximum attainable speed of swerve modules
-    public static final double MAX_MODULE_ACCEL = 21; // physical maximum attainable accel of swerve modules
+    public static final double MAX_MODULE_ACCEL = 10; // physical maximum attainable accel of swerve modules
 
     public static final double MAX_ANGULAR_VELOCITY = 4.0 * Math.PI; // constraint for angular velocity
-    public static final double MAX_ANGULAR_ACCEL = 2.0 * Math.PI; // constraint for angular acceleration // 4 ORIGINALS
+    public static final double MAX_ANGULAR_ACCEL = 2.0 * Math.PI; // constraint for angular acceleration // 4
+                                                                  // ORIGINALS
 
     public static final PIDConstants DRIVE_PID = new PIDConstants(2, 0, 0);
     public static final PIDConstants STEER_PID = new PIDConstants(1, 0, 0.0002);
 
     // Shooter
     // The motors on the right side have a CAN id ending in a 2, left side end in 1
-    public static final int SHOOTER_MOTOR_RIGHT_ID = 54;
+    public static final int SHOOTER_MOTOR_RIGHT_ID = 61;
     public static final int SHOOTER_MOTOR_LEFT_ID = 31;
-    public static final double SHOOTER_MAX_DUTYCYCLE = 0.7;
-    public static final int SHOOTER_MAX_RPM = 4000;
-    public static final int SHOOTER_SMART_CURRENT_LIMIT = 80; // FIXME
-    public static final double SHOOTER_GEAR_RATIO = 1.5; // 1:1.5 speeding up the flywheel
+    public static final double SHOOTER_MAX_DUTYCYCLE = 1.0;
+    public static final int SHOOTER_MAX_RPM = 10000; // Horrible idea
+    public static final int SHOOTER_SMART_CURRENT_LIMIT = 200; // Even worse idea
+    public static final double SHOOTER_GEAR_RATIO = 1 / 1.5; // 1:1.5 slowing down the flywheel
     public static final double MAX_SHOOTER_SPEED_TOLERANCE = 50.0; // RPM tolerance for considering shooter at target
                                                                    // speed
 
@@ -90,10 +103,9 @@ public final class Constants {
     // Shooter feeder (ball feeding) constants
     // Feeder motors: lead (has encoder/controller) and follower
     public static final int SHOOTER_FEEDER_MOTOR_RIGHT_ID = 52;
-    public static final int SHOOTER_FEEDER_MOTOR_LEFT_ID = 51;
     public static final double SHOOTER_FEEDER_ROTATIONS_PER_BALL = 1.0; // FIXME: tune this
     public static final int SHOOTER_MAIN_INVERSION = -1; // Shooter motor is inverted to achieve correct direction
-    public static final double SHOOTER_FEEDER_FEED_SPEED = 0.5; // FIXME: tune this
+    public static final double SHOOTER_FEEDER_FEED_SPEED = 1.0; // FIXME: tune this 0.4
     public static final int SHOOTER_FEEDER_SMART_CURRENT_LIMIT = 50; // FIXME: Make sure this is a good value
     public static final double BEAMBREAK_DEBOUNCE_DURATION = 2.5; // A delay for bouncy balls
 
@@ -120,60 +132,59 @@ public final class Constants {
     public static final double MAX_FLYWHEEL_RPM = 6700;
 
     // Manual shot RPMs
-    public static final double SHORT_BASELINE_RPM = 2500;
-    public static final double LONG_BASELINE_RPM = 3000;
-    public static final double PASS_SHOT_RPM = 3000;
-
+    public static final double SHORT_BASELINE_RPM = 9000;/// 4725;
+    public static final double LONG_BASELINE_RPM = 3500;// 6300
+    public static final double PASS_SHOT_RPM = 2750;
 
     // Finished table
     // These values are pre-generated using the ShooterTableGenerator class in
     // ShooterSubsystem
     // Robot cannot get more than sqrt((317.7/2-27/2)**2+(158.6-27/2)**2) / 39.37 =
     // ~5.22m away, so this table is sufficently large.
-    public static final double[] SHOOTER_DISTANCES = { 0.760, 0.910, 1.060, 1.210, 1.360, 1.510, 1.660, 1.810, 1.960,
-            2.110, 2.260, 2.410, 2.560, 2.710, 2.860, 3.010, 3.160, 3.310, 3.460, 3.610, 3.760, 3.910, 4.060, 4.210,
-            4.360,
-            4.510, 4.660, 4.810, 4.960, 5.110, 5.260, 5.410, 5.560, 5.710, 5.860, 6.010, 6.160, 6.310, 6.460, 6.610,
-            6.760,
-            6.910, 7.060, 7.210, 7.360, 7.510, 7.660, 7.810, 7.960 };
-    public static final double[] SHOOTER_RPMS = { 2249.560, 2144.172, 2138.794, 2171.941, 2222.114, 2282.167, 2345.449,
-            2412.512, 2479.890, 2549.671, 2617.397, 2687.568, 2755.280, 2824.306, 2890.317, 2957.447, 3025.737,
-            3091.615,
-            3158.406, 3222.482, 3287.518, 3352.802, 3418.573, 3482.073, 3545.718, 3609.897, 3671.989, 3735.946,
-            3797.731,
-            3859.944, 3922.575, 3985.612, 4049.056, 4109.084, 4173.102, 4233.650, 4295.919, 4359.141, 4421.428,
-            4483.337,
-            4545.577, 4607.759, 4669.065, 4730.113, 4793.585, 4857.450, 4919.507, 4981.861, 5046.699 };
+    public static final double[] SHOOTER_DISTANCES_METERS = {
+        2.00,
+        2.4,
+        2.83,
+        3.20,
+        3.60
+
+    };
+    public static final double[] SHOOTER_RPMS = {
+        3600,
+        3750,
+        3800,
+        4200,
+        4500
+
+    };
 
     // Intake
-    public static final int INTAKE_MOTOR_LEFT_ID = 41;
-    public static final int INTAKE_SMART_CURRENT_LIMIT = 70; // FIXME
+    public static final int INTAKE_MOTOR_LEFT_ID = 51;
+    public static final int INTAKE_MOTOR_RIGHT_ID = 4;
+    public static final int INTAKE_SMART_CURRENT_LIMIT = 50; // FIXME
 
-    public static final double INTAKE_INTAKE_SPEED = -0.4; // FIXME
-    public static final double INTAKE_FEED_SPEED = -0.4; // FIXME
-    public static final double INTAKE_EJECT_SPEED = 0.4; // FIXME
+    public static final double INTAKE_INTAKE_SPEED = 0.7; // FIXME
+    public static final double INTAKE_FEED_SPEED = 0.4; // FIXME
+
+    public static final double EVIL_INTAKE_FEED_SPEED = -0.7; // -0.75 for outpost
+    public static final double INTAKE_EJECT_SPEED = -0.5; // ` FIXME
 
     public static final double INTAKE_EJECT_TIME = 0.3; // FIXME
     public static final double INTAKE_STOWING_SPEED = 0.1; // FIXME
+
+    public static final double INTAKE_JIGGLE_FORWARD_DUTYCYCLE = 0.55; // FIXME
+    public static final double INTAKE_JIGGLE_REVERSE_DUTYCYCLE = -0.53;
+    public static final double INTAKE_JIGGLE_HINGE_LIFT_ROTATIONS = 0.1;
+    public static final double INTAKE_GEAR_RATIO = 1.5; // 1:1.5 :: motor:roller
 
     // Hinge
     // Intake hinge uses a single motor (right-side convention kept historically)
     public static final int HINGE_MOTOR_ID = 44;
 
-    public static final double HINGE_STOW_POSITION = 0.1; // FIXME
-    public static final double HINGE_FEED_POSITION = -6.3; // FIXME
-    public static final double HINGE_INTAKE_POSITION = -6.3; // FIXME
-    public static final double HINGE_EJECT_POSITION = 0; // FIXME
-    public static final int HINGE_SMART_CURRENT_LIMIT = 50; // FIXME
+    public static final int HINGE_SMART_CURRENT_LIMIT = 80; // FIXME
     public static final double HINGE_DEPLOY_DUTY_CYCLE = -0.2;
-    public static final double HINGE_STOW_DUTY_CYCLE = 0.2;
-
-    // Indexer
-    public static final int INDEXER_MOTOR_ID = 43;
-    public static final int INDEXER_SMART_CURRENT_LIMIT = 30; // FIXME
-
-    public static final double INDEXER_DUTYCYCLE_FORWARD = 0.5; // FIXME
-    public static final double INDEXER_DUTYCYCLE_REVERSE = 1;
+    public static final double EVIL_HINGE_DUTY_CYCLE = -0.20;
+    public static final double HINGE_STOW_DUTY_CYCLE = 0.6;
 
     // Basic constants
     public static final SparkMax.MotorType BRUSHLESS = SparkMax.MotorType.kBrushless;
@@ -181,4 +192,11 @@ public final class Constants {
             DRIVE_PID, // Translation Constants
             STEER_PID // Steering Constants
     );
+    public static final BooleanSupplier ON_RED_ALLIANCE = () -> {
+        Optional<Alliance> alliance = DriverStation.getAlliance();
+        if (alliance.isPresent()) {
+            return alliance.get() == DriverStation.Alliance.Red;
+        }
+        return false;
+    };
 }
