@@ -6,19 +6,23 @@ package frc.robot;
 
 import static frc.robot.Constants.*;
 
-import java.util.Set;
 import java.util.function.BooleanSupplier;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
-import edu.wpi.first.wpilibj.DataLogManager;
 
+import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.networktables.DoublePublisher;
+import edu.wpi.first.networktables.NetworkTable;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.StructArrayPublisher;
+import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.button.CommandPS4Controller;
-import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
-import edu.wpi.first.wpilibj2.command.button.Trigger;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.subsystems.DrivetrainSubsystem;
 import frc.robot.subsystems.IntakeSubsystem;
@@ -34,20 +38,25 @@ import frc.robot.commands.auto.StartFeedingCommand;
 import frc.robot.commands.auto.StopFeedCommand;
 import frc.robot.state_machines.RobotStateMachine;
 import frc.robot.state_machines.RobotStateMachine.RobotState;
-import frc.robot.state_machines.SystemStateMachine.SystemState;
 import frc.robot.state_machines.TeleopStateMachine.TeleopState;
+import frc.robot.util.PeriodTimer;
+import frc.robot.util.XboxController;
 
 public class RobotContainer {
+
+  private final SendableChooser<Command> autoChooser;
+  private final Field2d field = new Field2d();
 
   // Code override
   private final boolean START_IN_MANUAL = true;
 
   // Controllers
-  private final CommandXboxController driverController = new CommandXboxController(DRIVER_XBOX_PORT);
-  private final CommandXboxController operatorController = new CommandXboxController(OPERATOR_XBOX_PORT);
+  private final XboxController driver = new XboxController(DRIVER_XBOX_PORT);
+  private final XboxController operator = new XboxController(OPERATOR_XBOX_PORT);
+  private final XboxController coach = new XboxController(2);
 
   // Subsystems
-  private final DrivetrainSubsystem drivetrain = new DrivetrainSubsystem();
+  private final DrivetrainSubsystem drivetrain = new DrivetrainSubsystem(field);
   private final PoseEstimationSubsystem poseEstimationSubsystem = new PoseEstimationSubsystem(drivetrain);
   private final IntakeSubsystem intake = new IntakeSubsystem();
   private final IndexerSubsystem indexer = new IndexerSubsystem();
@@ -62,8 +71,16 @@ public class RobotContainer {
   private final TeleopStateMachine teleopSM = new TeleopStateMachine(systemSM, operatorOverrideSupplier);
   private final RobotStateMachine robotSM = new RobotStateMachine(teleopSM, systemSM, operatorOverrideSupplier);
 
+  // Timer
+  private final Timer teleopTimer = new Timer();
+
   // Manual-actions helper from the SystemStateMachine
   private final SystemStateMachine.ManualActions manual = systemSM.getManualActions();
+  private final PeriodTimer periodTimer = new PeriodTimer(teleopTimer);
+  private double timeLeft = 0;
+
+  public static final NetworkTable timeNT = NetworkTableInstance.getDefault().getTable("time");
+  private final DoublePublisher timePublisher = timeNT.getDoubleTopic("time").publish();
 
   private Command teleopMasterCommand; // the master command that runs the teleop timeline (scheduled in startTeleop)
 
@@ -71,6 +88,9 @@ public class RobotContainer {
     configureBindings();
 
     registerNamedCommands();
+
+    autoChooser = AutoBuilder.buildAutoChooser();
+    SmartDashboard.putData("Auto Chooser", autoChooser);
   }
 
   // Configure controller button -> command bindings.
@@ -94,7 +114,7 @@ public class RobotContainer {
    * Right Trigger   | Manual Shooter Autodistance Toggle On/Off // XXX: Replaces shooter short
    * Right Trigger   | Manual Shoot Short (Ramp Up) // XXX: Replaces shooter long
    * A Button        | Manual Stop All
-   * X Button        | Manual Shooter Feed (Once)
+   * X Button        | 
    * B Button        | 
    * Y Button        | 
    * POV Up          | Manual Intake Stow
@@ -107,63 +127,29 @@ public class RobotContainer {
 
   // @formatter:on
   private void configureBindings() {
+
     // Driver controls
-    Trigger driverX = driverController.x();
-    Trigger driverLB = driverController.leftBumper();
-    Trigger driverB = driverController.b();
-    Trigger driverA = driverController.a();
 
-    driverX.onTrue(drivetrain.zeroGyroCommand());
-    driverLB.onTrue(drivetrain.disableSpeedModeCommand());
-    driverLB.onFalse(drivetrain.enableSpeedModeCommand());
-    driverB.onTrue(drivetrain.toggleAutoAlignCommand());
-    driverA.onTrue(poseEstimationSubsystem.printDrivetrainPoseEstimation());
+    driver.x.onTrue(drivetrain.zeroGyroCommand());
+    driver.lb.onTrue(drivetrain.disableSpeedModeCommand());
+    driver.lb.onFalse(drivetrain.enableSpeedModeCommand());
+    driver.b.onTrue(drivetrain.toggleAutoAlignCommand());
+    //driver.y.onTrue(shooter.runShooterToShuffleboardRPM());
+    
 
-    // driverRB reserved for align/auto actions if implemented
-    // driverRB.onTrue(/* some align command */);
+    // Default drivetrain command (joystick driving)
+    drivetrain.setDefaultCommand(
+        drivetrain.joystickDriveCommand(
+            () -> (-driver.getLeftJoystickX()), // left Y -> robot +X
+            () -> (driver.getLeftJoystickY()), // left X -> robot +Y
+            () -> (driver.getRightJoystickX() / 1.6) // rotation scaled
+        ));
 
-    // Operator controls (manual gates are provided by
-    // SystemStateMachine.ManualActions)
-    Trigger operatorRT = operatorController.rightTrigger();
-    Trigger operatorLT = operatorController.leftTrigger();
-    Trigger operatorA = operatorController.a();
-    Trigger operatorB = operatorController.b();
-    Trigger operatorX = operatorController.x();
-    Trigger operatorY = operatorController.y();
-    Trigger operatorRB = operatorController.rightBumper();
-    Trigger operatorLB = operatorController.leftBumper();
-    Trigger operatorPOVDown = operatorController.povDown();
-    Trigger operatorPOVUp = operatorController.povUp();
-    Trigger operatorPOVLeft = operatorController.povLeft();
-    Trigger operatorPOVRight = operatorController.povRight();
-
-    // OPERATOR OVERRIDE
-    // operatorLB
-    // .onTrue(Commands.runOnce(() -> operatorOverrideValue = true))
-    // .onFalse(Commands.runOnce(() -> operatorOverrideValue = false));
-
-    // Enter Manual Mode
-    // Toggle mode is commented out right now
-
-    // @formatter:off
-    // operatorX.onTrue(
-    //     Commands.defer(() -> {
-    //       System.out.println("==== Attempting to toggle MANUAL state. Current state is manual?: "
-    //           + teleopSM.isInState(TeleopState.MANUAL));
-    //       TeleopState targetState = teleopSM.isInState(TeleopState.MANUAL) ? TeleopState.SCORE : TeleopState.MANUAL;
-    //       Command requestCommand = teleopSM.requestState(targetState);
-    //       return requestCommand;
-    //     }, Set.of(teleopSM)));
-    // operatorX.onTrue(teleopSM.requestState(TeleopState.MANUAL));
-    // @formatter:on
-
-    // Intake
-    // Call both the non-manual (state request) and the manual-gated action.
-    // Non-manual requests come first so the guard/transition is evaluated before
-    // the manual command (the manual command is gated to MANUAL state).
-    operatorRB.onTrue(manual.intake());
-    operatorPOVUp.onTrue(manual.intakeStow());
-    operatorPOVDown.onTrue(manual.eject());
+    operator.rb.onTrue(Commands.parallel(manual.intake(),
+        Commands.runOnce(() -> operator.rumbleSmooth(0.2))));
+    operator.povUp.onTrue(Commands.parallel(manual.intakeDeploy(),
+        Commands.runOnce(() -> operator.rumbleSmooth(0.2))));
+    operator.povDown.onTrue(manual.eject());
 
     // Teleop quick switches (non-manual): POV left/right pick STEAL/SCORE modes
 
@@ -171,49 +157,49 @@ public class RobotContainer {
     // Map face buttons to both manual shot commands and a guarded request to enter
     // SHOOT.
     // Shooter: request SHOOT + teleop SCORE (so the system and teleop modes align)
-    operatorRT.onTrue(manual.shootShort());
-    operatorLT.onTrue(manual.shootLong());
-    operatorA.onTrue(manual.reset());
-    // operatorPOVUp.onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT),
-    // manual.shootPass()));
-    // Start feeding should normally be part of SHOOT; request SHOOT too.
-    operatorLB
+    operator.rt.onTrue(shooter.onAutoDistanceCommand());
+    // operator.rt.onTrue(manual.shootShort());
+    //operator.lt.onTrue(manual.shootLong());
+
+    operator.b.onTrue(Commands.parallel(manual.stopIntake(),
+        Commands.runOnce(() -> operator.stopSmoothRumble())));
+
+    operator.a.onTrue(shooter.offAutoDistanceCommand());
+
+    operator.lb
         .onTrue(manual.startFeeding())
         .onFalse(manual.stopFeeding());
-    // // Shoot once
 
-    operatorX.onTrue(Commands.parallel(systemSM.requestState(SystemState.SHOOT), manual.feedOnce()));
-
-    // Default drivetrain command (joystick driving)
-    drivetrain.setDefaultCommand(
-        drivetrain.joystickDriveCommand(
-            () -> (-driverController.getLeftX()), // left Y -> robot +X
-            () -> (driverController.getLeftY()), // left X -> robot +Y
-            () -> (driverController.getRightX() / 1.6) // rotation scaled
-        ));
+    // Tuning
+    operator.leftStick
+        .onTrue(Commands.runOnce(() -> System.out.println("=========  RECONFIGURE PID"))
+            .andThen(shooter.reconfigureRobotTuningCommand()));
   }
 
   public Command getAutonomousCommand() {
     // If you later add an auto chooser, return selected command here.
-    return AutoBuilder.buildAuto("Outpost");
-    // return null;
+    if (autoChooser != null) {
+      return autoChooser.getSelected();
+    }
+    return null;
   }
 
   private void registerNamedCommands() {
     NamedCommands.registerCommand("Shoot", new CompleteScoreCommand(shooter, indexer));
-    NamedCommands.registerCommand("Ramp Shooter Long", new RampShooterLongCommand(shooter));
+    NamedCommands.registerCommand("Ramp Shooter Long", shooter.onAutoDistanceCommand());
     NamedCommands.registerCommand("Deploy Intake", new DeployIntakeCommand(intake));
-    NamedCommands.registerCommand("Feed All", new StartFeedingCommand(shooter, indexer, intake));
+    NamedCommands.registerCommand("Intake", intake.startIntakeAutoCommand());
+    NamedCommands.registerCommand("Feed All", new StartFeedingCommand(shooter, intake));
     NamedCommands.registerCommand("Stop", new StopFeedCommand(shooter, intake));
+    NamedCommands.registerCommand("Reset Odom", new WaitCommand(0.1));
   }
 
   public void startTeleop() {
+    resetTimer();
     // Request the top-level robot state machine to enter TELEOP and start the
     // teleop timeline (non-blocking; these return Commands and are scheduled).
     CommandScheduler.getInstance().schedule(robotSM.requestState(RobotState.TELEOP));
-    // No master command; it is not helping
-    // CommandScheduler.getInstance().schedule(teleopMasterCommand =
-    // teleopSM.teleopMasterCommand());
+    // No master command; it is not helping\
     if (START_IN_MANUAL) {
       CommandScheduler.getInstance().schedule(
           Commands.sequence(
@@ -239,7 +225,56 @@ public class RobotContainer {
             robotSM.requestState(RobotState.DISABLED),
             teleopSM.enterDisabled()));
   }
+
+  // @N/A 20s autonomous period
+  // @0s 10s transition shift
+  // @10s 25s loser shift
+  // @35s 25s winner shift
+  // @60s 25s loser shift
+  // @85s 25s winner shift
+  // @110s 30s endgame shift
+  // @140s 0s game end
+
+  public void setRumbles() {
+
+    if (periodTimer.getController5SecRumble()) {
+      driver.rumbleBoth(0.05);
+      coach.rumbleBoth(0.05);
+    } else if (periodTimer.getController10SecRumble()) {
+      driver.rumbleBoth(1.0);
+      coach.rumbleBoth(1.0);
+    } else {
+      driver.stopRoughRumble();
+      driver.stopSmoothRumble();
+      coach.stopRoughRumble();
+      coach.stopSmoothRumble();
+    }
+
+
+    double rpm = Math.abs(shooter.getShooterMotorRPM());
+    if (rpm > (4275) && rpm > 500) {
+      operator.rumbleRough(1.0);
+    } else {
+      operator.stopRoughRumble();
+    }
+  }
+
+  public void resetTimer() {
+    periodTimer.reset();
+    periodTimer.start();
+  }
+
+  public double getTime() {
+    return periodTimer.getTime();
+  }
+
+  public void periodic() {
+    setRumbles();
+    timePublisher.set(timeLeft);
+  }
+
 }
+
 // COMMANDS FOR AUTO (NOT USED FOR NOW!)
 
 /**

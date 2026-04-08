@@ -2,23 +2,21 @@ package frc.robot.subsystems;
 
 import static frc.robot.Constants.*;
 
+import java.util.Set;
+
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.spark.SparkAbsoluteEncoder;
 import com.revrobotics.spark.SparkClosedLoopController;
 import com.revrobotics.spark.SparkFlex;
-import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.SparkBase.ControlType;
 import com.revrobotics.ResetMode;
 import com.revrobotics.PersistMode;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkFlexConfig;
-import com.revrobotics.spark.config.SparkMaxConfig;
-
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringPublisher;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
@@ -67,11 +65,12 @@ public class IntakeSubsystem extends SubsystemBase {
     private final PIDGains intakePidGains;
 
     private double desiredSpeed;
+    private boolean returnToIntaking = false;
 
     /* ----- Hinge ----- */
     // Hinge motor and controller (single motor)
-    private final SparkMax hingeMotor;
-    private final SparkMaxConfig hingeMotorConfig;
+    private final SparkFlex hingeMotor;
+    private final SparkFlexConfig hingeMotorConfig;
 
     private final SparkClosedLoopController hingeMotorController;
     private final RelativeEncoder hingeMotorRelativeEncoder;
@@ -90,7 +89,8 @@ public class IntakeSubsystem extends SubsystemBase {
         INTAKE,
         FEED,
         EJECT,
-        STOW
+        STOW,
+        JIGGLE
         // Add JAM_CLEAR?
     };
 
@@ -103,19 +103,19 @@ public class IntakeSubsystem extends SubsystemBase {
 
         intakeMotorLeftController = intakeMotorLeft.getClosedLoopController();
         intakeMotorLeftRelativeEncoder = intakeMotorLeft.getEncoder();
-        intakePidGains = new PIDGains(1.0, 0.0, 0.0, 0.0); // FIXME: Tune pid constants
+        intakePidGains = new PIDGains(1.0, 0.000, 0.0, 0.00); // FIXME: Tune pid constants
 
         // Intake target variable
         desiredSpeed = 0.0;
 
         // Hinge motors and controllers and variables
 
-        hingeMotor = new SparkMax(HINGE_MOTOR_ID, BRUSHLESS);
-        hingeMotorConfig = new SparkMaxConfig();
+        hingeMotor = new SparkFlex(HINGE_MOTOR_ID, BRUSHLESS);
+        hingeMotorConfig = new SparkFlexConfig();
 
         hingeMotorController = hingeMotor.getClosedLoopController();
         hingeMotorRelativeEncoder = hingeMotor.getEncoder();
-        hingePidGains = new PIDGains(1.0, 0.0, 0.0, 0.0); // FIXME: Tune pid constants
+        hingePidGains = new PIDGains(1.0, 0.0002, 0.01, 0.001); // FIXME: Tune pid constants
 
         // Hinge target variable
         desiredPositionRotations = 0.0;
@@ -144,14 +144,15 @@ public class IntakeSubsystem extends SubsystemBase {
 
     public void configureMotors() {
         intakeMotorLeftConfig
-                .smartCurrentLimit(INTAKE_SMART_CURRENT_LIMIT)
+                //.smartCurrentLimit(INTAKE_SMART_CURRENT_LIMIT)
                 .idleMode(IdleMode.kCoast)
                 .inverted(true);
 
         intakeMotorLeftConfig.closedLoop
                 .p(intakePidGains.p)
                 .i(intakePidGains.i)
-                .d(intakePidGains.d);
+                .d(intakePidGains.d)
+                .velocityFF(intakePidGains.FF);
 
         intakeMotorLeft.configure(
                 intakeMotorLeftConfig,
@@ -159,23 +160,14 @@ public class IntakeSubsystem extends SubsystemBase {
                 PersistMode.kPersistParameters);
 
         intakeMotorRightConfig
-            .smartCurrentLimit(INTAKE_SMART_CURRENT_LIMIT)
-            .follow(INTAKE_MOTOR_LEFT_ID, true)
-            .idleMode(IdleMode.kCoast);
+                .smartCurrentLimit(INTAKE_SMART_CURRENT_LIMIT)
+                .follow(INTAKE_MOTOR_LEFT_ID, true)
+                .idleMode(IdleMode.kCoast);
 
         intakeMotorRight.configure(
-            intakeMotorRightConfig,
-            ResetMode.kResetSafeParameters,
-            PersistMode.kPersistParameters);
-			intakeMotorRightConfig
-            .smartCurrentLimit(INTAKE_SMART_CURRENT_LIMIT)
-            .follow(INTAKE_MOTOR_LEFT_ID, true)
-            .idleMode(IdleMode.kCoast);
-
-        intakeMotorRight.configure(
-            intakeMotorRightConfig,
-            ResetMode.kResetSafeParameters,
-            PersistMode.kPersistParameters);
+                intakeMotorRightConfig,
+                ResetMode.kResetSafeParameters,
+                PersistMode.kPersistParameters);
 
         hingeMotorConfig
                 .smartCurrentLimit(HINGE_SMART_CURRENT_LIMIT)
@@ -212,6 +204,10 @@ public class IntakeSubsystem extends SubsystemBase {
         intakeMotorLeftController.setSetpoint(dutyCycle, ControlType.kDutyCycle);
     }
 
+    public void setIntakeVelocity(double velocity) {
+        intakeMotorLeftController.setSetpoint(velocity, ControlType.kVelocity);
+    }
+
     public Command stopIntake() {
         desiredSpeed = 0;
         return Commands.runOnce(() -> setIntakeDutyCycle(0.0));
@@ -233,6 +229,49 @@ public class IntakeSubsystem extends SubsystemBase {
             this.desiredSpeed = desiredSpeed;
             setIntakeDutyCycle(desiredSpeed);
         });
+    }
+
+    public Command updateIntakeSpeed(double desiredSpeed) {
+        return Commands.runOnce(() -> {
+            System.out.println("======RUNNING INTAKE");
+            this.desiredSpeed = desiredSpeed;
+            setIntakeDutyCycle(desiredSpeed);
+        });
+    }
+
+    public Command updateIntakeRollerRPM(double desiredRPM) {
+        return Commands.runOnce(() -> {
+            System.out.println("======RUNNING INTAKE RPM");
+            setIntakeVelocity(desiredRPM * INTAKE_GEAR_RATIO);
+        });
+    }
+
+    public void setIntakeRelativePosition(double relativePosition) {
+        System.out.println("========== SETTING HINGE TO RELATIVE POSITION: " + relativePosition);
+        System.out.println("========== HINGE POS: " + intakeMotorLeftRelativeEncoder.getPosition());
+        hingeMotorController.setSetpoint(
+                intakeMotorLeftRelativeEncoder.getPosition() + relativePosition, ControlType.kPosition);
+    }
+
+    public void setHingePosition(double position) {
+        System.out.println("========== SETTING HINGE TO POSITION: " + position);
+        System.out.println("========== HINGE POS: " + getHingeEncoderAbsolutePositionRotations());
+        hingeMotorController.setSetpoint(position, ControlType.kPosition);
+    }
+
+    public void setHingeRelativePosition(double relativePosition) {
+        System.out.println("========== SETTING HINGE TO RELATIVE POSITION: " + relativePosition);
+        System.out.println("========== HINGE POS: " + getHingeEncoderAbsolutePositionRotations());
+        hingeMotorController.setSetpoint(
+                getHingeEncoderAbsolutePositionRotations() + relativePosition, ControlType.kPosition);
+    }
+
+    public Command moveHingeToPositionAndWait(double position) {
+        return Commands.sequence(
+                Commands.runOnce(() -> setHingePosition(position)),
+                Commands.race(
+                        Commands.waitSeconds(3),
+                        Commands.waitUntil(this::isAtDesiredPosition)));
     }
 
     public Command runHingeAtDutyCycleForSeconds(double dutyCycle, double seconds) {
@@ -265,26 +304,56 @@ public class IntakeSubsystem extends SubsystemBase {
     }
 
     public Command deployIntake() {
-        return runHingeAtDutyCycleForSeconds(HINGE_DEPLOY_DUTY_CYCLE, 0.5);
+        return runHingeAtDutyCycleForSeconds(HINGE_DEPLOY_DUTY_CYCLE, 2);
     }
 
     public Command deployIntakeAuto() {
-        return runHingeAtDutyCycleForSeconds(EVIL_HINGE_DUTY_CYCLE, 2);
+        return runHingeAtDutyCycleForSeconds(EVIL_HINGE_DUTY_CYCLE, 4);
     }
 
     public Command stowIntake() {
         return runHingeAtDutyCycleForSeconds(HINGE_STOW_DUTY_CYCLE, 1);
     }
 
-    public Command jiggle() {
-        return new RepeatCommand(new SequentialCommandGroup(
-            runHingeAtDutyCycleForSeconds(0.3, 0.7),
-            runHingeAtDutyCycleForSeconds(-HINGE_DEPLOY_DUTY_CYCLE, 0.3)
-        ));
+    public Command jiggleWithReverse() {
+        return new SequentialCommandGroup(
+            setState(IntakeState.JIGGLE),
+            setReturnToIntaking(),
+            new RepeatCommand(
+                new SequentialCommandGroup(
+                    Commands.waitSeconds(0.1),
+                    Commands.runOnce(() -> setIntakeDutyCycle(INTAKE_JIGGLE_FORWARD_DUTYCYCLE)),
+                    Commands.waitSeconds(0.3),
+                    Commands.runOnce(() -> setIntakeDutyCycle(INTAKE_JIGGLE_REVERSE_DUTYCYCLE))
+                )
+            )
+        );
+    }
+
+    public Command setReturnToIntaking() {
+        return Commands.runOnce(() -> {
+            if (getIntakeDesiredSpeed() == 0) {
+                returnToIntaking = false;
+            } else {
+                returnToIntaking = true;
+            }
+        });
     }
 
     public Command stopJiggle() {
-        return runHingeAtDutyCycleForSeconds(HINGE_DEPLOY_DUTY_CYCLE, 0.3);
+        if (returnToIntaking) {
+            return updateIntakeDutyCycle(INTAKE_INTAKE_SPEED);
+        } else {
+            return stopIntake();
+        }
+    }
+
+    public Command stopJiggleFixed() {
+        return Commands.either(
+            updateIntakeDutyCycle(INTAKE_INTAKE_SPEED),
+            stopIntake(),
+            () -> returnToIntaking
+        );
     }
 
     public Command updateHingePosition(double desiredPosition) {
@@ -295,14 +364,22 @@ public class IntakeSubsystem extends SubsystemBase {
     public Command startIntakeCommand() {
         return new SequentialCommandGroup(
                 setState(IntakeState.INTAKE),
-                updateIntakeDutyCycle(INTAKE_DUTYCYCLE),
+                updateIntakeDutyCycle(INTAKE_INTAKE_SPEED),
                 deployIntake());
+    }
+
+    public Command startIntakeAutoCommand() {
+        return new SequentialCommandGroup(
+                setState(IntakeState.INTAKE),
+                updateIntakeSpeed(INTAKE_INTAKE_SPEED),
+                Commands.runOnce(() -> holdHinge()));
+                // deployIntakeAuto());
     }
 
     public Command feedIntakeCommand() {
         return new ParallelCommandGroup(
                 setState(IntakeState.FEED),
-                updateIntakeDutyCycle(INTAKE_DUTYCYCLE));
+                updateIntakeDutyCycle(INTAKE_INTAKE_SPEED));
     }
 
     public Command ejectIntakeCommand() {
@@ -334,5 +411,9 @@ public class IntakeSubsystem extends SubsystemBase {
 
     public IntakeState getState() {
         return intakeState;
+    }
+
+    public double getIntakeDesiredSpeed() {
+        return desiredSpeed;
     }
 }

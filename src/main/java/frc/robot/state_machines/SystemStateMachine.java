@@ -1,5 +1,7 @@
 package frc.robot.state_machines;
 
+import static frc.robot.Constants.INTAKE_INTAKE_SPEED;
+
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
@@ -11,6 +13,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.IndexerSubsystem;
 import frc.robot.subsystems.ShooterSubsystem;
@@ -80,7 +83,7 @@ public class SystemStateMachine extends SubsystemBase {
     private final IntakeSubsystem intake;
     private final ShooterSubsystem shooter;
     private final IndexerSubsystem indexer;
-    private final DrivetrainSubsystem drivetrain;
+    //private final DrivetrainSubsystem drivetrain;
 
     // ManualActions class instance for this instance
     private final ManualActions manualActions;
@@ -96,7 +99,7 @@ public class SystemStateMachine extends SubsystemBase {
         this.intake = Objects.requireNonNull(intake);
         this.shooter = Objects.requireNonNull(shooter);
         this.indexer = Objects.requireNonNull(indexer);
-        this.drivetrain = Objects.requireNonNull(drivetrain);
+        //this.drivetrain = Objects.requireNonNull(drivetrain);
         this.manualActions = new ManualActions();
         configureTriggers();
     }
@@ -224,10 +227,12 @@ public class SystemStateMachine extends SubsystemBase {
     public class ManualActions {
 
         // Intake Controls
+        public Command intakeDeploy() {
+            return manualGate(intake.startIntakeCommand());
+        }
+
         public Command intake() {
-            return manualGate(Commands.sequence(
-                Commands.runOnce(() -> System.out.println("================Starting intake!!")),
-                intake.startIntakeCommand()));
+            return manualGate(intake.updateIntakeSpeed(INTAKE_INTAKE_SPEED));
         }
 
         public Command intakeStop() {
@@ -244,11 +249,17 @@ public class SystemStateMachine extends SubsystemBase {
 
         // Shooter Controls
         public Command shootShort() {
-            return manualGate(shooter.shortShotCommand());
+            return manualGate(
+                Commands.sequence(
+                    Commands.runOnce(() -> System.out.println("========----------======= ATTEMPTING TO START SHOOTER!!! ====")), 
+                    shooter.shortShotCommand()
+                )
+            );
         }
 
         public Command shootLong() {
-            return manualGate(shooter.longShotCommand());
+            return manualGate(
+                shooter.longShotCommand());
         }
 
         public Command shootPass() {
@@ -256,16 +267,12 @@ public class SystemStateMachine extends SubsystemBase {
         }
 
         public Command feedOnce() {
-            return manualGate(Commands.parallel(shooter.feedOnceCommand()
-            //, indexer.startCommand()
-            ));
+            return manualGate(shooter.feedOnceCommand());
         }
 
         public Command startFeeding() {
-            return manualGate(Commands.parallel(shooter.startFeedingCommand()
-            , intake.jiggle()
-            , intake.updateIntakeSpeed(0.4)
-            // , indexer.startCommand()
+            return manualGate(Commands.sequence(shooter.startFeedingCommand()
+            , intake.jiggleWithReverse()
             ));
         }
 
@@ -276,21 +283,24 @@ public class SystemStateMachine extends SubsystemBase {
         }
 
         public Command autoShooterDistanceToggleCommand() {
-            return manualGate(shooter.toggleAutoDistanceCommand());
+            return manualGate(shooter.onAutoDistanceCommand());
         }
 
         // Indexer Controls
         public Command startIndexer() {
             return manualGate(
                 Commands.none()
-                // indexer.startCommand()
             );
         }
 
         // Reset
-        public Command reset() {
-            return Commands.parallel(intake.stopIntake(), intake.stopHinge(), shooter.stopShooterCommand(),
-                    indexer.stopIndexerCommand());
+        public Command stopIntake() {
+            return new ParallelCommandGroup(intake.stopIntake(), intake.stopHinge());
+        }
+
+        public Command stopShooter() {
+            return Commands.parallel(
+                shooter.stopShooterCommand());
         }
 
         private Command manualGate(Command action) {
