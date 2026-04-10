@@ -480,6 +480,11 @@ public class DrivetrainSubsystem implements Subsystem {
         poseEstimator.resetPosition(getAdjustedRotation(), getSwervePositions(), pose);
     }
 
+    public void resetPoseAuto(Pose2d pose) {
+        zeroGyro();
+        poseEstimator.resetPosition(getAdjustedRotation(), getSwervePositions(), pose);
+    }
+
     public void newAutoResetPose(Pose2d pose) {
         poseEstimator.resetPosition(getAdjustedRotation(),
                 getSwervePositions(),

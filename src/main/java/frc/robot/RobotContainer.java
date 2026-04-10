@@ -196,6 +196,9 @@ public class RobotContainer {
 
   public void startTeleop() {
     resetTimer();
+    shooter.stopFeeding();
+    intake.stopIntake();
+    shooter.stopShooter();
     // Request the top-level robot state machine to enter TELEOP and start the
     // teleop timeline (non-blocking; these return Commands and are scheduled).
     CommandScheduler.getInstance().schedule(robotSM.requestState(RobotState.TELEOP));
@@ -271,6 +274,10 @@ public class RobotContainer {
   public void periodic() {
     setRumbles();
     timePublisher.set(timeLeft);
+  }
+
+  public void autoPeriodic() {
+    poseEstimationSubsystem.visionPeriodic();
   }
 
 }

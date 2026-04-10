@@ -272,13 +272,13 @@ public class SystemStateMachine extends SubsystemBase {
 
         public Command startFeeding() {
             return manualGate(Commands.sequence(shooter.startFeedingCommand()
-            , intake.jiggleWithReverse()
+            //, intake.jiggleWithReverse()
             ));
         }
 
         public Command stopFeeding() {
             return manualGate(Commands.parallel(shooter.stopFeedingCommand()
-            , intake.stopJiggle()
+            //, intake.stopJiggle()
             ));
         }
 

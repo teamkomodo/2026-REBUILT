@@ -68,6 +68,12 @@ public class PoseEstimationSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
+        visionPeriodic();
+
+    }
+
+    public void visionPeriodic() {
+        System.out.println("VISIONINGGGGGGGGGG");
         var pose = getVisionPose();
         pose.ifPresent(est -> {
             Pose2d incomingVisionPose = est.estimatedPose.toPose2d();
@@ -89,7 +95,6 @@ public class PoseEstimationSubsystem extends SubsystemBase {
                                                                                               // lot, fix placeholder
             }
         });
-
     }
 
     public Command printVisionPoseEstimation() {

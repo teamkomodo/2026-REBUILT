@@ -159,8 +159,8 @@ public final class Constants {
     };
 
     // Intake
-    public static final int INTAKE_MOTOR_LEFT_ID = 51;
-    public static final int INTAKE_MOTOR_RIGHT_ID = 4;
+    public static final int INTAKE_MOTOR_LEFT_ID = 62;
+    public static final int INTAKE_MOTOR_RIGHT_ID = 55;
     public static final int INTAKE_SMART_CURRENT_LIMIT = 50; // FIXME
 
     public static final double INTAKE_INTAKE_SPEED = 0.7; // FIXME

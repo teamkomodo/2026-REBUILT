@@ -71,6 +71,9 @@ public class ShooterSubsystem extends SubsystemBase {
     private double shooterD = 0;
     private double shooterFF = 0.00045;
     private double shooterRPM = 0;
+    
+    double multiplier = 0.72;
+    double speedAdjust = 1450;
 
     public boolean autoDistanceEnabled = false;
 
@@ -106,6 +109,7 @@ public class ShooterSubsystem extends SubsystemBase {
         SmartDashboard.putNumber("Shooter FF", shooterFF);
         SmartDashboard.putNumber("Shooter RPM", shooterRPM);
         SmartDashboard.putNumber("Target Shooter RPM", 0);
+        SmartDashboard.putNumber("Extra Shooter RPM", 0);
     }
 
     public void teleopInit() {
@@ -380,7 +384,8 @@ public class ShooterSubsystem extends SubsystemBase {
     public double calculateShooterSpeedWithCurve(double initialSpeed) {
         double perfectSpeed = 4000;
         if(initialSpeed > perfectSpeed) {
-            double finalSpeed = 0.87*(initialSpeed - perfectSpeed) + perfectSpeed + 400;
+            double finalSpeed = multiplier*(initialSpeed - perfectSpeed) + perfectSpeed + speedAdjust
+                + SmartDashboard.getNumber("Extra Shooter RPM", 0);
             return finalSpeed;
         }
         return initialSpeed;
@@ -404,5 +409,13 @@ public class ShooterSubsystem extends SubsystemBase {
 
     public double getShooterDesiredRPM() {
         return shooterMotorRightRelativeEncoder.getVelocity();
+    }
+
+    public Command up() {
+        return Commands.runOnce(() -> {speedAdjust += 100; multiplier -= 0.02;});
+    }
+
+    public Command down() {
+        return Commands.runOnce(() -> {speedAdjust -= 100; multiplier += 0.02;});
     }
 }
