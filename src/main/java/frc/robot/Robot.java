@@ -91,12 +91,12 @@ public class Robot extends TimedRobot {
 
   @Override
   public void teleopInit() {
+    // Start teleop state / timeline
+    robotContainer.startTeleop();
     // Stop autonomous if running
     if (autonomousCommand != null) {
       autonomousCommand.cancel();
     }
-    // Start teleop state / timeline
-    robotContainer.startTeleop();
   }
 
   /** This function is called periodically during operator control. */

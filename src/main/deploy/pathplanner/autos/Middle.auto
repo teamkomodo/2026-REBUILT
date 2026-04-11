@@ -11,7 +11,7 @@
               {
                 "type": "path",
                 "data": {
-                  "pathName": "New New New Path"
+                  "pathName": "Middle-Path"
                 }
               },
               {
@@ -50,9 +50,9 @@
                       }
                     },
                     {
-                      "type": "named",
+                      "type": "wait",
                       "data": {
-                        "name": "Ramp Shooter Long"
+                        "waitTime": 3.0
                       }
                     }
                   ]
@@ -62,9 +62,33 @@
           }
         },
         {
+          "type": "named",
+          "data": {
+            "name": "On Vision"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "Align"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "Ramp Shooter Long"
+          }
+        },
+        {
           "type": "wait",
           "data": {
-            "waitTime": 0.5
+            "waitTime": 2.0
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "Off Align"
           }
         },
         {

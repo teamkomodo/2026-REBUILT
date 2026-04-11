@@ -12,6 +12,8 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+
 import org.photonvision.*;
 
 public class PoseEstimationSubsystem extends SubsystemBase {
@@ -68,11 +70,10 @@ public class PoseEstimationSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-        visionPeriodic();
 
     }
 
-    public void visionPeriodic() {
+    public void visionTeleopPeriodic() {
         System.out.println("VISIONINGGGGGGGGGG");
         var pose = getVisionPose();
         pose.ifPresent(est -> {
@@ -88,6 +89,30 @@ public class PoseEstimationSubsystem extends SubsystemBase {
                 // for this
                 drivetrainSubsystem.addVisionMeasurement(
                         incomingVisionPose,
+                        est.timestampSeconds, VecBuilder.fill(0.5, 0.5, 60 * Math.PI / 180)); // TODO: Add
+                                                                                              // VisionStdDevs
+                                                                                              // to improve pose
+                                                                                              // estimation by a
+                                                                                              // lot, fix placeholder
+            }
+        });
+    }
+
+    public void visionAutoPeriodic() {
+        var pose = getVisionPose();
+        pose.ifPresent(est -> {
+            Pose2d incomingVisionPose = est.estimatedPose.toPose2d();
+            Pose2d currentPose = drivetrainSubsystem.getPoseEstimation();
+
+            double error = incomingVisionPose.getTranslation().getDistance(currentPose.getTranslation());
+
+            if (error < 2 || est.targetsUsed.size() >= 2) { // I completely pulled this error rate out of my butt, we
+                                                            // need to some
+                                                            // velocity adjustment FIXME: Change 1 to 2 on real
+                                                            // field!!!!
+                // for this
+                drivetrainSubsystem.addVisionMeasurement(
+                        incomingVisionPose.rotateBy(Rotation2d.fromRadians(Math.PI)),
                         est.timestampSeconds, VecBuilder.fill(0.5, 0.5, 60 * Math.PI / 180)); // TODO: Add
                                                                                               // VisionStdDevs
                                                                                               // to improve pose

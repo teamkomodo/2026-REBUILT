@@ -46,6 +46,7 @@ public class RobotContainer {
 
   private final SendableChooser<Command> autoChooser;
   private final Field2d field = new Field2d();
+  public boolean vision = false;
 
   // Code override
   private final boolean START_IN_MANUAL = true;
@@ -159,7 +160,7 @@ public class RobotContainer {
     // Shooter: request SHOOT + teleop SCORE (so the system and teleop modes align)
     operator.rt.onTrue(shooter.onAutoDistanceCommand());
     // operator.rt.onTrue(manual.shootShort());
-    //operator.lt.onTrue(manual.shootLong());
+    operator.lt.onTrue(manual.shootLong());
 
     operator.b.onTrue(Commands.parallel(manual.stopIntake(),
         Commands.runOnce(() -> operator.stopSmoothRumble())));
@@ -192,6 +193,11 @@ public class RobotContainer {
     NamedCommands.registerCommand("Feed All", new StartFeedingCommand(shooter, intake));
     NamedCommands.registerCommand("Stop", new StopFeedCommand(shooter, intake));
     NamedCommands.registerCommand("Reset Odom", new WaitCommand(0.1));
+    NamedCommands.registerCommand("Reset Gyro", drivetrain.zeroGyroCommand());
+    NamedCommands.registerCommand("Align", drivetrain.toggleAutoAlignCommand());
+    NamedCommands.registerCommand("Off Align", drivetrain.offAutoAlignCommand());
+    NamedCommands.registerCommand("On Vision", Commands.runOnce(() -> vision=true));
+    NamedCommands.registerCommand("Off Vision", Commands.runOnce(() -> vision=false));
   }
 
   public void startTeleop() {
@@ -199,6 +205,7 @@ public class RobotContainer {
     shooter.stopFeeding();
     intake.stopIntake();
     shooter.stopShooter();
+    CommandScheduler.getInstance().schedule(drivetrain.offAutoAlignCommand());
     // Request the top-level robot state machine to enter TELEOP and start the
     // teleop timeline (non-blocking; these return Commands and are scheduled).
     CommandScheduler.getInstance().schedule(robotSM.requestState(RobotState.TELEOP));
@@ -272,12 +279,18 @@ public class RobotContainer {
   }
 
   public void periodic() {
+    teleopPeriodic();
     setRumbles();
     timePublisher.set(timeLeft);
   }
 
   public void autoPeriodic() {
-    poseEstimationSubsystem.visionPeriodic();
+    if(vision) {
+    poseEstimationSubsystem.visionTeleopPeriodic();}
+  }
+
+  public void teleopPeriodic() {
+    poseEstimationSubsystem.visionTeleopPeriodic();
   }
 
 }

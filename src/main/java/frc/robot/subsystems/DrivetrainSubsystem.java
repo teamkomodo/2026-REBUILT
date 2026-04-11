@@ -127,7 +127,7 @@ public class DrivetrainSubsystem implements Subsystem {
     private ChassisSpeeds currentChassisSpeeds = new ChassisSpeeds();
     RobotConfig config;
     private boolean slowMode = false;
-    private double gyroRotationOffsetRadians = -Math.PI;
+    private double gyroRotationOffsetRadians = 0;
     private final Field2d field;
 
     private ChassisSpeeds lastCommandedChassisSpeeds = new ChassisSpeeds();
@@ -203,13 +203,13 @@ public class DrivetrainSubsystem implements Subsystem {
                 },
                 new Pose2d());
         resetPose(new Pose2d(new Translation2d(10, 0), Rotation2d.fromDegrees(-90)));
-        zeroGyro();
+        setGyro(new Rotation2d().minus(Rotation2d.fromDegrees(180)));
         setupPathPlanner();
         this.field = field;
     }
 
     void resetAutoPose(Pose2d pose) {
-        poseEstimator.resetPosition(getAdjustedRotation(),
+        poseEstimator.resetPosition(getRotation(),
                 getSwervePositions(),
                 new Pose2d(new Translation2d(10, 0),
                         Rotation2d.fromDegrees(179.79)));
@@ -235,7 +235,7 @@ public class DrivetrainSubsystem implements Subsystem {
 
         // does not need to use adjusted rotation, odometry handles it.
         // updates pose with rotation and swerve positions
-        poseEstimator.update(getAdjustedRotation(), getSwervePositions());
+        poseEstimator.update(getRotation(), getSwervePositions());
         updateTelemetry();
 
         transferBrakeMode();
@@ -322,7 +322,7 @@ public class DrivetrainSubsystem implements Subsystem {
         }, RobotController.getFPGATime() - 200000);
 
         adjustedRotationPublisher.set(getAdjustedRotation());
-        rotationPublisher.set(getAdjustedRotation());
+        rotationPublisher.set(getRotation());
 
         frontLeft.updateTelemetry();
         frontRight.updateTelemetry();
@@ -344,6 +344,13 @@ public class DrivetrainSubsystem implements Subsystem {
     public Command toggleAutoAlignCommand() {
         return Commands.runOnce(() -> {
             useAutoAlign = !useAutoAlign;
+            System.out.println("Auto align: " + (useAutoAlign ? "ON" : "OFF"));
+        }, this);
+    }
+
+    public Command offAutoAlignCommand() {
+        return Commands.runOnce(() -> {
+            useAutoAlign = false;
             System.out.println("Auto align: " + (useAutoAlign ? "ON" : "OFF"));
         }, this);
     }
@@ -452,7 +459,7 @@ public class DrivetrainSubsystem implements Subsystem {
      *         degrees being the direction the robot will drive forward in
      */
     public Rotation2d getAdjustedRotation() {
-        return getRotation().plus(Rotation2d.fromRadians(gyroRotationOffsetRadians));
+        return getRotation().plus(Rotation2d.fromRadians(gyroRotationOffsetRadians + Math.PI));
     }
 
     /**
@@ -460,7 +467,7 @@ public class DrivetrainSubsystem implements Subsystem {
      *         degrees being the direction the robot was facing at startup
      */
     public Rotation2d getRotation() {
-        return navX.getRotation2d().plus(Rotation2d.fromRadians(0));
+        return navX.getRotation2d().plus(Rotation2d.fromRadians(Math.PI));
 
     }
 
@@ -477,16 +484,11 @@ public class DrivetrainSubsystem implements Subsystem {
     }
 
     public void resetPose(Pose2d pose) {
-        poseEstimator.resetPosition(getAdjustedRotation(), getSwervePositions(), pose);
-    }
-
-    public void resetPoseAuto(Pose2d pose) {
-        zeroGyro();
-        poseEstimator.resetPosition(getAdjustedRotation(), getSwervePositions(), pose);
+        poseEstimator.resetPosition(getRotation(), getSwervePositions(), pose);
     }
 
     public void newAutoResetPose(Pose2d pose) {
-        poseEstimator.resetPosition(getAdjustedRotation(),
+        poseEstimator.resetPosition(getRotation(),
                 getSwervePositions(),
                 new Pose2d(new Translation2d(pose.getX(), pose.getY()),
                         Rotation2d.fromDegrees(179.79)));

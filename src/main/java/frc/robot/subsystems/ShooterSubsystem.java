@@ -73,7 +73,7 @@ public class ShooterSubsystem extends SubsystemBase {
     private double shooterRPM = 0;
     
     double multiplier = 0.72;
-    double speedAdjust = 1450;
+    double speedAdjust = 1600;
 
     public boolean autoDistanceEnabled = false;
 
@@ -387,8 +387,9 @@ public class ShooterSubsystem extends SubsystemBase {
             double finalSpeed = multiplier*(initialSpeed - perfectSpeed) + perfectSpeed + speedAdjust
                 + SmartDashboard.getNumber("Extra Shooter RPM", 0);
             return finalSpeed;
+        } else {
+        return initialSpeed + 200;
         }
-        return initialSpeed;
     }
 
     public Command runShooterToShuffleboardRPM() {
