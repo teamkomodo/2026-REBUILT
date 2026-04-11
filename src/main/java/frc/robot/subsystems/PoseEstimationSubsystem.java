@@ -74,7 +74,6 @@ public class PoseEstimationSubsystem extends SubsystemBase {
     }
 
     public void visionTeleopPeriodic() {
-        System.out.println("VISIONINGGGGGGGGGG");
         var pose = getVisionPose();
         pose.ifPresent(est -> {
             Pose2d incomingVisionPose = est.estimatedPose.toPose2d();

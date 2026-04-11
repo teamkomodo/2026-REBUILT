@@ -5,6 +5,12 @@
     "data": {
       "commands": [
         {
+          "type": "named",
+          "data": {
+            "name": "Reset Gyro"
+          }
+        },
+        {
           "type": "parallel",
           "data": {
             "commands": [
@@ -21,13 +27,13 @@
                     {
                       "type": "named",
                       "data": {
-                        "name": "Deploy Intake"
+                        "name": "Intake"
                       }
                     },
                     {
                       "type": "named",
                       "data": {
-                        "name": "Intake"
+                        "name": "Deploy Intake"
                       }
                     },
                     {
@@ -49,12 +55,6 @@
               {
                 "type": "named",
                 "data": {
-                  "name": "Ramp Shooter Long"
-                }
-              },
-              {
-                "type": "named",
-                "data": {
                   "name": "On Vision"
                 }
               },
@@ -62,6 +62,12 @@
                 "type": "named",
                 "data": {
                   "name": "Align"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "Ramp Shooter Long"
                 }
               }
             ]
@@ -86,109 +92,27 @@
           }
         },
         {
-          "type": "parallel",
+          "type": "named",
           "data": {
-            "commands": [
-              {
-                "type": "path",
-                "data": {
-                  "pathName": "Second-Middle-Path"
-                }
-              },
-              {
-                "type": "sequential",
-                "data": {
-                  "commands": [
-                    {
-                      "type": "named",
-                      "data": {
-                        "name": "Intake"
-                      }
-                    },
-                    {
-                      "type": "wait",
-                      "data": {
-                        "waitTime": 4.0
-                      }
-                    },
-                    {
-                      "type": "named",
-                      "data": {
-                        "name": "Ramp Shooter Long"
-                      }
-                    }
-                  ]
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "Off Align"
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "Off Vision"
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "Stop"
-                }
-              }
-            ]
+            "name": "On Vision"
           }
         },
         {
-          "type": "parallel",
+          "type": "named",
           "data": {
-            "commands": [
-              {
-                "type": "named",
-                "data": {
-                  "name": "On Vision"
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "Align"
-                }
-              }
-            ]
+            "name": "Off Align"
           }
         },
         {
-          "type": "wait",
+          "type": "named",
           "data": {
-            "waitTime": 0.8
+            "name": "Intake"
           }
         },
         {
-          "type": "parallel",
+          "type": "path",
           "data": {
-            "commands": [
-              {
-                "type": "named",
-                "data": {
-                  "name": "Feed All"
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "Off Align"
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "Off Vision"
-                }
-              }
-            ]
+            "pathName": "Second-Middle-Path"
           }
         }
       ]

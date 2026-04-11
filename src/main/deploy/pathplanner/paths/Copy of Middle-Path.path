@@ -64,11 +64,11 @@
     },
     {
       "anchor": {
-        "x": 2.136797853309481,
+        "x": 1.637,
         "y": 2.50169946332737
       },
       "prevControl": {
-        "x": 4.229874776386405,
+        "x": 3.7300769230769237,
         "y": 2.5990518783542043
       },
       "nextControl": null,
@@ -78,7 +78,7 @@
   ],
   "rotationTargets": [
     {
-      "waypointRelativePos": 1.0186915887850465,
+      "waypointRelativePos": 0.6203208556149727,
       "rotationDegrees": 26.961217390567796
     },
     {
@@ -93,12 +93,25 @@
   "constraintZones": [
     {
       "name": "Constraints Zone",
-      "minWaypointRelativePos": 2.616949152542364,
+      "minWaypointRelativePos": 1.3423728813559375,
       "maxWaypointRelativePos": 3.1322033898305075,
       "constraints": {
-        "maxVelocity": 1.5,
+        "maxVelocity": 1.4,
         "maxAcceleration": 3.0,
         "maxAngularVelocity": 150.0,
+        "maxAngularAcceleration": 720.0,
+        "nominalVoltage": 12.0,
+        "unlimited": false
+      }
+    },
+    {
+      "name": "Constraints Zone",
+      "minWaypointRelativePos": 3.172881355932199,
+      "maxWaypointRelativePos": 4.0,
+      "constraints": {
+        "maxVelocity": 6.0,
+        "maxAcceleration": 5.0,
+        "maxAngularVelocity": 540.0,
         "maxAngularAcceleration": 720.0,
         "nominalVoltage": 12.0,
         "unlimited": false
